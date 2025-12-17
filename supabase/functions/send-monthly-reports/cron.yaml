@@ -1,0 +1,25 @@
+# Cron configuration for send-monthly-reports Edge Function
+# Executa automaticamente todo dia 1 do mês às 08:00 (horário de Brasília)
+
+# Schedule: Primeiro dia de cada mês às 08:00 BRT (11:00 UTC)
+- schedule: "0 11 1 * *" # Formato: minuto hora dia mês dia-da-semana
+  function: send-monthly-reports
+  description: "Envio automático de relatórios mensais para todas as organizações ativas"
+
+# Formato do cron:
+# ┌───────────── minuto (0 - 59)
+# │ ┌───────────── hora (0 - 23) - UTC timezone
+# │ │ ┌───────────── dia do mês (1 - 31)
+# │ │ │ ┌───────────── mês (1 - 12)
+# │ │ │ │ ┌───────────── dia da semana (0 - 6) (0 = Domingo)
+# │ │ │ │ │
+# │ │ │ │ │
+# * * * * *
+
+# Exemplos de schedules:
+# "0 11 1 * *"   - Todo dia 1 às 08:00 BRT (11:00 UTC)
+# "0 11 * * 1"   - Toda segunda-feira às 08:00 BRT
+# "0 */6 * * *"  - A cada 6 horas
+# "*/30 * * * *" - A cada 30 minutos
+
+# Nota: Supabase usa UTC timezone, então 11:00 UTC = 08:00 BRT

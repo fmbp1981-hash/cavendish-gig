@@ -1,0 +1,31 @@
+project_id = "latslcjmtoppzfwwvtvp"
+
+[functions.denuncias]
+verify_jwt = false
+
+[functions.ai-generate]
+verify_jwt = true
+
+[functions.send-email]
+verify_jwt = true
+
+[functions.google-calendar]
+verify_jwt = true
+
+[functions.google-drive]
+verify_jwt = true
+
+[functions.send-whatsapp]
+verify_jwt = true
+
+[functions.process-transcription]
+verify_jwt = false
+
+[functions.document-reminders]
+verify_jwt = false
+
+[functions.send-monthly-reports]
+verify_jwt = false
+
+[functions.generate-monthly-report]
+verify_jwt = true
