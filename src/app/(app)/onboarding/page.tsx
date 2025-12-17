@@ -7,6 +7,10 @@ import { Loader2 } from "lucide-react";
 import Onboarding from "@/spa/pages/Onboarding";
 import { useAuth } from "@/contexts/AuthContext";
 
+// Prevent static generation - this page needs runtime
+export const dynamic = 'force-dynamic';
+
+
 export default function OnboardingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
