@@ -74,7 +74,7 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setIsLoading(true);
@@ -83,11 +83,19 @@ const Auth = () => {
       if (mode === "login") {
         const { error } = await signIn(formData.email, formData.password);
         if (error) {
-          const errorMessage = error.message.includes("Invalid login")
-            ? "Email ou senha incorretos"
-            : error.message.includes("Email not confirmed")
-            ? "Por favor, confirme seu email antes de fazer login"
-            : "Erro ao fazer login. Tente novamente.";
+          let errorMessage = "Erro ao fazer login. Tente novamente.";
+
+          if (error.message.includes("Invalid login")) {
+            errorMessage = "Email ou senha incorretos";
+          } else if (error.message.includes("Email not confirmed")) {
+            errorMessage = "Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.";
+          } else if (error.message.includes("Invalid email")) {
+            errorMessage = "Email inválido";
+          } else {
+            // Show actual error for debugging
+            errorMessage = error.message;
+          }
+
           toast({
             title: "Erro no login",
             description: errorMessage,
@@ -97,11 +105,19 @@ const Auth = () => {
       } else {
         const { error } = await signUp(formData.email, formData.password, { nome: formData.name });
         if (error) {
-          const errorMessage = error.message.includes("already registered")
-            ? "Este email já está cadastrado"
-            : error.message.includes("Password")
-            ? "Senha muito fraca. Use pelo menos 6 caracteres"
-            : "Erro ao criar conta. Tente novamente.";
+          let errorMessage = "Erro ao criar conta. Tente novamente.";
+
+          if (error.message.includes("already registered")) {
+            errorMessage = "Este email já está cadastrado";
+          } else if (error.message.includes("Password")) {
+            errorMessage = "Senha muito fraca. Use pelo menos 6 caracteres";
+          } else if (error.message.includes("valid email")) {
+            errorMessage = "Por favor, insira um email válido";
+          } else {
+            // Show actual error for debugging
+            errorMessage = error.message;
+          }
+
           toast({
             title: "Erro no cadastro",
             description: errorMessage,
@@ -110,8 +126,10 @@ const Auth = () => {
         } else {
           toast({
             title: "Conta criada!",
-            description: "Você já pode acessar o sistema.",
+            description: "Verifique seu email para confirmar a conta e depois faça login.",
           });
+          // Switch to login mode after successful registration
+          setMode("login");
         }
       }
     } catch (error) {
