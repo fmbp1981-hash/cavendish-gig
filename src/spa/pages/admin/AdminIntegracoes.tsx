@@ -30,7 +30,8 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
-  Loader2
+  Loader2,
+  LayoutGrid
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,7 +69,7 @@ const integrations: IntegrationConfig[] = [
     status: "available",
     instructions: [
       "Esta integração já está configurada automaticamente",
-      "Modelos disponíveis: Gemini 2.5 Flash, GPT-5, entre outros",
+      "Modelos disponíveis variam por configuração do provedor",
       "Não é necessária nenhuma configuração adicional"
     ]
   },
@@ -132,14 +133,36 @@ const integrations: IntegrationConfig[] = [
     ]
   },
   {
+    id: "trello",
+    name: "Trello",
+    description: "Preparação para integração futura com Trello (sync de tarefas/kanban)",
+    secretName: "TRELLO_API_KEY",
+    secondarySecretName: "TRELLO_API_TOKEN",
+    docsUrl: "https://developer.atlassian.com/cloud/trello/guides/rest-api/api-introduction/",
+    icon: LayoutGrid,
+    color: "text-sky-500",
+    placeholder: "sua_api_key",
+    secondaryPlaceholder: "seu_api_token",
+    inputType: "password",
+    status: "available",
+    instructions: [
+      "Acesse Trello Developer API para obter sua API key",
+      "Gere um token associado à sua conta",
+      "Cole a API key e o token nos campos abaixo",
+      "Esta é uma preparação: o sync automático será ativado posteriormente"
+    ]
+  },
+  {
     id: "fireflies",
     name: "Fireflies.ai",
     description: "Transcrição automática de reuniões para geração de atas via IA",
     secretName: "FIREFLIES_API_KEY",
+    secondarySecretName: "TRANSCRIPTION_WEBHOOK_SECRET",
     docsUrl: "https://fireflies.ai/integrations",
     icon: Mic,
     color: "text-orange-500",
     placeholder: "ff_xxxxxxxxxxxx",
+    secondaryPlaceholder: "seu_segredo_webhook",
     inputType: "password",
     status: "available",
     instructions: [
@@ -147,7 +170,7 @@ const integrations: IntegrationConfig[] = [
       "Acesse Settings → API & Integrations",
       "Gere uma nova API Key",
       "Configure o webhook URL: supabase.co/functions/v1/process-transcription",
-      "Selecione os eventos: transcription_completed"
+      "Configure o header x-webhook-secret com o mesmo valor salvo em TRANSCRIPTION_WEBHOOK_SECRET"
     ]
   },
   {
@@ -170,6 +193,47 @@ const integrations: IntegrationConfig[] = [
     ]
   },
 ];
+
+type IntegrationScope = "system" | "organization";
+
+async function listVaultIntegrations(scope: IntegrationScope) {
+  const { data, error } = await (supabase as any).functions.invoke("integrations", {
+    body: { action: "list", scope },
+  });
+  if (error) throw error;
+  return (data?.data || []) as Array<{
+    provider: string;
+    scope: IntegrationScope;
+    enabled: boolean;
+    configured: boolean;
+    updated_at: string;
+    config: Record<string, any>;
+  }>;
+}
+
+async function upsertVaultIntegration(params: {
+  provider: string;
+  scope: IntegrationScope;
+  secrets?: Record<string, any>;
+  config?: Record<string, any>;
+  enabled?: boolean;
+}) {
+  const hasSecrets = !!params.secrets && Object.keys(params.secrets).length > 0;
+  const hasConfig = typeof params.config !== "undefined";
+
+  const { data, error } = await (supabase as any).functions.invoke("integrations", {
+    body: {
+      action: "upsert",
+      provider: params.provider,
+      scope: params.scope,
+      ...(typeof params.enabled === "boolean" ? { enabled: params.enabled } : {}),
+      ...(hasConfig ? { config: params.config } : {}),
+      ...(hasSecrets ? { secrets: params.secrets } : {}),
+    },
+  });
+  if (error) throw error;
+  return data?.data;
+}
 
 // Hook to fetch AI generation stats
 function useAIStats() {
@@ -302,20 +366,20 @@ export default function AdminIntegracoes() {
   const [configuring, setConfiguring] = useState<IntegrationConfig | null>(null);
   const [secretValue, setSecretValue] = useState("");
   const [secondarySecretValue, setSecondarySecretValue] = useState("");
+  const [twilioPhoneNumber, setTwilioPhoneNumber] = useState("");
   const [showSecret, setShowSecret] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [configuredSecrets, setConfiguredSecrets] = useState<Record<string, boolean>>({
-    "LOVABLE_API_KEY": true
+
+  const queryClient = useQueryClient();
+
+  const { data: vaultIntegrations } = useQuery({
+    queryKey: ["integrations-vault", "system"],
+    queryFn: () => listVaultIntegrations("system"),
+    staleTime: 30_000,
+    retry: 1,
   });
 
   const { data: aiStats, isLoading: statsLoading } = useAIStats();
-
-  useEffect(() => {
-    setConfiguredSecrets(prev => ({
-      ...prev,
-      "LOVABLE_API_KEY": true
-    }));
-  }, []);
 
   const handleConfigure = (integration: IntegrationConfig) => {
     if (integration.status === "coming_soon") {
@@ -327,6 +391,7 @@ export default function AdminIntegracoes() {
     setConfiguring(integration);
     setSecretValue("");
     setSecondarySecretValue("");
+    setTwilioPhoneNumber("");
     setShowSecret(false);
   };
 
@@ -344,14 +409,27 @@ export default function AdminIntegracoes() {
     setSaving(true);
 
     try {
-      // Simulate save - in production this would use the secrets tool
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const secrets: Record<string, any> = {
+        [configuring.secretName]: secretValue.trim(),
+      };
+      if (configuring.secondarySecretName) {
+        secrets[configuring.secondarySecretName] = secondarySecretValue.trim();
+      }
 
-      setConfiguredSecrets(prev => ({
-        ...prev,
-        [configuring.secretName]: true,
-        ...(configuring.secondarySecretName ? { [configuring.secondarySecretName]: true } : {})
-      }));
+      const config: Record<string, any> = {};
+      if (configuring.id === "twilio" && twilioPhoneNumber.trim()) {
+        config.TWILIO_PHONE_NUMBER = twilioPhoneNumber.trim();
+      }
+
+      await upsertVaultIntegration({
+        provider: configuring.id,
+        scope: "system",
+        secrets,
+        config: Object.keys(config).length > 0 ? config : undefined,
+        enabled: true,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["integrations-vault", "system"] });
 
       toast.success(`${configuring.name} configurado com sucesso!`, {
         description: "A integração está ativa e pronta para uso."
@@ -360,6 +438,7 @@ export default function AdminIntegracoes() {
       setConfiguring(null);
       setSecretValue("");
       setSecondarySecretValue("");
+      setTwilioPhoneNumber("");
     } catch (error) {
       toast.error("Erro ao salvar configuração", {
         description: "Tente novamente ou entre em contato com o suporte."
@@ -369,8 +448,33 @@ export default function AdminIntegracoes() {
     }
   };
 
-  const isConfigured = (secretName: string) => {
-    return configuredSecrets[secretName] || false;
+  const isProviderConfigured = (providerId: string) => {
+    if (providerId === "lovable-ai") return true;
+    if (!vaultIntegrations) return false;
+    const row = vaultIntegrations.find((r) => r.provider === providerId);
+    return !!row?.configured;
+  };
+
+  const getProviderRow = (providerId: string) => {
+    if (!vaultIntegrations) return null;
+    return vaultIntegrations.find((r) => r.provider === providerId) || null;
+  };
+
+  const isProviderEnabled = (providerId: string) => {
+    if (providerId === "lovable-ai") return true;
+    const row = getProviderRow(providerId);
+    return !!row?.enabled;
+  };
+
+  const toggleProvider = async (providerId: string, enabled: boolean) => {
+    await upsertVaultIntegration({
+      provider: providerId,
+      scope: "system",
+      enabled,
+      // Preserve config for providers that store additional non-secret settings
+      config: getProviderRow(providerId)?.config,
+    });
+    queryClient.invalidateQueries({ queryKey: ["integrations-vault", "system"] });
   };
 
   const formatNumber = (num: number) => {
@@ -405,7 +509,8 @@ export default function AdminIntegracoes() {
           <h2 className="text-lg font-semibold">Integrações Disponíveis</h2>
           <div className="grid gap-4">
             {availableIntegrations.map((integration) => {
-              const configured = integration.alwaysConfigured || isConfigured(integration.secretName);
+              const configured = integration.alwaysConfigured || isProviderConfigured(integration.id);
+              const enabled = integration.alwaysConfigured || isProviderEnabled(integration.id);
 
               return (
                 <Card key={integration.id} className={configured ? "border-green-500/30" : ""}>
@@ -436,6 +541,22 @@ export default function AdminIntegracoes() {
                             <AlertTriangle className="h-3 w-3 mr-1" />
                             Pendente
                           </Badge>
+                        )}
+
+                        {!integration.alwaysConfigured && configured && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">Ativo</span>
+                            <Switch
+                              checked={enabled}
+                              onCheckedChange={(value) => {
+                                toggleProvider(integration.id, value).catch(() => {
+                                  toast.error("Erro ao atualizar integração", {
+                                    description: "Tente novamente."
+                                  });
+                                });
+                              }}
+                            />
+                          </div>
                         )}
                       </div>
                     </div>
@@ -580,7 +701,7 @@ export default function AdminIntegracoes() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isConfigured("RESEND_API_KEY") ? (
+            {isProviderConfigured("resend") ? (
               <Alert className="border-green-500/30 bg-green-500/10">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
                 <AlertDescription className="text-green-700 dark:text-green-300">
@@ -662,7 +783,7 @@ export default function AdminIntegracoes() {
                   <div className="flex items-center gap-2">
                     <integration.icon className={`h-4 w-4 ${integration.color}`} />
                     <h4 className="font-medium">{integration.name}</h4>
-                    {isConfigured(integration.secretName) && (
+                    {isProviderConfigured(integration.id) && (
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
                     )}
                   </div>
@@ -738,6 +859,22 @@ export default function AdminIntegracoes() {
                       value={secondarySecretValue}
                       onChange={(e) => setSecondarySecretValue(e.target.value)}
                     />
+                  </div>
+                )}
+
+                {configuring.id === "twilio" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="twilio-phone">TWILIO_PHONE_NUMBER (opcional)</Label>
+                    <Input
+                      id="twilio-phone"
+                      type="text"
+                      placeholder="+5511999999999"
+                      value={twilioPhoneNumber}
+                      onChange={(e) => setTwilioPhoneNumber(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Usado como remetente padrão em SMS/WhatsApp (quando aplicável).
+                    </p>
                   </div>
                 )}
               </div>

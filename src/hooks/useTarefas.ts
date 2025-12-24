@@ -7,6 +7,7 @@ export interface Tarefa {
   descricao: string | null;
   status: string;
   prioridade: string;
+  kanban_order?: number | null;
   responsavel_id: string | null;
   projeto_id: string | null;
   organizacao_id: string | null;
@@ -23,6 +24,8 @@ export function useTarefas(organizacaoId?: string, projetoId?: string) {
       let query = supabase
         .from("tarefas")
         .select("*")
+        .order("status", { ascending: true })
+        .order("kanban_order", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false });
 
       if (organizacaoId) {

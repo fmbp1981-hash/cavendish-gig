@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createServiceClient } from "../_shared/supabase.ts";
+import { loadIntegration } from "../_shared/integrations.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -217,7 +219,18 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const serviceAccountJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT");
+    const service = createServiceClient();
+    const integration = await loadIntegration(service, "google-calendar", "system", null);
+
+    if (integration && !integration.enabled) {
+      return new Response(
+        JSON.stringify({ error: "Google Calendar integration disabled" }),
+        { status: 503, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const secrets = integration?.secrets as any;
+    const serviceAccountJson = secrets?.GOOGLE_SERVICE_ACCOUNT || Deno.env.get("GOOGLE_SERVICE_ACCOUNT") || "";
 
     if (!serviceAccountJson) {
       console.error("GOOGLE_SERVICE_ACCOUNT not configured");

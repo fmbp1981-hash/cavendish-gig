@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ConsultorLayout } from "@/components/layout/ConsultorLayout";
 import { useTarefas, useCriarTarefa, useAtualizarTarefa, useExcluirTarefa } from "@/hooks/useTarefas";
 import { useOrganizacoes } from "@/hooks/useConsultorData";
@@ -9,11 +9,30 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Calendar, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   pendente: { label: "Pendente", color: "bg-yellow-500" },
@@ -35,14 +54,59 @@ export default function ConsultorTarefas() {
   const criarTarefa = useCriarTarefa();
   const atualizarTarefa = useAtualizarTarefa();
   const excluirTarefa = useExcluirTarefa();
+  const queryClient = useQueryClient();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [localTasks, setLocalTasks] = useState(tarefas || []);
   const [novaTarefa, setNovaTarefa] = useState({
     titulo: "",
     descricao: "",
     prioridade: "media",
     organizacao_id: "",
     prazo: "",
+  });
+
+  useEffect(() => {
+    setLocalTasks(tarefas || []);
+  }, [tarefas]);
+
+  const statuses = useMemo(() => ["pendente", "em_andamento", "concluida", "cancelada"], []);
+
+  const tasksByStatus = useMemo(() => {
+    const map: Record<string, any[]> = Object.fromEntries(statuses.map((s) => [s, []]));
+    for (const t of localTasks || []) {
+      const s = statuses.includes(t.status) ? t.status : "pendente";
+      map[s].push(t);
+    }
+    for (const s of statuses) {
+      map[s].sort((a, b) => {
+        const ao = typeof a.kanban_order === "number" ? a.kanban_order : Number.POSITIVE_INFINITY;
+        const bo = typeof b.kanban_order === "number" ? b.kanban_order : Number.POSITIVE_INFINITY;
+        if (ao !== bo) return ao - bo;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    }
+    return map as Record<string, typeof localTasks>;
+  }, [localTasks, statuses]);
+
+  const reorderMutation = useMutation({
+    mutationFn: async (updates: Array<{ id: string; status: string; kanban_order: number; concluido_em?: string | null }>) => {
+      if (updates.length === 0) return;
+      const { error } = await (supabase as any)
+        .from("tarefas")
+        .upsert(updates, { onConflict: "id" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tarefas"] });
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar Kanban", {
+        description: "Tente novamente."
+      });
+      queryClient.invalidateQueries({ queryKey: ["tarefas"] });
+    },
   });
 
   const handleCriar = async () => {
@@ -67,17 +131,97 @@ export default function ConsultorTarefas() {
     }
   };
 
-  const handleToggleConcluida = async (id: string, atualStatus: string) => {
-    const novoStatus = atualStatus === "concluida" ? "pendente" : "concluida";
-    try {
-      await atualizarTarefa.mutateAsync({
-        id,
-        status: novoStatus,
-        concluido_em: novoStatus === "concluida" ? new Date().toISOString() : undefined,
-      });
-    } catch {
-      toast.error("Erro ao atualizar tarefa");
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    })
+  );
+
+  const parseColumnId = (id: string) => {
+    if (!id.startsWith("column:")) return null;
+    return id.replace("column:", "");
+  };
+
+  const onDragStart = (event: DragStartEvent) => {
+    setActiveTaskId(String(event.active.id));
+  };
+
+  const onDragEnd = async (event: DragEndEvent) => {
+    const activeId = String(event.active.id);
+    const overId = event.over ? String(event.over.id) : null;
+    setActiveTaskId(null);
+    if (!overId || activeId === overId) return;
+
+    const activeTask = (localTasks || []).find((t) => t.id === activeId);
+    if (!activeTask) return;
+
+    const overTask = (localTasks || []).find((t) => t.id === overId);
+    const toStatus = overTask?.status || parseColumnId(overId);
+    const fromStatus = activeTask.status;
+
+    if (!toStatus || !statuses.includes(toStatus) || !statuses.includes(fromStatus)) return;
+
+    const fromList = tasksByStatus[fromStatus].map((t) => t.id);
+    const toList = tasksByStatus[toStatus].map((t) => t.id);
+
+    const overIndexInTo = overTask ? toList.indexOf(overId) : -1;
+
+    let nextFrom = fromList;
+    let nextTo = toList;
+
+    if (fromStatus === toStatus) {
+      const oldIndex = fromList.indexOf(activeId);
+      const newIndex = fromList.indexOf(overId);
+      if (oldIndex === -1 || newIndex === -1) return;
+      nextFrom = arrayMove(fromList, oldIndex, newIndex);
+    } else {
+      nextFrom = fromList.filter((id) => id !== activeId);
+      nextTo = toList.filter((id) => id !== activeId);
+
+      const insertAt = overIndexInTo >= 0 ? overIndexInTo : nextTo.length;
+      nextTo.splice(insertAt, 0, activeId);
     }
+
+    const updates: Array<{ id: string; status: string; kanban_order: number; concluido_em?: string | null }> = [];
+
+    const applyOrder = (status: string, ids: string[]) => {
+      ids.forEach((id, index) => {
+        const prev = (localTasks || []).find((t) => t.id === id);
+        let concluido_em: string | null | undefined;
+        if (status === "concluida" && !prev?.concluido_em) concluido_em = new Date().toISOString();
+        if (status !== "concluida" && prev?.concluido_em) concluido_em = null;
+
+        updates.push({
+          id,
+          status,
+          kanban_order: index + 1,
+          ...(typeof concluido_em !== "undefined" ? { concluido_em } : {}),
+        });
+      });
+    };
+
+    if (fromStatus === toStatus) {
+      applyOrder(fromStatus, nextFrom);
+    } else {
+      applyOrder(fromStatus, nextFrom);
+      applyOrder(toStatus, nextTo);
+    }
+
+    const updatesById = new Map(updates.map((u) => [u.id, u]));
+    setLocalTasks((prev) =>
+      (prev || []).map((t) => {
+        const upd = updatesById.get(t.id);
+        if (!upd) return t;
+        return {
+          ...t,
+          status: upd.status,
+          kanban_order: upd.kanban_order,
+          ...(Object.prototype.hasOwnProperty.call(upd, "concluido_em") ? { concluido_em: upd.concluido_em as any } : {}),
+        };
+      })
+    );
+
+    reorderMutation.mutate(updates);
   };
 
   const handleExcluir = async (id: string) => {
@@ -89,8 +233,109 @@ export default function ConsultorTarefas() {
     }
   };
 
-  const tarefasPendentes = tarefas?.filter(t => t.status !== "concluida" && t.status !== "cancelada") || [];
-  const tarefasConcluidas = tarefas?.filter(t => t.status === "concluida") || [];
+  function KanbanCard({ tarefa }: { tarefa: any }) {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: tarefa.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+    } as React.CSSProperties;
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={
+          "rounded-lg border bg-background p-3 shadow-sm hover:bg-muted/30 transition-colors " +
+          (isDragging ? "opacity-70" : "")
+        }
+        {...attributes}
+        {...listeners}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="font-medium truncate">{tarefa.titulo}</div>
+            {tarefa.descricao && (
+              <p className="text-sm text-muted-foreground line-clamp-2">{tarefa.descricao}</p>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleExcluir(tarefa.id);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          <Badge className={`${statusConfig[tarefa.status]?.color || "bg-gray-500"} text-white text-xs`}>
+            {statusConfig[tarefa.status]?.label || tarefa.status}
+          </Badge>
+          <span className={`text-xs ${prioridadeConfig[tarefa.prioridade]?.color || ""}`}>
+            {prioridadeConfig[tarefa.prioridade]?.label || tarefa.prioridade}
+          </span>
+          {tarefa.prazo && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              {format(new Date(tarefa.prazo), "dd/MM", { locale: ptBR })}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function KanbanColumn({ status }: { status: string }) {
+    const { setNodeRef, isOver } = useDroppable({ id: `column:${status}` });
+    const tasks = tasksByStatus[status] || [];
+    const ids = tasks.map((t) => t.id);
+
+    return (
+      <div className="w-80 shrink-0">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center justify-between">
+              <span>{statusConfig[status]?.label || status}</span>
+              <Badge variant="secondary">{tasks.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div
+              ref={setNodeRef}
+              className={
+                "space-y-3 min-h-24 rounded-md p-1 transition-colors " +
+                (isOver ? "bg-muted/40" : "")
+              }
+            >
+              <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+                {tasks.map((tarefa) => (
+                  <KanbanCard key={tarefa.id} tarefa={tarefa} />
+                ))}
+              </SortableContext>
+              {tasks.length === 0 && (
+                <div className="text-xs text-muted-foreground text-center py-6">
+                  Arraste tarefas para cá
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <ConsultorLayout>
@@ -111,97 +356,28 @@ export default function ConsultorTarefas() {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Tarefas Pendentes */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Pendentes ({tarefasPendentes.length})</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {tarefasPendentes.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    Nenhuma tarefa pendente
-                  </p>
-                ) : (
-                  tarefasPendentes.map((tarefa) => (
-                    <div
-                      key={tarefa.id}
-                      className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <Checkbox
-                        checked={tarefa.status === "concluida"}
-                        onCheckedChange={() => handleToggleConcluida(tarefa.id, tarefa.status)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium">{tarefa.titulo}</div>
-                        {tarefa.descricao && (
-                          <p className="text-sm text-muted-foreground line-clamp-2">{tarefa.descricao}</p>
-                        )}
-                        <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          <Badge className={`${statusConfig[tarefa.status]?.color || "bg-gray-500"} text-white text-xs`}>
-                            {statusConfig[tarefa.status]?.label || tarefa.status}
-                          </Badge>
-                          <span className={`text-xs ${prioridadeConfig[tarefa.prioridade]?.color || ""}`}>
-                            {prioridadeConfig[tarefa.prioridade]?.label || tarefa.prioridade}
-                          </span>
-                          {tarefa.prazo && (
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {format(new Date(tarefa.prazo), "dd/MM", { locale: ptBR })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => handleExcluir(tarefa.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+          >
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {statuses.map((status) => (
+                <KanbanColumn key={status} status={status} />
+              ))}
+            </div>
 
-            {/* Tarefas Concluídas */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Concluídas ({tarefasConcluidas.length})</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {tarefasConcluidas.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    Nenhuma tarefa concluída
-                  </p>
-                ) : (
-                  tarefasConcluidas.slice(0, 10).map((tarefa) => (
-                    <div
-                      key={tarefa.id}
-                      className="flex items-start gap-3 p-3 border rounded-lg opacity-60"
-                    >
-                      <Checkbox
-                        checked={true}
-                        onCheckedChange={() => handleToggleConcluida(tarefa.id, tarefa.status)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium line-through">{tarefa.titulo}</div>
-                        {tarefa.concluido_em && (
-                          <span className="text-xs text-muted-foreground">
-                            Concluída em {format(new Date(tarefa.concluido_em), "dd/MM/yyyy", { locale: ptBR })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          </div>
+            <DragOverlay>
+              {activeTaskId ? (
+                <div className="w-80 rounded-lg border bg-background p-3 shadow">
+                  <div className="font-medium">
+                    {(localTasks || []).find((t) => t.id === activeTaskId)?.titulo || ""}
+                  </div>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         )}
 
         {/* Modal Nova Tarefa */}

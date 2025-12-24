@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DocumentoPreviewButton } from "@/components/documentos/DocumentoPreviewButton";
+import { GoogleDrivePreviewButton } from "@/components/documentos/GoogleDrivePreviewButton";
 import { DocumentoHistorico } from "@/components/documentos/DocumentoHistorico";
 import { useClienteProjeto } from "@/hooks/useClienteProjeto";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -26,6 +28,15 @@ const faseLabels: Record<string, string> = {
   diagnostico: "Diagnóstico",
   implementacao: "Implementação",
   recorrencia: "Recorrência",
+};
+
+type DocumentoRow = Database["public"]["Tables"]["documentos"]["Row"];
+type DocumentoRequeridoRow = Database["public"]["Tables"]["documentos_requeridos"]["Row"];
+type DocumentoRequeridoStatusRow = Database["public"]["Tables"]["documentos_requeridos_status"]["Row"];
+
+type DocumentoAprovadoRow = DocumentoRequeridoStatusRow & {
+  documentos_requeridos: Pick<DocumentoRequeridoRow, "id" | "nome" | "descricao" | "fase"> | null;
+  documentos: Pick<DocumentoRow, "id" | "nome" | "url" | "storage_path" | "drive_file_id" | "tipo" | "tamanho_bytes" | "created_at"> | null;
 };
 
 export default function RepositorioDocumentos() {
@@ -52,11 +63,13 @@ export default function RepositorioDocumentos() {
             nome,
             url,
             storage_path,
+            drive_file_id,
             tipo,
             tamanho_bytes,
             created_at
           )
         `)
+        .returns<DocumentoAprovadoRow[]>()
         .eq("status", "aprovado")
         .not("documento_id", "is", null);
 
@@ -213,6 +226,12 @@ export default function RepositorioDocumentos() {
                             {doc.documentos?.url && (
                               <DocumentoPreviewButton
                                 url={doc.documentos.url}
+                                fileName={doc.documentos.nome}
+                              />
+                            )}
+                            {doc.documentos?.drive_file_id && (
+                              <GoogleDrivePreviewButton
+                                driveFileId={doc.documentos.drive_file_id}
                                 fileName={doc.documentos.nome}
                               />
                             )}

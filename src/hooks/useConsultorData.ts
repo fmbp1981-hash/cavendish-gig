@@ -65,7 +65,8 @@ export function useDocumentosPendentes() {
             id,
             nome,
             url,
-            storage_path
+            storage_path,
+            drive_file_id
           )
         `)
         .in("status", ["enviado", "em_analise"])

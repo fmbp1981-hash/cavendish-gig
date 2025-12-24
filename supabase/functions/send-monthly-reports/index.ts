@@ -5,6 +5,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { loadIntegration } from "../_shared/integrations.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -286,11 +287,24 @@ async function enviarEmail(
   html: string
 ): Promise<boolean> {
   try {
+    const integration = await loadIntegration(supabase, "resend", "system", null);
+    if (integration && !integration.enabled) {
+      console.error("Resend disabled via integrations vault");
+      return false;
+    }
+
+    let apiKey = (integration?.secrets as any)?.RESEND_API_KEY || RESEND_API_KEY || "";
+
+    if (!apiKey) {
+      console.error("RESEND_API_KEY não configurada");
+      return false;
+    }
+
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         from: "GIG Sistema <noreply@cavendish.com.br>",

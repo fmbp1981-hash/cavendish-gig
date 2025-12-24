@@ -403,6 +403,7 @@ export type Database = {
         Row: {
           created_at: string
           descricao: string | null
+          drive_file_id: string | null
           id: string
           nome: string
           organizacao_id: string | null
@@ -417,6 +418,7 @@ export type Database = {
         Insert: {
           created_at?: string
           descricao?: string | null
+          drive_file_id?: string | null
           id?: string
           nome: string
           organizacao_id?: string | null
@@ -431,6 +433,7 @@ export type Database = {
         Update: {
           created_at?: string
           descricao?: string | null
+          drive_file_id?: string | null
           id?: string
           nome?: string
           organizacao_id?: string | null

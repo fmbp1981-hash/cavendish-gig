@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createServiceClient } from "../_shared/supabase.ts";
+import { loadIntegration } from "../_shared/integrations.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,7 +28,17 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     // Webhook authentication (Fireflies or similar)
-    const expectedSecret = Deno.env.get("TRANSCRIPTION_WEBHOOK_SECRET") || "";
+    const service = createServiceClient();
+    const integration = await loadIntegration(service, "fireflies", "system", null);
+
+    if (integration && !integration.enabled) {
+      return new Response(
+        JSON.stringify({ error: "Transcription integration disabled" }),
+        { status: 503, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const expectedSecret = (integration?.secrets as any)?.TRANSCRIPTION_WEBHOOK_SECRET || Deno.env.get("TRANSCRIPTION_WEBHOOK_SECRET") || "";
     const providedSecret = req.headers.get("x-webhook-secret") || "";
     if (!expectedSecret || providedSecret !== expectedSecret) {
       return new Response(

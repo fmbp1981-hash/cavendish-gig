@@ -221,6 +221,17 @@ export default function ConsultorDocumentos() {
             updated_at: selectedDoc.updated_at,
           }}
           documentoUrl={selectedDoc.documentos?.url}
+          documentoArquivo={
+            selectedDoc.documentos
+              ? {
+                  id: selectedDoc.documentos.id,
+                  nome: selectedDoc.documentos.nome,
+                  url: selectedDoc.documentos.url,
+                  drive_file_id: selectedDoc.documentos.drive_file_id,
+                  storage_path: selectedDoc.documentos.storage_path,
+                }
+              : undefined
+          }
           onAprovar={handleAprovar}
           onRejeitar={handleRejeitar}
           isLoading={aprovarMutation.isPending || rejeitarMutation.isPending}

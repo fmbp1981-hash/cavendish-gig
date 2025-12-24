@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createServiceClient } from "../_shared/supabase.ts";
+import { loadIntegration } from "../_shared/integrations.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -115,9 +117,22 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const twilioPhone = Deno.env.get("TWILIO_PHONE_NUMBER") || "";
+    const service = createServiceClient();
+    const integration = await loadIntegration(service, "twilio", "system", null);
+
+    if (integration && !integration.enabled) {
+      return new Response(
+        JSON.stringify({ error: "Twilio integration disabled" }),
+        { status: 503, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const secrets = (integration?.secrets as any) || {};
+    const cfg = (integration?.config || {}) as any;
+
+    let accountSid = secrets?.TWILIO_ACCOUNT_SID || Deno.env.get("TWILIO_ACCOUNT_SID") || "";
+    let authToken = secrets?.TWILIO_AUTH_TOKEN || Deno.env.get("TWILIO_AUTH_TOKEN") || "";
+    let twilioPhone = cfg?.TWILIO_PHONE_NUMBER || Deno.env.get("TWILIO_PHONE_NUMBER") || "";
 
     if (!accountSid || !authToken) {
       console.error("Twilio credentials not configured");

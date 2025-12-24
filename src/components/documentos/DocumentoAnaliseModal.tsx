@@ -14,7 +14,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DocumentoPreviewButton } from "@/components/documentos/DocumentoPreviewButton";
+import { GoogleDrivePreviewButton } from "@/components/documentos/GoogleDrivePreviewButton";
+import { DocumentoHistorico } from "@/components/documentos/DocumentoHistorico";
 import { useAIGenerate } from "@/hooks/useAIGenerate";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface DocumentoInfo {
@@ -30,10 +34,19 @@ interface StatusInfo {
   updated_at?: string;
 }
 
+interface DocumentoArquivoInfo {
+  id: string;
+  nome: string;
+  url?: string | null;
+  drive_file_id?: string | null;
+  storage_path?: string | null;
+}
+
 interface DocumentoAnaliseModalProps {
   documento: DocumentoInfo;
   status: StatusInfo;
   documentoUrl?: string;
+  documentoArquivo?: DocumentoArquivoInfo;
   open: boolean;
   onClose: () => void;
   onAprovar: () => Promise<void>;
@@ -45,6 +58,7 @@ export function DocumentoAnaliseModal({
   documento,
   status,
   documentoUrl,
+  documentoArquivo,
   open,
   onClose,
   onAprovar,
@@ -57,6 +71,26 @@ export function DocumentoAnaliseModal({
   const [loadingAI, setLoadingAI] = useState(false);
 
   const { generate } = useAIGenerate();
+
+  const handleDownload = async (storagePath: string, fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage.from("documentos").download(storagePath);
+
+      if (error) throw error;
+
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading:", error);
+      toast.error("Erro ao baixar documento");
+    }
+  };
 
   const handleAnaliseIA = async () => {
     setLoadingAI(true);
@@ -168,14 +202,47 @@ Se não houver critérios específicos, assuma que o documento deve ser aprovado
                   )}
                 </div>
               </div>
-              {documentoUrl && (
-                <Button variant="outline" size="sm" asChild>
-                  <a href={documentoUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="w-4 h-4 mr-1" />
-                    Abrir
-                  </a>
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {documentoArquivo?.id && (
+                  <DocumentoHistorico
+                    documentoId={documentoArquivo.id}
+                    documentoNome={documentoArquivo.nome}
+                  />
+                )}
+
+                {(documentoArquivo?.url || null) && (
+                  <DocumentoPreviewButton
+                    url={documentoArquivo?.url ?? null}
+                    fileName={documentoArquivo?.nome ?? documento.nome}
+                  />
+                )}
+
+                {(documentoArquivo?.drive_file_id || null) && (
+                  <GoogleDrivePreviewButton
+                    driveFileId={documentoArquivo?.drive_file_id ?? null}
+                    fileName={documentoArquivo?.nome ?? documento.nome}
+                  />
+                )}
+
+                {documentoArquivo?.storage_path && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownload(documentoArquivo.storage_path!, documentoArquivo.nome)}
+                  >
+                    Baixar
+                  </Button>
+                )}
+
+                {!documentoArquivo?.url && !documentoArquivo?.drive_file_id && !documentoArquivo?.storage_path && documentoUrl && (
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={documentoUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="w-4 h-4 mr-1" />
+                      Abrir
+                    </a>
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
