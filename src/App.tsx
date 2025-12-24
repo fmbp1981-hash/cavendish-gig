@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { TenantBrandingProvider } from "@/components/branding/TenantBrandingProvider";
@@ -44,6 +44,8 @@ import AdminOrganizacoes from "./spa/pages/admin/AdminOrganizacoes";
 import AdminCatalogo from "./spa/pages/admin/AdminCatalogo";
 import AdminConfiguracoes from "./spa/pages/admin/AdminConfiguracoes";
 import AdminIntegracoes from "./spa/pages/admin/AdminIntegracoes";
+import AdminTemplates from "./spa/pages/admin/Templates";
+import AdminHistoricoRelatorios from "./spa/pages/admin/HistoricoRelatorios";
 
 const queryClient = new QueryClient();
 
@@ -177,6 +179,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+
+            {/* Aliases: links já presentes no layout/dashboard */}
+            <Route
+              path="/admin/consultores"
+              element={
+                <ProtectedRoute requiredRoles={["admin"]}>
+                  <AdminUsuarios />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/admin/organizacoes"
               element={
@@ -193,6 +205,25 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+
+            <Route
+              path="/admin/templates"
+              element={
+                <ProtectedRoute requiredRoles={["admin"]}>
+                  <AdminTemplates />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/relatorios/historico"
+              element={
+                <ProtectedRoute requiredRoles={["admin"]}>
+                  <AdminHistoricoRelatorios />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/admin/configuracoes"
               element={
@@ -201,11 +232,30 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+
+            <Route
+              path="/admin/seguranca"
+              element={
+                <ProtectedRoute requiredRoles={["admin"]}>
+                  <AdminConfiguracoes />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/admin/integracoes"
               element={
                 <ProtectedRoute requiredRoles={["admin"]}>
                   <AdminIntegracoes />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/documentos"
+              element={
+                <ProtectedRoute requiredRoles={["admin"]}>
+                  <Navigate to="/consultor/documentos" replace />
                 </ProtectedRoute>
               }
             />

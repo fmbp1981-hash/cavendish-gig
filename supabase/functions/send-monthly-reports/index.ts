@@ -7,6 +7,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { loadIntegration } from "../_shared/integrations.ts";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
+};
+
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -405,21 +410,51 @@ async function processarRelatorio(
  * Handler principal da Edge Function
  */
 serve(async (req) => {
-  // Require a shared secret because this function is triggered by cron.
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  // Auth:
+  // - Cron: must provide x-cron-secret matching CRON_SECRET
+  // - Manual: must be an authenticated admin (JWT)
   const expectedSecret = Deno.env.get("CRON_SECRET") || "";
   const providedSecret = req.headers.get("x-cron-secret") || "";
-  if (!expectedSecret || providedSecret !== expectedSecret) {
-    return new Response(JSON.stringify({ error: "Não autorizado" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
+  const isCron = Boolean(providedSecret) && Boolean(expectedSecret) && providedSecret === expectedSecret;
+
+  if (!isCron) {
+    const authHeader = req.headers.get("Authorization") || "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+
+    if (!anonKey) {
+      return new Response(JSON.stringify({ error: "Configuração inválida: SUPABASE_ANON_KEY ausente" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const authClient = createClient(SUPABASE_URL, anonKey, {
+      global: { headers: { Authorization: authHeader } },
     });
+
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: isAdmin } = await authClient.rpc("has_role", { _user_id: user.id, _role: "admin" });
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: "Acesso negado" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
   }
 
   try {
-    // Verificar se é chamada do cron ou manual
-    const authHeader = req.headers.get("Authorization");
-    const isCronJob = authHeader?.includes("Bearer");
-
     console.log("🚀 Iniciando envio de relatórios mensais...");
 
     // Buscar organizações que devem receber relatórios
@@ -431,7 +466,7 @@ serve(async (req) => {
       console.error("Erro ao buscar organizações:", error);
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -444,7 +479,7 @@ serve(async (req) => {
         }),
         {
           status: 200,
-          headers: { "Content-Type": "application/json" },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
@@ -470,7 +505,7 @@ serve(async (req) => {
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   } catch (error) {
@@ -479,7 +514,7 @@ serve(async (req) => {
       JSON.stringify({ error: "Erro interno do servidor" }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   }

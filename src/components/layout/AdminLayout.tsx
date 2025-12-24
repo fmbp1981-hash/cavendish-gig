@@ -18,7 +18,8 @@ import {
   Database,
   UserCog,
   Users2,
-  Plug
+  Plug,
+  TrendingUp
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -40,8 +41,10 @@ const navItems = [
   { icon: Building2, label: "Organizações", href: "/admin/organizacoes" },
   { icon: Users, label: "Usuários", href: "/admin/usuarios" },
   { icon: UserCog, label: "Consultores", href: "/admin/consultores" },
-  { icon: FileText, label: "Documentos", href: "/admin/documentos" },
+  { icon: FileText, label: "Documentos", href: "/consultor/documentos" },
   { icon: Database, label: "Catálogo", href: "/admin/catalogo" },
+  { icon: FileText, label: "Templates", href: "/admin/templates" },
+  { icon: TrendingUp, label: "Relatórios", href: "/admin/relatorios/historico" },
   { icon: Plug, label: "Integrações", href: "/admin/integracoes" },
   { icon: Shield, label: "Segurança", href: "/admin/seguranca" },
   { icon: Settings, label: "Configurações", href: "/admin/configuracoes" },
