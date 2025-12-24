@@ -9,10 +9,10 @@ O Sistema Cavendish GIG é uma plataforma SaaS/white-label para entrega contínu
 ## Stack Tecnológica
 
 ### Frontend
-- **Framework**: React + Vite + TypeScript
+- **Framework**: Next.js + React + TypeScript
 - **UI**: shadcn-ui + Tailwind CSS
 - **Estado**: TanStack Query (React Query)
-- **Roteamento**: React Router DOM
+- **Roteamento**: Next App Router + React Router DOM (SPA interna)
 
 ### Backend
 - **Banco de Dados**: PostgreSQL (Supabase) com Row Level Security (RLS)
@@ -35,8 +35,8 @@ O Sistema Cavendish GIG é uma plataforma SaaS/white-label para entrega contínu
 ### Frontend (.env)
 
 ```env
-VITE_SUPABASE_URL=https://latslcjmtoppzfwwvtvp.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=[SUPABASE_ANON_KEY]
+NEXT_PUBLIC_SUPABASE_URL=https://latslcjmtoppzfwwvtvp.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[SUPABASE_ANON_KEY]
 ```
 
 ### Supabase Edge Functions (Secrets)
@@ -222,8 +222,8 @@ supabase db push --linked
 
 2. **Configure as variáveis de ambiente**:
    ```
-   VITE_SUPABASE_URL=https://latslcjmtoppzfwwvtvp.supabase.co
-   VITE_SUPABASE_PUBLISHABLE_KEY=[chave_anon]
+  NEXT_PUBLIC_SUPABASE_URL=https://latslcjmtoppzfwwvtvp.supabase.co
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[chave_anon]
    ```
 
 3. **Build settings**:

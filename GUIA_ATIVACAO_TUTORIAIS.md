@@ -37,7 +37,7 @@ ls
 - src/
 - supabase/
 - node_modules/
-- vite.config.ts
+- next.config.mjs
 
 ---
 
@@ -162,7 +162,7 @@ npm run dev
 
 **✅ Como saber que funcionou:**
 ```
-  VITE v5.0.8  ready in 1234 ms
+   ready - started server on 0.0.0.0:3000
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose

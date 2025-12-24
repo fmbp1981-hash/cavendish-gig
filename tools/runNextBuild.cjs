@@ -1,9 +1,24 @@
 const { spawn } = require('child_process');
 
-const child = spawn('npx.cmd', ['next', 'build'], {
-  shell: false,
-  env: process.env,
-});
+const isWin = process.platform === 'win32';
+
+function spawnNextBuild() {
+  // Using a shell on Windows avoids spawn EINVAL issues with .cmd shims in some Node versions.
+  // We also prefer invoking `npx next build` so the locally installed Next is used.
+  if (isWin) {
+    return spawn('cmd.exe', ['/d', '/s', '/c', 'npx next build'], {
+      shell: false,
+      env: process.env,
+    });
+  }
+
+  return spawn('npx', ['next', 'build'], {
+    shell: false,
+    env: process.env,
+  });
+}
+
+const child = spawnNextBuild();
 
 let stdout = '';
 let stderr = '';

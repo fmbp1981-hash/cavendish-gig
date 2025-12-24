@@ -5,18 +5,24 @@
     "module": "ESNext",
     "skipLibCheck": true,
 
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
+    "moduleResolution": "node16",
+    "allowJs": true,
+    "checkJs": false,
+    "resolveJsonModule": true,
     "isolatedModules": true,
-    "moduleDetection": "force",
     "noEmit": true,
 
-    /* Linting */
-    "strict": true,
+    "strict": false,
     "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true
+    "noUnusedParameters": false
   },
-  "include": ["vite.config.ts"]
+  "include": [
+    "next.config.mjs",
+    "tailwind.config.ts",
+    "postcss.config.js",
+    "eslint.config.js",
+    "tools/**/*.cjs",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ]
 }

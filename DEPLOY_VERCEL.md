@@ -66,7 +66,7 @@ git push origin main
 
 ### 2.3 Configurar Projeto
 
-**Framework Preset:** Vite (detectado automaticamente)
+**Framework Preset:** Next.js
 
 **Root Directory:** `./` (deixe em branco)
 
@@ -77,7 +77,7 @@ npm run build
 
 **Output Directory:**
 ```
-dist
+.next
 ```
 
 **Install Command:**
@@ -93,9 +93,11 @@ Clique em **Environment Variables** e adicione:
 
 | Nome | Valor | Onde obter |
 |------|-------|------------|
-| `VITE_SUPABASE_URL` | `https://seu-projeto.supabase.co` | Supabase → Settings → API → Project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | `eyJhbGc...` | Supabase → Settings → API → anon/public key |
-| `VITE_SUPABASE_PROJECT_ID` | `seu-project-id` | Supabase → Settings → General → Reference ID |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://seu-projeto.supabase.co` | Supabase → Settings → API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `eyJhbGc...` | Supabase → Settings → API → anon/public key |
+| `NEXT_PUBLIC_SUPABASE_PROJECT_ID` | `seu-project-id` | Supabase → Settings → General → Reference ID |
+
+⚠️ **Observação:** o projeto usa Next.js. Variáveis públicas devem começar com `NEXT_PUBLIC_`.
 
 **Onde encontrar no Supabase:**
 1. https://app.supabase.com/
@@ -304,7 +306,7 @@ Use sempre **Environment Variables** no Vercel.
 
 **Documentação Vercel:** https://vercel.com/docs
 **Documentação Supabase:** https://supabase.com/docs
-**Documentação Vite:** https://vitejs.dev/guide/
+**Documentação Next.js:** https://nextjs.org/docs
 
 ---
 

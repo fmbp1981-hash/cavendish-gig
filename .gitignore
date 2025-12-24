@@ -7,6 +7,12 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Audit / diagnostics artifacts
+audit*.json
+git_status*.txt
+git_diff*.txt
+npm_ls_*.txt
+
 # Dependencies
 node_modules/
 dist
