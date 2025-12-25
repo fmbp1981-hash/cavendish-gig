@@ -69,7 +69,6 @@ export default function RepositorioDocumentos() {
             created_at
           )
         `)
-        .returns<DocumentoAprovadoRow[]>()
         .eq("status", "aprovado")
         .not("documento_id", "is", null);
 
@@ -81,7 +80,7 @@ export default function RepositorioDocumentos() {
         d.documentos
       );
 
-      return filtered || [];
+      return (filtered || []) as DocumentoAprovadoRow[];
     },
     enabled: !!projeto?.id,
   });
