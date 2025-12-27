@@ -59,18 +59,19 @@ interface IntegrationConfig {
 
 const integrations: IntegrationConfig[] = [
   {
-    id: "lovable-ai",
-    name: "Lovable AI",
-    description: "IA integrada para geração de código de ética, análise de documentos e atas de reunião",
-    secretName: "LOVABLE_API_KEY",
+    id: "ai-provider",
+    name: "Provedor de IA",
+    description: "Escolha o provedor de IA para geração de conteúdo (Código de Ética, Análise de Documentos, Atas)",
+    secretName: "AI_API_KEY",
     icon: Sparkles,
     color: "text-purple-500",
-    alwaysConfigured: true,
     status: "available",
+    placeholder: "sua_api_key_aqui",
+    inputType: "password",
     instructions: [
-      "Esta integração já está configurada automaticamente",
-      "Modelos disponíveis variam por configuração do provedor",
-      "Não é necessária nenhuma configuração adicional"
+      "Escolha seu provedor de IA preferido abaixo",
+      "Cada provedor tem suas próprias vantagens e forma de obter a API Key",
+      "Após configurar, todas as gerações de IA usarão o provedor selecionado"
     ]
   },
   {
@@ -185,11 +186,20 @@ const integrations: IntegrationConfig[] = [
     inputType: "password",
     status: "available",
     instructions: [
-      "Use a mesma Service Account do Google Calendar",
-      "Ative a API Google Drive em APIs & Services → Library",
-      "Crie uma pasta raiz no Google Drive para os clientes",
-      "Compartilhe essa pasta com o email da Service Account",
-      "Copie o ID da pasta (da URL) e cole nas configurações abaixo"
+      "1. Acesse console.cloud.google.com e faça login com sua conta Google",
+      "2. Clique em 'Selecionar projeto' → 'Novo Projeto' → Nomeie como 'Cavendish-GIG' → Criar",
+      "3. No menu lateral, vá em 'APIs e Serviços' → 'Biblioteca'",
+      "4. Pesquise 'Google Drive API' → Clique nela → 'Ativar'",
+      "5. Vá em 'APIs e Serviços' → 'Credenciais' → 'Criar credenciais' → 'Conta de serviço'",
+      "6. Preencha: Nome='gig-drive-service', ID será gerado automaticamente → 'Criar e Continuar'",
+      "7. Em 'Conceder acesso', pule (não é necessário) → 'Concluir'",
+      "8. Na lista de contas de serviço, clique no email criado (ex: gig-drive-service@...iam.gserviceaccount.com)",
+      "9. Vá na aba 'Chaves' → 'Adicionar chave' → 'Criar nova chave' → 'JSON' → 'Criar'",
+      "10. Um arquivo JSON será baixado. Abra-o e copie TODO o conteúdo",
+      "11. Cole o JSON completo no campo abaixo",
+      "12. No Google Drive, crie uma pasta raiz (ex: 'Clientes GIG')",
+      "13. Clique com botão direito na pasta → 'Compartilhar' → Cole o email da conta de serviço → 'Editor' → 'Enviar'",
+      "14. Copie o ID da pasta da URL (após /folders/) e cole na configuração 'ID da Pasta Raiz' abaixo"
     ]
   },
 ];
@@ -362,6 +372,230 @@ function DriveFolderInput() {
   );
 }
 
+// AI Provider configurations
+const aiProviders = [
+  {
+    id: "gemini",
+    name: "Google Gemini",
+    description: "IA do Google com excelente desempenho em português",
+    color: "bg-blue-500",
+    secretName: "GEMINI_API_KEY",
+    instructions: [
+      "1. Acesse aistudio.google.com/apikey",
+      "2. Faça login com sua conta Google",
+      "3. Clique em 'Create API key'",
+      "4. Selecione um projeto existente ou crie um novo",
+      "5. Copie a API Key gerada",
+      "6. Cole no campo abaixo"
+    ]
+  },
+  {
+    id: "openai",
+    name: "OpenAI (ChatGPT)",
+    description: "GPT-4 e modelos da OpenAI",
+    color: "bg-green-500",
+    secretName: "OPENAI_API_KEY",
+    instructions: [
+      "1. Acesse platform.openai.com",
+      "2. Faça login ou crie uma conta",
+      "3. Vá em 'API keys' no menu lateral",
+      "4. Clique em 'Create new secret key'",
+      "5. Dê um nome (ex: 'Cavendish GIG')",
+      "6. Copie a chave imediatamente (só aparece uma vez!)",
+      "7. Cole no campo abaixo",
+      "Obs: Requer créditos pagos na conta OpenAI"
+    ]
+  },
+  {
+    id: "claude",
+    name: "Anthropic (Claude)",
+    description: "Claude 3.5 Sonnet - excelente para análises",
+    color: "bg-orange-500",
+    secretName: "ANTHROPIC_API_KEY",
+    instructions: [
+      "1. Acesse console.anthropic.com",
+      "2. Faça login ou crie uma conta",
+      "3. Vá em 'API Keys' no menu",
+      "4. Clique em 'Create Key'",
+      "5. Dê um nome (ex: 'Cavendish GIG')",
+      "6. Copie a chave gerada",
+      "7. Cole no campo abaixo",
+      "Obs: Requer plano pago da Anthropic"
+    ]
+  }
+];
+
+function AIProviderSelector() {
+  const queryClient = useQueryClient();
+  const [selectedProvider, setSelectedProvider] = useState<string>("");
+  const [apiKey, setApiKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Fetch current AI config
+  const { data: currentConfig, isLoading } = useQuery({
+    queryKey: ["ai-provider-config"],
+    queryFn: async () => {
+      const { data } = await sb
+        .from("system_settings")
+        .select("key, value")
+        .in("key", ["ai_provider", "ai_configured"]);
+
+      const settings: Record<string, string> = {};
+      (data || []).forEach((row: any) => {
+        settings[row.key] = row.value;
+      });
+      return settings;
+    }
+  });
+
+  useEffect(() => {
+    if (currentConfig?.ai_provider) {
+      setSelectedProvider(currentConfig.ai_provider);
+    }
+  }, [currentConfig]);
+
+  const handleSave = async () => {
+    if (!selectedProvider || !apiKey.trim()) {
+      toast.error("Selecione um provedor e insira a API Key");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const providerConfig = aiProviders.find(p => p.id === selectedProvider);
+      if (!providerConfig) throw new Error("Provedor inválido");
+
+      // Save to vault via edge function
+      await (supabase as any).functions.invoke("integrations", {
+        body: {
+          action: "upsert",
+          provider: "ai-provider",
+          scope: "system",
+          enabled: true,
+          secrets: {
+            [providerConfig.secretName]: apiKey.trim(),
+            AI_PROVIDER: selectedProvider
+          },
+          config: {
+            provider: selectedProvider,
+            providerName: providerConfig.name
+          }
+        }
+      });
+
+      // Also save to system_settings for easy access
+      await sb.from("system_settings").upsert([
+        { key: "ai_provider", value: selectedProvider },
+        { key: "ai_configured", value: "true" }
+      ], { onConflict: "key" });
+
+      queryClient.invalidateQueries({ queryKey: ["ai-provider-config"] });
+      queryClient.invalidateQueries({ queryKey: ["integrations-vault", "system"] });
+
+      toast.success(`${providerConfig.name} configurado com sucesso!`);
+      setApiKey("");
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      toast.error("Erro ao salvar configuração");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const selectedProviderConfig = aiProviders.find(p => p.id === selectedProvider);
+  const isConfigured = currentConfig?.ai_configured === "true";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-purple-500" />
+          Provedor de Inteligência Artificial
+        </CardTitle>
+        <CardDescription>
+          Escolha qual IA será usada para gerar Código de Ética, analisar documentos e criar atas
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {isConfigured && currentConfig?.ai_provider && (
+          <Alert className="border-green-500/30 bg-green-500/10">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <AlertDescription className="text-green-700 dark:text-green-300">
+              Provedor configurado: <strong>{aiProviders.find(p => p.id === currentConfig.ai_provider)?.name}</strong>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="grid gap-3 md:grid-cols-3">
+          {aiProviders.map((provider) => (
+            <div
+              key={provider.id}
+              onClick={() => setSelectedProvider(provider.id)}
+              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedProvider === provider.id
+                ? "border-primary bg-primary/5"
+                : "border-muted hover:border-primary/50"
+                }`}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`w-3 h-3 rounded-full ${provider.color}`} />
+                <span className="font-medium">{provider.name}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{provider.description}</p>
+            </div>
+          ))}
+        </div>
+
+        {selectedProviderConfig && (
+          <div className="space-y-4 pt-4 border-t">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Como obter a API Key do {selectedProviderConfig.name}:</strong>
+                <ol className="list-decimal list-inside mt-2 space-y-1 text-sm">
+                  {selectedProviderConfig.instructions.map((instruction, idx) => (
+                    <li key={idx}>{instruction}</li>
+                  ))}
+                </ol>
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <Label htmlFor="ai-api-key">{selectedProviderConfig.secretName}</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="ai-api-key"
+                    type={showKey ? "text" : "password"}
+                    placeholder="Cole sua API Key aqui..."
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={() => setShowKey(!showKey)}
+                  >
+                    {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <Button onClick={handleSave} disabled={saving || !apiKey.trim()}>
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Salvar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+
 export default function AdminIntegracoes() {
   const [configuring, setConfiguring] = useState<IntegrationConfig | null>(null);
   const [secretValue, setSecretValue] = useState("");
@@ -503,6 +737,9 @@ export default function AdminIntegracoes() {
             Nunca compartilhe suas chaves com terceiros.
           </AlertDescription>
         </Alert>
+
+        {/* AI Provider Selection */}
+        <AIProviderSelector />
 
         {/* Available Integrations */}
         <div className="space-y-4">

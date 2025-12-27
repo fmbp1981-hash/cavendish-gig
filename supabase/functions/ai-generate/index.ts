@@ -14,25 +14,196 @@ interface AIRequest {
   stream?: boolean;
 }
 
+interface AIProviderConfig {
+  provider: "gemini" | "openai" | "claude" | "lovable";
+  apiKey: string;
+  model: string;
+  baseUrl: string;
+}
+
+// Get AI provider configuration
+async function getAIConfig(supabaseService: any): Promise<AIProviderConfig> {
+  // Try to get configured provider from system_settings
+  const { data: settings } = await supabaseService
+    .from("system_settings")
+    .select("key, value")
+    .in("key", ["ai_provider", "ai_configured"]);
+
+  const settingsMap: Record<string, string> = {};
+  (settings || []).forEach((row: any) => {
+    settingsMap[row.key] = row.value;
+  });
+
+  // If custom provider configured, try to load from vault
+  if (settingsMap.ai_configured === "true" && settingsMap.ai_provider) {
+    const { data: vaultData } = await supabaseService
+      .from("integration_vault")
+      .select("secrets, config")
+      .eq("provider", "ai-provider")
+      .eq("scope", "system")
+      .single();
+
+    if (vaultData?.secrets) {
+      const secrets = vaultData.secrets as Record<string, string>;
+      const config = vaultData.config as Record<string, string>;
+
+      switch (config?.provider || settingsMap.ai_provider) {
+        case "gemini":
+          return {
+            provider: "gemini",
+            apiKey: secrets.GEMINI_API_KEY || "",
+            model: "gemini-1.5-flash",
+            baseUrl: "https://generativelanguage.googleapis.com/v1beta"
+          };
+        case "openai":
+          return {
+            provider: "openai",
+            apiKey: secrets.OPENAI_API_KEY || "",
+            model: "gpt-4o-mini",
+            baseUrl: "https://api.openai.com/v1"
+          };
+        case "claude":
+          return {
+            provider: "claude",
+            apiKey: secrets.ANTHROPIC_API_KEY || "",
+            model: "claude-3-5-sonnet-20241022",
+            baseUrl: "https://api.anthropic.com/v1"
+          };
+      }
+    }
+  }
+
+  // Default: Use Lovable AI Gateway
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) {
+    throw new Error("Nenhum provedor de IA configurado. Configure em Admin → Integrações.");
+  }
+
+  return {
+    provider: "lovable",
+    apiKey: LOVABLE_API_KEY,
+    model: "google/gemini-2.5-flash",
+    baseUrl: "https://ai.gateway.lovable.dev/v1"
+  };
+}
+
+// Call AI based on provider
+async function callAI(config: AIProviderConfig, systemPrompt: string, userPrompt: string): Promise<{ text: string; tokens: number }> {
+  let response: Response;
+
+  if (config.provider === "gemini") {
+    // Google Gemini API
+    response = await fetch(`${config.baseUrl}/models/${config.model}:generateContent?key=${config.apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          { role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 8192
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("Gemini error:", error);
+      throw new Error(`Erro Gemini: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const tokens = data.usageMetadata?.totalTokenCount || 0;
+    return { text, tokens };
+
+  } else if (config.provider === "openai" || config.provider === "lovable") {
+    // OpenAI-compatible API (includes Lovable Gateway)
+    response = await fetch(`${config.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("OpenAI error:", error);
+
+      if (response.status === 429) {
+        throw new Error("Limite de requisições excedido. Tente novamente em alguns minutos.");
+      }
+      if (response.status === 402) {
+        throw new Error("Créditos de IA esgotados.");
+      }
+      throw new Error(`Erro OpenAI: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || "";
+    const tokens = data.usage?.total_tokens || 0;
+    return { text, tokens };
+
+  } else if (config.provider === "claude") {
+    // Anthropic Claude API
+    response = await fetch(`${config.baseUrl}/messages`, {
+      method: "POST",
+      headers: {
+        "x-api-key": config.apiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: config.model,
+        max_tokens: 8192,
+        system: systemPrompt,
+        messages: [
+          { role: "user", content: userPrompt }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("Claude error:", error);
+      throw new Error(`Erro Claude: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || "";
+    const tokens = (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0);
+    return { text, tokens };
+  }
+
+  throw new Error("Provedor de IA não suportado");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY não configurada");
-    }
-
     // Autenticação do usuário
     const authHeader = req.headers.get("Authorization");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader || "" } }
     });
+
+    const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -41,6 +212,10 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Get AI configuration
+    const aiConfig = await getAIConfig(supabaseService);
+    console.log(`Using AI provider: ${aiConfig.provider} (${aiConfig.model})`);
 
     const { tipo, input_data, projeto_id, organizacao_id, stream = false }: AIRequest = await req.json();
 
@@ -204,16 +379,17 @@ Responda de forma clara, profissional e objetiva.`;
 
     const startTime = Date.now();
 
-    if (stream) {
-      // Streaming response
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Note: Streaming is disabled for multi-provider support. Enable only for Lovable gateway.
+    if (stream && aiConfig.provider === "lovable") {
+      // Streaming response (only supported with Lovable gateway)
+      const response = await fetch(`${aiConfig.baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          Authorization: `Bearer ${aiConfig.apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: aiConfig.model,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt }
@@ -245,70 +421,33 @@ Responda de forma clara, profissional e objetiva.`;
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     } else {
-      // Non-streaming response
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-          ],
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("AI Gateway error:", response.status, errorText);
-
-        if (response.status === 429) {
-          return new Response(
-            JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }),
-            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        if (response.status === 402) {
-          return new Response(
-            JSON.stringify({ error: "Créditos de IA esgotados. Adicione créditos na configuração do workspace." }),
-            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        throw new Error(`AI Gateway error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const generatedText = data.choices?.[0]?.message?.content || "";
-      const tokensUsed = data.usage?.total_tokens || 0;
+      // Non-streaming response using multi-provider callAI
+      const result = await callAI(aiConfig, systemPrompt, userPrompt);
       const durationMs = Date.now() - startTime;
 
-      // Salvar no histórico usando service role
-      const supabaseService = createClient(
-        supabaseUrl,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      );
-
+      // Save to history
       await supabaseService.from("ai_generations").insert({
         tipo,
         input_data,
-        output_text: generatedText,
+        output_text: result.text,
         user_id: user.id,
         projeto_id: projeto_id || null,
         organizacao_id: organizacao_id || null,
-        tokens_used: tokensUsed,
+        tokens_used: result.tokens,
         duracao_ms: durationMs,
         status: "completed",
+        provider: aiConfig.provider,
+        model: aiConfig.model,
       });
 
       return new Response(
         JSON.stringify({
           success: true,
-          output: generatedText,
-          tokens_used: tokensUsed,
-          duration_ms: durationMs
+          output: result.text,
+          tokens_used: result.tokens,
+          duration_ms: durationMs,
+          provider: aiConfig.provider,
+          model: aiConfig.model
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -321,3 +460,4 @@ Responda de forma clara, profissional e objetiva.`;
     );
   }
 });
+
