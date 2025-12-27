@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AIGenerationType = "codigo_etica" | "analise_documento" | "gerar_ata" | "chat";
+export type AIGenerationType = "codigo_etica" | "analise_documento" | "gerar_ata" | "chat" | "sumarizar_documento" | "detectar_riscos" | "gerar_contrato";
 
 interface AIGenerateOptions {
   tipo: AIGenerationType;
@@ -37,9 +37,8 @@ export function useAIGenerate() {
       if (options.stream && options.onDelta) {
         // Streaming mode
         const response = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_SUPABASE_URL ??
-            process.env.VITE_SUPABASE_URL
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL ??
+          process.env.VITE_SUPABASE_URL
           }/functions/v1/ai-generate`,
           {
             method: "POST",

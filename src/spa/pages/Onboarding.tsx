@@ -8,7 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { Building2, FileText, CheckCircle2, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
-import { useCreateClientDriveFolder } from "@/hooks/useGoogleDrive";
+import { useCreateClientDriveFolder, useUploadToDrive } from "@/hooks/useGoogleDrive";
+import { useAIGenerate } from "@/hooks/useAIGenerate";
+import { generatePDFFromHTML } from "@/utils/pdfExport";
 
 type TipoProjeto = "gig_completo" | "gig_modular" | "consultoria_pontual";
 
@@ -44,6 +46,8 @@ export default function Onboarding() {
   });
 
   const createDriveFolder = useCreateClientDriveFolder();
+  const uploadToDrive = useUploadToDrive();
+  const { generate: generateAI } = useAIGenerate();
 
   const formatCNPJ = (value: string) => {
     const numbers = value.replace(/\D/g, "");
@@ -82,6 +86,71 @@ export default function Onboarding() {
             organizacaoId: onboardingResult.organizacao_id,
           });
           toast.success("Pasta do cliente criada no Google Drive!");
+
+          // Generate contract using AI
+          try {
+            toast.info("Gerando contrato oficial CCE...");
+
+            // Map project type to GIG plan names
+            const planoMap: Record<TipoProjeto, { nome: string; valor: string; valorDiag: string }> = {
+              gig_completo: { nome: "GIG Premium", valor: "a partir de R$ 15.000", valorDiag: "R$ 12.900,00" },
+              gig_modular: { nome: "GIG Executivo", valor: "a partir de R$ 8.500", valorDiag: "R$ 8.900,00" },
+              consultoria_pontual: { nome: "GIG Essencial", valor: "a partir de R$ 4.500", valorDiag: "R$ 4.900,00" },
+            };
+
+            const planoInfo = planoMap[data.tipoProjeto];
+
+            const contractResult = await generateAI({
+              tipo: "gerar_contrato",
+              input_data: {
+                nome_cliente: data.nomeOrganizacao,
+                cnpj: data.cnpj,
+                tipo_projeto: tiposProjetoInfo[data.tipoProjeto].titulo,
+                plano: planoInfo.nome,
+                valor_mensal: planoInfo.valor,
+                valor_diagnostico: planoInfo.valorDiag,
+                prazo: data.tipoProjeto === "consultoria_pontual" ? "3 meses" : "12 meses",
+                porte: data.tipoProjeto === "gig_completo" ? "Grande empresa" : data.tipoProjeto === "gig_modular" ? "Média empresa" : "Pequena empresa",
+              },
+              organizacao_id: onboardingResult.organizacao_id,
+            });
+
+            if (contractResult.success && contractResult.output) {
+              // Convert markdown to HTML for PDF
+              const htmlContent = `
+                <html>
+                  <head>
+                    <style>
+                      body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; }
+                      h1 { color: #0B66C3; border-bottom: 2px solid #E3A200; padding-bottom: 10px; }
+                      h2 { color: #2F3E46; margin-top: 30px; }
+                      p { margin: 10px 0; }
+                    </style>
+                  </head>
+                  <body>
+                    ${contractResult.output.replace(/\n/g, '<br>')}
+                  </body>
+                </html>
+              `;
+
+              // Generate PDF
+              const pdfBlob = await generatePDFFromHTML(htmlContent, { filename: `Proposta_${data.nomeOrganizacao}.pdf` });
+
+              // Upload to Drive
+              if (pdfBlob) {
+                const pdfFile = new File([pdfBlob], `Proposta_${data.nomeOrganizacao}.pdf`, { type: 'application/pdf' });
+                await uploadToDrive.mutateAsync({
+                  organizacaoId: onboardingResult.organizacao_id,
+                  file: pdfFile,
+                  targetFolder: "02 - Contratos",
+                });
+                toast.success("Proposta comercial gerada e salva no Drive!");
+              }
+            }
+          } catch (contractError) {
+            console.error("Erro ao gerar contrato:", contractError);
+            // Don't block onboarding if contract generation fails
+          }
         } catch (driveError) {
           console.error("Erro ao criar pasta no Drive:", driveError);
           // Don't block onboarding if Drive fails

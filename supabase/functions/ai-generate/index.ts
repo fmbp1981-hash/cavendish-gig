@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface AIRequest {
-  tipo: "codigo_etica" | "analise_documento" | "gerar_ata" | "chat";
+  tipo: "codigo_etica" | "analise_documento" | "gerar_ata" | "chat" | "sumarizar_documento" | "detectar_riscos" | "gerar_contrato";
   input_data: Record<string, unknown>;
   projeto_id?: string;
   organizacao_id?: string;
@@ -29,7 +29,7 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
-    
+
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader || "" } }
     });
@@ -87,6 +87,113 @@ Pauta: ${input_data.pauta || "Reunião geral"}
 Notas/Discussões: ${input_data.notas || "Discussão dos temas da pauta"}`;
         break;
 
+      case "sumarizar_documento":
+        systemPrompt = `Você é um especialista em análise documental e governança corporativa.
+Sua tarefa é criar um resumo executivo claro e objetivo do documento fornecido.
+O resumo deve incluir:
+1. **Objetivo do Documento:** Qual é o propósito principal
+2. **Pontos Principais:** Os 3-5 pontos mais importantes
+3. **Implicações:** O que isso significa para a organização
+4. **Ações Requeridas:** Se houver ações necessárias
+Formate em Markdown de forma concisa e profissional.`;
+        userPrompt = `Crie um resumo executivo do seguinte documento:
+Tipo: ${input_data.tipo_documento || "Documento"}
+Nome: ${input_data.nome_documento || "Sem nome"}
+Conteúdo: ${input_data.conteudo || input_data.texto || "Não disponível"}`;
+        break;
+
+      case "detectar_riscos":
+        systemPrompt = `Você é um especialista em compliance, gestão de riscos e governança corporativa.
+Analise o documento/situação fornecida e identifique potenciais riscos.
+Sua análise deve incluir:
+1. **Riscos Identificados:** Lista de riscos encontrados
+2. **Classificação:** Para cada risco, classifique como ALTO, MÉDIO ou BAIXO
+3. **Impacto Potencial:** Descrição do impacto caso o risco se materialize
+4. **Probabilidade:** Estimativa de probabilidade de ocorrência
+5. **Recomendações de Mitigação:** Ações sugeridas para cada risco
+6. **Matriz de Risco:** Resumo visual em formato tabela
+
+Formate em Markdown estruturado.`;
+        userPrompt = `Analise os seguintes dados e identifique riscos de compliance e governança:
+Contexto: ${input_data.contexto || "Análise geral"}
+Área: ${input_data.area || "Governança Corporativa"}
+Dados/Documento: ${input_data.conteudo || input_data.dados || input_data.descricao || "Não disponível"}
+Observações adicionais: ${input_data.observacoes || "Nenhuma"}`;
+        break;
+
+      case "gerar_contrato":
+        systemPrompt = `Você é um especialista em contratos corporativos da CCE – Consultoria Corporativa Especializada.
+Gere um contrato de prestação de serviços de consultoria em Governança Corporativa, Compliance e Gestão Estratégica, seguindo EXATAMENTE o modelo oficial da CCE.
+
+O contrato DEVE seguir esta estrutura:
+
+# CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE CONSULTORIA EM GOVERNANÇA CORPORATIVA, COMPLIANCE E GESTÃO ESTRATÉGICA
+
+**CONTRATADA:** CCE – Consultoria Corporativa Especializada, pessoa jurídica de direito privado.
+
+**CONTRATANTE:** [Preencher com dados do cliente]
+
+## 1. OBJETO DO CONTRATO
+- Prestação de serviços especializados de Gestão Integrada de Governança (GIG)
+- Metodologia proprietária GIG
+
+## 2. ESCOPO DOS SERVIÇOS
+### 2.1 Fase 1 – Diagnóstico Inicial (15 a 30 dias)
+### 2.2 Fase 2 – Execução do Programa GIG (Assinatura Mensal)
+- Módulo 1: Governança Corporativa
+- Módulo 2: Compliance e Integridade
+- Módulo 3: Gestão Estratégica Recorrente
+### 2.3 Fase 3 – Monitoramento e Evolução Contínua
+
+## 3. PRAZO E VIGÊNCIA
+- Vigência mínima de 03, 06 ou 12 meses conforme plano
+
+## 4. VALOR E CONDIÇÕES DE PAGAMENTO
+### 4.1 Diagnóstico Inicial
+- Pequenas empresas: R$ 4.900,00
+- Médias empresas: R$ 8.900,00
+- Grandes empresas: R$ 12.900,00
+
+### 4.2 Plano Mensal (Assinatura GIG)
+- GIG Essencial: a partir de R$ 4.500
+- GIG Executivo: a partir de R$ 8.500
+- GIG Premium: a partir de R$ 15.000
+
+## 5. OBRIGAÇÕES DA CONTRATADA
+## 6. OBRIGAÇÕES DA CONTRATANTE
+## 7. CONFIDENCIALIDADE
+## 8. RESCISÃO
+## 9. LIMITAÇÃO DE RESPONSABILIDADE
+## 10. FORO
+## 11. DISPOSIÇÕES FINAIS
+
+Preencha os campos com os dados do cliente fornecidos. Mantenha linguagem jurídica profissional.
+Formate em Markdown.`;
+        userPrompt = `Gere o contrato oficial CCE com os seguintes dados:
+
+**DADOS DO CONTRATANTE:**
+- Razão Social: ${input_data.nome_cliente || "[RAZÃO SOCIAL DO CLIENTE]"}
+- CNPJ: ${input_data.cnpj || "[●]"}
+- Endereço: ${input_data.endereco || "[endereço completo]"}
+- Representante Legal: ${input_data.representante || "[nome do representante]"}
+
+**PLANO CONTRATADO:**
+- Tipo de Projeto: ${input_data.tipo_projeto || "GIG Completo"}
+- Plano: ${input_data.plano || "GIG Essencial"}
+- Vigência: ${input_data.prazo || "12 meses"}
+- Porte da Empresa: ${input_data.porte || "Média empresa"}
+
+**VALORES:**
+- Diagnóstico Inicial: ${input_data.valor_diagnostico || "R$ 8.900,00"}
+- Mensalidade: ${input_data.valor_mensal || "a partir de R$ 4.500"}
+
+**DATA:**
+- Data de início: ${input_data.data_inicio || new Date().toLocaleDateString("pt-BR")}
+- Local: ${input_data.local || "São Paulo/SP"}
+
+Inclua TODAS as 11 cláusulas do modelo oficial CCE.`;
+        break;
+
       case "chat":
       default:
         systemPrompt = `Você é um assistente especializado em governança corporativa, compliance e gestão empresarial.
@@ -118,7 +225,7 @@ Responda de forma clara, profissional e objetiva.`;
       if (!response.ok) {
         const errorText = await response.text();
         console.error("AI Gateway error:", response.status, errorText);
-        
+
         if (response.status === 429) {
           return new Response(
             JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }),
@@ -157,7 +264,7 @@ Responda de forma clara, profissional e objetiva.`;
       if (!response.ok) {
         const errorText = await response.text();
         console.error("AI Gateway error:", response.status, errorText);
-        
+
         if (response.status === 429) {
           return new Response(
             JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }),
@@ -197,8 +304,8 @@ Responda de forma clara, profissional e objetiva.`;
       });
 
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           output: generatedText,
           tokens_used: tokensUsed,
           duration_ms: durationMs
