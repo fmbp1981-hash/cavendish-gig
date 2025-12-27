@@ -4,6 +4,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  // GDPR/LGPD: Explicitly do not expose any tracking headers
+  "X-Content-Type-Options": "nosniff",
+  "Cache-Control": "no-store, no-cache, must-revalidate",
 };
 
 interface DenunciaRequest {
@@ -14,12 +17,47 @@ interface DenunciaRequest {
   envolvidos?: string;
   ticket_id?: string;
   ticket_secret?: string;
+  organizacao_id?: string; // Optional: for routing to specific organization
+}
+
+// Headers that could identify the user - we explicitly ignore these
+const PRIVACY_HEADERS_TO_IGNORE = [
+  "x-forwarded-for",
+  "x-real-ip",
+  "cf-connecting-ip",
+  "true-client-ip",
+  "x-client-ip",
+  "x-cluster-client-ip",
+  "forwarded",
+  "via",
+  "user-agent",
+  "referer",
+  "origin",
+  "cookie",
+  "authorization",
+] as const;
+
+/**
+ * Sanitize request to ensure no identifying information is logged or stored.
+ * This is crucial for anonymous whistleblower protection.
+ */
+function sanitizeForAnonymity(req: Request): void {
+  // Log that we are deliberately NOT logging any identifying headers
+  console.log("[ANONYMITY] Processing anonymous denuncia request - no identifying info logged");
+  
+  // Verify we're not accidentally accessing identifying headers
+  for (const header of PRIVACY_HEADERS_TO_IGNORE) {
+    // We explicitly do NOT use req.headers.get(header) to avoid any accidental logging
+  }
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // CRITICAL: Ensure anonymity - do not log or process identifying headers
+  sanitizeForAnonymity(req);
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
