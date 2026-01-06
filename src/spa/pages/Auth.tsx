@@ -20,7 +20,7 @@ const registerSchema = loginSchema.extend({
 });
 
 const Auth = () => {
-  const { signIn, signUp, user, loading: authLoading, isAdmin, isConsultor } = useAuth();
+  const { signIn, signUp, resetPassword, updatePassword, user, loading: authLoading, isAdmin, isConsultor } = useAuth();
   const { toast } = useToast();
 
   const getQueryParam = (key: string) => {
@@ -28,8 +28,10 @@ const Auth = () => {
     return new URLSearchParams(window.location.search).get(key);
   };
 
-  const initialMode = getQueryParam("mode") === "register" ? "register" : "login";
-  const [mode, setMode] = useState<"login" | "register">(initialMode);
+  const initialMode = getQueryParam("mode") === "register" ? "register" : 
+                       getQueryParam("mode") === "forgot-password" ? "forgot-password" :
+                       getQueryParam("mode") === "reset-password" ? "reset-password" : "login";
+  const [mode, setMode] = useState<"login" | "register" | "forgot-password" | "reset-password">(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -39,6 +41,8 @@ const Auth = () => {
     password: "",
     name: "",
     company: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
   // Redirect if already authenticated
@@ -145,6 +149,85 @@ const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.email || !z.string().email().safeParse(formData.email).success) {
+      setErrors({ email: "Por favor, insira um email válido" });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const { error } = await resetPassword(formData.email);
+      
+      if (error) {
+        toast({
+          title: "Erro",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Email enviado!",
+          description: "Verifique sua caixa de entrada para redefinir sua senha.",
+        });
+        setMode("login");
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Algo deu errado. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (formData.newPassword.length < 6) {
+      setErrors({ newPassword: "Senha deve ter pelo menos 6 caracteres" });
+      return;
+    }
+    
+    if (formData.newPassword !== formData.confirmPassword) {
+      setErrors({ confirmPassword: "As senhas não coincidem" });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const { error } = await updatePassword(formData.newPassword);
+      
+      if (error) {
+        toast({
+          title: "Erro",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Senha atualizada!",
+          description: "Sua senha foi alterada com sucesso. Faça login com a nova senha.",
+        });
+        setMode("login");
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Algo deu errado. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -186,16 +269,130 @@ const Auth = () => {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              {mode === "login" ? "Bem-vindo de volta" : "Crie sua conta"}
+              {mode === "login" ? "Bem-vindo de volta" : 
+               mode === "register" ? "Crie sua conta" : 
+               mode === "forgot-password" ? "Recuperar senha" :
+               "Definir nova senha"}
             </h1>
             <p className="text-muted-foreground">
               {mode === "login"
                 ? "Entre para acessar seu portal de governança"
-                : "Comece sua jornada de governança inteligente"}
+                : mode === "register" 
+                ? "Comece sua jornada de governança inteligente"
+                : mode === "forgot-password"
+                ? "Digite seu email para receber o link de recuperação"
+                : "Digite sua nova senha abaixo"}
             </p>
           </div>
 
-          {/* Form */}
+          {/* Forgot Password Form */}
+          {mode === "forgot-password" && (
+            <form onSubmit={handleForgotPassword} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className={`h-11 ${errors.email ? "border-destructive" : ""}`}
+                />
+                {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+              </div>
+
+              <Button
+                type="submit"
+                variant="hero"
+                size="lg"
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  "Enviar link de recuperação"
+                )}
+              </Button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setErrors({});
+                }}
+                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ← Voltar ao login
+              </button>
+            </form>
+          )}
+
+          {/* Reset Password Form */}
+          {mode === "reset-password" && (
+            <form onSubmit={handleResetPassword} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">Nova senha</Label>
+                <div className="relative">
+                  <Input
+                    id="newPassword"
+                    name="newPassword"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={formData.newPassword}
+                    onChange={handleInputChange}
+                    className={`h-11 pr-10 ${errors.newPassword ? "border-destructive" : ""}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {errors.newPassword && <p className="text-xs text-destructive">{errors.newPassword}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  className={`h-11 ${errors.confirmPassword ? "border-destructive" : ""}`}
+                />
+                {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword}</p>}
+              </div>
+
+              <Button
+                type="submit"
+                variant="hero"
+                size="lg"
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Atualizando...
+                  </>
+                ) : (
+                  "Atualizar senha"
+                )}
+              </Button>
+            </form>
+          )}
+
+          {/* Login/Register Form */}
+          {(mode === "login" || mode === "register") && (
           <form onSubmit={handleSubmit} className="space-y-5">
             {mode === "register" && (
               <>
@@ -246,11 +443,17 @@ const Auth = () => {
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Senha</Label>
                 {mode === "login" && (
-                  <a
-                    href="#"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("forgot-password");
+                      setErrors({});
+                    }}
                     className="text-sm text-primary hover:text-primary/80 transition-colors"
                   >
                     Esqueceu a senha?
+                  </button>
+                )}
                   </a>
                 )}
               </div>
@@ -294,8 +497,10 @@ const Auth = () => {
               )}
             </Button>
           </form>
+          )}
 
           {/* Toggle Mode */}
+          {(mode === "login" || mode === "register") && (
           <p className="text-center text-sm text-muted-foreground mt-6">
             {mode === "login" ? (
               <>
@@ -325,6 +530,7 @@ const Auth = () => {
               </>
             )}
           </p>
+          )}
 
           {/* Divider */}
           <div className="relative my-8">
