@@ -454,8 +454,6 @@ const Auth = () => {
                     Esqueceu a senha?
                   </button>
                 )}
-                  </a>
-                )}
               </div>
               <div className="relative">
                 <Input
