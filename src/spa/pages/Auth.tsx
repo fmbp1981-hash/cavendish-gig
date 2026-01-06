@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
+import { IntelliXLogo } from "@/components/ui/IntelliXLogo";
+import { ArrowLeft, Eye, EyeOff, Loader2, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
@@ -177,13 +179,8 @@ const Auth = () => {
           </a>
 
           {/* Logo */}
-          <div className="flex items-center gap-2.5 mb-8">
-            <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center shadow-md">
-              <Shield className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-2xl font-bold text-foreground">
-              Cavendish<span className="text-primary">GIG</span>
-            </span>
+          <div className="mb-8">
+            <Logo size="lg" />
           </div>
 
           {/* Header */}
@@ -347,6 +344,11 @@ const Auth = () => {
               Fazer denúncia anônima
             </Button>
           </a>
+
+          {/* IntelliX.AI Credit */}
+          <p className="text-center text-xs text-muted-foreground mt-8">
+            Desenvolvido por <span style={{ color: '#E5A61C' }}>IntelliX</span><span style={{ color: '#4A9BD9' }}>.AI</span>
+          </p>
         </div>
       </div>
 
@@ -360,7 +362,7 @@ const Auth = () => {
 
         <div className="relative text-center max-w-md">
           <div className="w-20 h-20 rounded-2xl bg-sidebar-primary/20 flex items-center justify-center mx-auto mb-8">
-            <Shield className="w-10 h-10 text-sidebar-primary" />
+            <TrendingUp className="w-10 h-10 text-sidebar-primary" />
           </div>
           <h2 className="text-3xl font-bold text-sidebar-foreground mb-4">
             Governança simplificada

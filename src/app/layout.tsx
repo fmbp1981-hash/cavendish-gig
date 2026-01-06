@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Cavendish GIG',
-  description: 'Plataforma Cavendish GIG',
+  title: 'Sistema GIG',
+  description: 'Governança, Integridade e Gestão Estratégica - Desenvolvido por IntelliX.AI',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

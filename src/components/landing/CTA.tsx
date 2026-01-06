@@ -25,8 +25,8 @@ const CTA = () => {
 
           {/* Subtext */}
           <p className="text-lg text-sidebar-foreground/70 mb-10 max-w-2xl mx-auto">
-            Junte-se a dezenas de empresas que já transformaram sua gestão com o 
-            Cavendish GIG. Comece hoje com uma demonstração gratuita.
+            Junte-se a dezenas de empresas que já transformaram sua gestão com o
+            Sistema GIG. Comece hoje com uma demonstração gratuita.
           </p>
 
           {/* CTAs */}
@@ -38,9 +38,9 @@ const CTA = () => {
               </Button>
             </Link>
             <a href="mailto:contato@cavendish.com.br">
-              <Button 
-                variant="outline" 
-                size="xl" 
+              <Button
+                variant="outline"
+                size="xl"
                 className="border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
                 Falar com especialista

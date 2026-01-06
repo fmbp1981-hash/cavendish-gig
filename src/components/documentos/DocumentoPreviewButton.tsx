@@ -1,8 +1,16 @@
+"use client";
+
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
-import { PDFViewer } from './PDFViewer';
 import { toast } from 'sonner';
+
+// Dynamic import to prevent SSR issues with react-pdf
+const PDFViewer = dynamic(() => import('./PDFViewer').then(mod => ({ default: mod.PDFViewer })), {
+  ssr: false,
+  loading: () => null
+});
 
 interface DocumentoPreviewButtonProps {
   url: string | null;

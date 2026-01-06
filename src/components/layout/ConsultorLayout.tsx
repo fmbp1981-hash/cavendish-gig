@@ -4,13 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { TutorialHelpButton } from "@/components/tutorial/TutorialHelpButton";
-import { 
-  LayoutDashboard, 
-  Users, 
-  FileText, 
-  Settings, 
-  LogOut, 
-  Menu, 
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  Settings,
+  LogOut,
+  Menu,
   X,
   ChevronDown,
   Shield,
@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { IntelliXLogo } from "@/components/ui/IntelliXLogo";
 
 interface ConsultorLayoutProps {
   children: React.ReactNode;
@@ -69,10 +70,9 @@ export function ConsultorLayout({ children }: ConsultorLayoutProps) {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <aside 
-        className={`fixed inset-y-0 left-0 z-50 bg-card border-r border-border transition-all duration-300 ${
-          sidebarOpen ? "w-64" : "w-16"
-        } flex flex-col`}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 bg-card border-r border-border transition-all duration-300 ${sidebarOpen ? "w-64" : "w-16"
+          } flex flex-col`}
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
@@ -81,12 +81,12 @@ export function ConsultorLayout({ children }: ConsultorLayoutProps) {
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-sm">GIG</span>
               </div>
-              <span className="font-semibold text-foreground">Cavendish</span>
+              <span className="font-semibold text-foreground">Sistema<span className="text-primary">GIG</span></span>
             </Link>
           )}
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="shrink-0"
           >
@@ -104,11 +104,10 @@ export function ConsultorLayout({ children }: ConsultorLayoutProps) {
                 key={item.href}
                 to={item.href}
                 data-tour={item.dataTour}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                }`}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  }`}
               >
                 <item.icon className="h-5 w-5 shrink-0" />
                 {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
@@ -163,6 +162,13 @@ export function ConsultorLayout({ children }: ConsultorLayoutProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* IntelliX.AI Logo - below user section */}
+          {sidebarOpen && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <IntelliXLogo size="sm" />
+            </div>
+          )}
         </div>
       </aside>
 

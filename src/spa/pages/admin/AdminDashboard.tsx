@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useConsultorStats } from "@/hooks/useConsultorData";
 import { useAdminStats } from "@/hooks/useAdminData";
+import { useAuth } from "@/contexts/AuthContext";
 import { DocumentStatusChart } from "@/components/analytics/DocumentStatusChart";
 import { ProjectPhaseChart } from "@/components/analytics/ProjectPhaseChart";
 import { TrainingCompletionChart } from "@/components/analytics/TrainingCompletionChart";
@@ -18,21 +19,41 @@ import {
   ArrowRight,
   Shield,
   UserCog,
-  Database
+  Database,
+  Sparkles,
+  Clock
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function AdminDashboard() {
   const { data: stats, isLoading: loadingStats } = useConsultorStats();
   const { data: adminStats, isLoading: loadingAdmin } = useAdminStats();
+  const { profile } = useAuth();
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Bom dia";
+    if (hour < 18) return "Boa tarde";
+    return "Boa noite";
+  };
+
+  const firstName = profile?.nome?.split(" ")[0] || "Administrador";
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Painel Administrativo</h1>
-          <p className="text-muted-foreground">Controle total do sistema Cavendish GIG</p>
+        {/* Header with Welcome */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              {getGreeting()}, {firstName}! <Sparkles className="h-5 w-5 text-primary" />
+            </h1>
+            <p className="text-muted-foreground">Controle total do Sistema GIG</p>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4" />
+            <span>{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+          </div>
         </div>
 
         {/* Stats */}

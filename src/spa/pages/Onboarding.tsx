@@ -157,7 +157,7 @@ export default function Onboarding() {
         }
       }
 
-      toast.success("Organização criada com sucesso! Bem-vindo ao Cavendish GIG.");
+      toast.success("Organização criada com sucesso! Bem-vindo ao Sistema GIG.");
       window.location.assign("/meu-projeto");
     } catch (error: unknown) {
       console.error("Erro no onboarding:", error);

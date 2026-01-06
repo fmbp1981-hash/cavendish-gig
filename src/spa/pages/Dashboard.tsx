@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  Shield,
+  TrendingUp as LogoIcon,
   LayoutDashboard,
   Users,
   FileText,
@@ -55,11 +55,11 @@ const Dashboard = () => {
         <div className="h-16 flex items-center justify-center border-b border-sidebar-border px-4">
           <Link to="/dashboard" className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center">
-              <Shield className="w-5 h-5 text-sidebar-primary-foreground" />
+              <LogoIcon className="w-5 h-5 text-sidebar-primary-foreground" />
             </div>
             {!sidebarCollapsed && (
               <span className="text-lg font-bold text-sidebar-foreground">
-                Cavendish<span className="text-sidebar-primary">GIG</span>
+                Sistema<span className="text-sidebar-primary">GIG</span>
               </span>
             )}
           </Link>
@@ -72,11 +72,10 @@ const Dashboard = () => {
               <li key={item.label}>
                 <Link
                   to={item.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                    item.active
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${item.active
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
                       : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                  }`}
+                    }`}
                 >
                   <item.icon className="w-5 h-5 shrink-0" />
                   {!sidebarCollapsed && <span className="text-sm font-medium">{item.label}</span>}
@@ -191,14 +190,13 @@ const Dashboard = () => {
                     key={index}
                     className="flex items-start gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                   >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      activity.type === 'success' ? 'bg-secondary/10 text-secondary' :
-                      activity.type === 'warning' ? 'bg-accent/10 text-accent' :
-                      'bg-primary/10 text-primary'
-                    }`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${activity.type === 'success' ? 'bg-secondary/10 text-secondary' :
+                        activity.type === 'warning' ? 'bg-accent/10 text-accent' :
+                          'bg-primary/10 text-primary'
+                      }`}>
                       {activity.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> :
-                       activity.type === 'warning' ? <AlertCircle className="w-4 h-4" /> :
-                       <Calendar className="w-4 h-4" />}
+                        activity.type === 'warning' ? <AlertCircle className="w-4 h-4" /> :
+                          <Calendar className="w-4 h-4" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground">{activity.title}</p>

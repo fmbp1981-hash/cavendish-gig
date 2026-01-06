@@ -56,12 +56,12 @@ export const notificarDocumentoPendenteWhatsApp = async (
 ): Promise<WhatsAppResponse> => {
   const mensagem = `Olá${userName ? ` ${userName}` : ''}! 📋
 
-O documento "${documentoNome}" ainda está pendente de envio no sistema Cavendish GIG.
+O documento "${documentoNome}" ainda está pendente de envio no Sistema GIG.
 
 Por favor, acesse o sistema para enviar o documento necessário.
 
 Atenciosamente,
-Equipe Cavendish GIG`;
+Equipe Sistema GIG`;
 
   return enviarWhatsApp(telefone, mensagem);
 };
@@ -78,7 +78,7 @@ export const notificarAprovacaoWhatsApp = async (
 Continue enviando os documentos pendentes para avançar no projeto.
 
 Atenciosamente,
-Equipe Cavendish GIG`;
+Equipe Sistema GIG`;
 
   return enviarWhatsApp(telefone, mensagem);
 };
@@ -98,7 +98,7 @@ Motivo: ${motivo}
 Por favor, corrija e envie novamente.
 
 Atenciosamente,
-Equipe Cavendish GIG`;
+Equipe Sistema GIG`;
 
   return enviarWhatsApp(telefone, mensagem);
 };

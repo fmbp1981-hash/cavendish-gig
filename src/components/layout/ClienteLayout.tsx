@@ -3,11 +3,11 @@ import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { TutorialHelpButton } from '@/components/tutorial/TutorialHelpButton';
-import { 
-  LayoutDashboard, 
-  FileText, 
-  FolderOpen, 
-  Settings, 
+import {
+  LayoutDashboard,
+  FileText,
+  FolderOpen,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -17,6 +17,7 @@ import {
   ScrollText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { IntelliXLogo } from '@/components/ui/IntelliXLogo';
 import { cn } from '@/lib/utils';
 
 interface ClienteLayoutProps {
@@ -42,7 +43,7 @@ export function ClienteLayout({ children }: ClienteLayoutProps) {
     <div className="min-h-screen flex w-full bg-background">
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
@@ -57,7 +58,7 @@ export function ClienteLayout({ children }: ClienteLayoutProps) {
         {/* Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           {!collapsed && (
-            <span className="font-semibold text-lg text-foreground">Cavendish</span>
+            <span className="font-semibold text-lg text-foreground">Sistema<span className="text-primary">GIG</span></span>
           )}
           <Button
             variant="ghost"
@@ -120,6 +121,13 @@ export function ClienteLayout({ children }: ClienteLayoutProps) {
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* IntelliX.AI Logo - below user name */}
+          {!collapsed && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <IntelliXLogo size="sm" />
+            </div>
+          )}
         </div>
       </aside>
 
