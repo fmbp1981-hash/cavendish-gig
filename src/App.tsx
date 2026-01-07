@@ -46,6 +46,7 @@ import AdminOrganizacoes from "./spa/pages/admin/AdminOrganizacoes";
 import AdminCatalogo from "./spa/pages/admin/AdminCatalogo";
 import AdminConfiguracoes from "./spa/pages/admin/AdminConfiguracoes";
 import AdminIntegracoes from "./spa/pages/admin/AdminIntegracoes";
+import AdminConsultores from "./spa/pages/admin/AdminConsultores";
 import AdminTemplates from "./spa/pages/admin/Templates";
 import AdminHistoricoRelatorios from "./spa/pages/admin/HistoricoRelatorios";
 
@@ -60,287 +61,287 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/denuncia" element={<Denuncia />} />
-            <Route path="/consulta-protocolo" element={<ConsultaProtocolo />} />
-            <Route
-              path="/onboarding"
-              element={
-                <ProtectedRoute>
-                  <Onboarding />
-                </ProtectedRoute>
-              }
-            />
+              {/* Public routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/denuncia" element={<Denuncia />} />
+              <Route path="/consulta-protocolo" element={<ConsultaProtocolo />} />
+              <Route
+                path="/onboarding"
+                element={
+                  <ProtectedRoute>
+                    <Onboarding />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Legacy dashboard redirect */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                  <ConsultorDashboard />
-                </ProtectedRoute>
-              }
-            />
+              {/* Legacy dashboard redirect */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Consultor routes */}
-            <Route
-              path="/consultor"
-              element={
-                <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                  <ConsultorDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/consultor/clientes"
-              element={
-                <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                  <ConsultorClientes />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/consultor/documentos"
-              element={
-                <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                  <ConsultorDocumentos />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/consultor/denuncias"
-              element={
-                <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                  <ConsultorDenuncias />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/consultor/tarefas"
-              element={
-                <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                  <ConsultorTarefas />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/consultor/codigo-etica"
-              element={
-                <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                  <ConsultorCodigoEtica />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/consultor/atas"
-              element={
-                <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                  <ConsultorAtas />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/consultor/agendamento"
-              element={
-                <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                  <ConsultorAgendamento />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/consultor/adesao-etica"
-              element={
-                <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                  <ConsultorAdesaoEtica />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/consultor/relatorios"
-              element={
-                <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                  <ConsultorRelatorios />
-                </ProtectedRoute>
-              }
-            />
+              {/* Consultor routes */}
+              <Route
+                path="/consultor"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/clientes"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorClientes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/documentos"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorDocumentos />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/denuncias"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorDenuncias />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/tarefas"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorTarefas />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/codigo-etica"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorCodigoEtica />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/atas"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorAtas />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/agendamento"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorAgendamento />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/adesao-etica"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorAdesaoEtica />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/relatorios"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorRelatorios />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/consultor/configuracoes"
-              element={
-                <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                  <ConsultorConfiguracoes />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute requiredRoles={["admin"]}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/usuarios"
-              element={
-                <ProtectedRoute requiredRoles={["admin"]}>
-                  <AdminUsuarios />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/consultor/configuracoes"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorConfiguracoes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/usuarios"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminUsuarios />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Aliases: links já presentes no layout/dashboard */}
-            <Route
-              path="/admin/consultores"
-              element={
-                <ProtectedRoute requiredRoles={["admin"]}>
-                  <AdminUsuarios />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/organizacoes"
-              element={
-                <ProtectedRoute requiredRoles={["admin"]}>
-                  <AdminOrganizacoes />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/catalogo"
-              element={
-                <ProtectedRoute requiredRoles={["admin"]}>
-                  <AdminCatalogo />
-                </ProtectedRoute>
-              }
-            />
+              {/* Admin Consultores - Pre-registration management */}
+              <Route
+                path="/admin/consultores"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminConsultores />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/organizacoes"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminOrganizacoes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/catalogo"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminCatalogo />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/admin/templates"
-              element={
-                <ProtectedRoute requiredRoles={["admin"]}>
-                  <AdminTemplates />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/admin/templates"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminTemplates />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/admin/relatorios/historico"
-              element={
-                <ProtectedRoute requiredRoles={["admin"]}>
-                  <AdminHistoricoRelatorios />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/admin/relatorios/historico"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminHistoricoRelatorios />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/admin/configuracoes"
-              element={
-                <ProtectedRoute requiredRoles={["admin"]}>
-                  <AdminConfiguracoes />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/admin/configuracoes"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminConfiguracoes />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/admin/seguranca"
-              element={
-                <ProtectedRoute requiredRoles={["admin"]}>
-                  <AdminConfiguracoes />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/admin/seguranca"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminConfiguracoes />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/admin/integracoes"
-              element={
-                <ProtectedRoute requiredRoles={["admin"]}>
-                  <AdminIntegracoes />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/admin/integracoes"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminIntegracoes />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/admin/documentos"
-              element={
-                <ProtectedRoute requiredRoles={["admin"]}>
-                  <Navigate to="/consultor/documentos" replace />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/admin/documentos"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <Navigate to="/consultor/documentos" replace />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Client routes */}
-            <Route
-              path="/meu-projeto"
-              element={
-                <ProtectedRoute>
-                  <MeuProjeto />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/meu-projeto/diagnostico"
-              element={
-                <ProtectedRoute>
-                  <ClienteDiagnostico />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/meu-projeto/documentos-necessarios"
-              element={
-                <ProtectedRoute>
-                  <DocumentosNecessarios />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/meu-projeto/treinamentos"
-              element={
-                <ProtectedRoute>
-                  <ClienteTreinamentos />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/meu-projeto/treinamentos/:id"
-              element={
-                <ProtectedRoute>
-                  <TreinamentoDetalhe />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/meu-projeto/codigo-etica"
-              element={
-                <ProtectedRoute>
-                  <ClienteCodigoEtica />
-                </ProtectedRoute>
-              }
-            />
+              {/* Client routes */}
+              <Route
+                path="/meu-projeto"
+                element={
+                  <ProtectedRoute>
+                    <MeuProjeto />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/meu-projeto/diagnostico"
+                element={
+                  <ProtectedRoute>
+                    <ClienteDiagnostico />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/meu-projeto/documentos-necessarios"
+                element={
+                  <ProtectedRoute>
+                    <DocumentosNecessarios />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/meu-projeto/treinamentos"
+                element={
+                  <ProtectedRoute>
+                    <ClienteTreinamentos />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/meu-projeto/treinamentos/:id"
+                element={
+                  <ProtectedRoute>
+                    <TreinamentoDetalhe />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/meu-projeto/codigo-etica"
+                element={
+                  <ProtectedRoute>
+                    <ClienteCodigoEtica />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/meu-projeto/documentos"
-              element={
-                <ProtectedRoute>
-                  <RepositorioDocumentos />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/meu-projeto/documentos"
+                element={
+                  <ProtectedRoute>
+                    <RepositorioDocumentos />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/meu-projeto/configuracoes"
-              element={
-                <ProtectedRoute>
-                  <ClienteConfiguracoes />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/meu-projeto/configuracoes"
+                element={
+                  <ProtectedRoute>
+                    <ClienteConfiguracoes />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Catch-all */}
-            <Route path="*" element={<NotFound />} />
+              {/* Catch-all */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>

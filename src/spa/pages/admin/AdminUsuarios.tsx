@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAllUsers, useConsultores, useConsultorOrganizacoes, useAllOrganizacoes } from "@/hooks/useAdminData";
+import { useAllUsers, useConsultorOrganizacoes, useAllOrganizacoes } from "@/hooks/useAdminData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -68,6 +68,7 @@ export default function AdminUsuarios() {
   const [selectedRole, setSelectedRole] = useState<AppRole>("cliente");
   const [selectedOrgs, setSelectedOrgs] = useState<string[]>([]);
   const [savingAssignment, setSavingAssignment] = useState(false);
+  const [assignSelectionInitialized, setAssignSelectionInitialized] = useState(false);
   
   const { data: users, isLoading } = useAllUsers();
   const { data: organizacoes } = useAllOrganizacoes();
@@ -138,15 +139,23 @@ export default function AdminUsuarios() {
     if (!open) {
       setAssignDialog({ open: false, consultorId: "", consultorName: "" });
       setSelectedOrgs([]);
+      setAssignSelectionInitialized(false);
     }
   };
 
-  // Update selectedOrgs when consultorOrgs changes
-  useState(() => {
-    if (consultorOrgs) {
-      setSelectedOrgs(consultorOrgs.map(co => co.organizacao_id));
-    }
-  });
+  // Initialize selected orgs from DB once when the dialog opens (or consultor changes)
+  useEffect(() => {
+    if (!assignDialog.open) return;
+    setAssignSelectionInitialized(false);
+  }, [assignDialog.open, assignDialog.consultorId]);
+
+  useEffect(() => {
+    if (!assignDialog.open) return;
+    if (assignSelectionInitialized) return;
+    if (!consultorOrgs) return;
+    setSelectedOrgs(consultorOrgs.map((co) => co.organizacao_id));
+    setAssignSelectionInitialized(true);
+  }, [assignDialog.open, consultorOrgs, assignSelectionInitialized]);
 
   const handleSaveAssignments = async () => {
     try {
@@ -203,12 +212,6 @@ export default function AdminUsuarios() {
         : [...prev, orgId]
     );
   };
-
-  // Initialize selectedOrgs when dialog opens and data loads
-  const currentAssignedOrgs = consultorOrgs?.map(co => co.organizacao_id) || [];
-  if (assignDialog.open && consultorOrgs && selectedOrgs.length === 0 && currentAssignedOrgs.length > 0) {
-    setSelectedOrgs(currentAssignedOrgs);
-  }
 
   return (
     <AdminLayout>

@@ -11,7 +11,9 @@
     "build": "next build",
     "typecheck": "tsc --noEmit",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "admin:grant-role": "node tools/grantRole.mjs",
+    "admin:promote": "node tools/grantRole.mjs --email fmbp1981@gmail.com --role admin"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
