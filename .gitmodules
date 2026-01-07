@@ -1,0 +1,3 @@
+[submodule "cavendish-gig"]
+	path = cavendish-gig
+	url = https://github.com/fmbp1981-hash/cavendish-gig.git
