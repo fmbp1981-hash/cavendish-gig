@@ -20,6 +20,8 @@ export function TutorialGuide({ steps, tutorialType, onComplete }: TutorialGuide
     skipTutorial,
     stopTutorial,
     isCompleted,
+    isLoading,
+    startTutorial,
   } = useTutorial(tutorialType);
 
   const [targetPosition, setTargetPosition] = useState<{
@@ -29,7 +31,19 @@ export function TutorialGuide({ steps, tutorialType, onComplete }: TutorialGuide
     height: number;
   } | null>(null);
 
-  const currentStep = steps[currentStepIndex];
+  const safeIndex = steps.length > 0
+    ? Math.min(Math.max(currentStepIndex, 0), steps.length - 1)
+    : 0;
+
+  const currentStep = steps[safeIndex];
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (isCompleted) return;
+    if (steps.length === 0) return;
+    if (isActive) return;
+    startTutorial(steps);
+  }, [isActive, isCompleted, isLoading, startTutorial, steps]);
 
   useEffect(() => {
     if (!isActive || !currentStep?.target) {
@@ -54,13 +68,13 @@ export function TutorialGuide({ steps, tutorialType, onComplete }: TutorialGuide
     }
   }, [isActive, currentStep, currentStepIndex]);
 
-  if (!isActive || isCompleted) {
+  if (!isActive || isCompleted || steps.length === 0 || !currentStep) {
     return null;
   }
 
   const handleNext = async () => {
     await nextStep(steps);
-    if (currentStepIndex === steps.length - 1) {
+    if (safeIndex === steps.length - 1) {
       onComplete?.();
     }
   };

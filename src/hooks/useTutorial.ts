@@ -86,9 +86,18 @@ export function useTutorial(tutorialType: string) {
     },
   });
 
-  const startTutorial = () => {
+  const startTutorial = (steps?: TutorialStep[]) => {
     setIsActive(true);
-    setCurrentStepIndex(progress?.current_step || 0);
+
+    const fromProgress = progress?.current_step ?? 0;
+    const normalized = Math.max(0, fromProgress);
+
+    if (steps && steps.length > 0) {
+      setCurrentStepIndex(Math.min(normalized, steps.length - 1));
+      return;
+    }
+
+    setCurrentStepIndex(normalized);
   };
 
   const stopTutorial = () => {

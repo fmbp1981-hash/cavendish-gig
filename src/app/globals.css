@@ -7,61 +7,63 @@
 @layer base {
   :root {
     /* Sistema GIG Design System - IntelliX.AI */
-    --background: 220 30% 98%;
-    --foreground: 220 25% 15%;
+    /* Base: Black/Navy */
+    --background: 220 30% 6%;
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 25% 15%;
+    /* Surfaces */
+    --card: 220 25% 10%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 15%;
+    --popover: 220 25% 10%;
+    --popover-foreground: 0 0% 98%;
 
-    /* Primary: Deep Navy Blue - Trust & Authority */
-    --primary: 220 80% 35%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary: Electric Blue */
+    --primary: 210 90% 55%;
+    --primary-foreground: 220 30% 6%;
 
-    /* Secondary: Vibrant Teal/Cyan */
-    --secondary: 195 90% 40%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondary: Deep Blue */
+    --secondary: 220 70% 40%;
+    --secondary-foreground: 0 0% 98%;
 
     /* Muted */
-    --muted: 220 20% 94%;
-    --muted-foreground: 220 15% 45%;
+    --muted: 220 18% 16%;
+    --muted-foreground: 220 12% 70%;
 
     /* Accent: Premium Gold */
     --accent: 45 100% 50%;
-    --accent-foreground: 220 25% 15%;
+    --accent-foreground: 220 30% 6%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 88%;
-    --input: 220 20% 88%;
-    --ring: 220 80% 35%;
+    --border: 220 16% 18%;
+    --input: 220 16% 18%;
+    --ring: 210 90% 55%;
 
     --radius: 0.625rem;
 
     /* Custom tokens */
-    --surface-elevated: 0 0% 100%;
-    --surface-sunken: 220 25% 96%;
-    --text-subtle: 220 15% 55%;
-    --gradient-primary: linear-gradient(135deg, hsl(220 80% 35%) 0%, hsl(195 90% 40%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(220 30% 98%) 0%, hsl(220 25% 94%) 100%);
+    --surface-elevated: 220 25% 10%;
+    --surface-sunken: 220 30% 6%;
+    --text-subtle: 220 12% 70%;
+    --gradient-primary: linear-gradient(135deg, hsl(210 90% 55%) 0%, hsl(220 70% 40%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(220 30% 6%) 0%, hsl(220 25% 10%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(45 100% 50%) 0%, hsl(40 100% 60%) 100%);
-    --shadow-sm: 0 1px 2px 0 hsl(220 25% 15% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(220 25% 15% / 0.08), 0 2px 4px -2px hsl(220 25% 15% / 0.05);
-    --shadow-lg: 0 10px 15px -3px hsl(220 25% 15% / 0.08), 0 4px 6px -4px hsl(220 25% 15% / 0.05);
-    --shadow-glow: 0 0 40px hsl(220 80% 35% / 0.2);
+    --shadow-sm: 0 1px 2px 0 hsl(220 30% 6% / 0.4);
+    --shadow-md: 0 8px 20px -8px hsl(220 30% 6% / 0.6);
+    --shadow-lg: 0 18px 45px -18px hsl(220 30% 6% / 0.75);
+    --shadow-glow: 0 0 40px hsl(210 90% 55% / 0.2);
 
     /* Sidebar - Elegant Black */
-    --sidebar-background: 220 25% 10%;
-    --sidebar-foreground: 220 20% 90%;
-    --sidebar-primary: 195 90% 50%;
+    --sidebar-background: 220 35% 7%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 210 90% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 16%;
-    --sidebar-accent-foreground: 220 20% 95%;
-    --sidebar-border: 220 20% 18%;
-    --sidebar-ring: 195 90% 50%;
+    --sidebar-accent: 220 22% 14%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 220 18% 14%;
+    --sidebar-ring: 210 90% 55%;
   }
 
   .dark {
@@ -117,6 +119,13 @@
 @layer utilities {
   .text-gradient-primary {
     background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-accent {
+    background: var(--gradient-accent);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

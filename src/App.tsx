@@ -32,10 +32,12 @@ import ConsultorAtas from "./spa/pages/consultor/ConsultorAtas";
 import ConsultorAgendamento from "./spa/pages/consultor/ConsultorAgendamento";
 import ConsultorAdesaoEtica from "./spa/pages/consultor/ConsultorAdesaoEtica";
 import ConsultorRelatorios from "./spa/pages/consultor/ConsultorRelatorios";
+import ConsultorConfiguracoes from "./spa/pages/consultor/ConsultorConfiguracoes";
 
 // Cliente Pages
 import RepositorioDocumentos from "./spa/pages/cliente/RepositorioDocumentos";
 import ClienteCodigoEtica from "./spa/pages/cliente/CodigoEtica";
+import ClienteConfiguracoes from "./spa/pages/cliente/ClienteConfiguracoes";
 
 // Admin Pages
 import AdminDashboard from "./spa/pages/admin/AdminDashboard";
@@ -160,6 +162,15 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRoles={["admin", "consultor"]}>
                   <ConsultorRelatorios />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/consultor/configuracoes"
+              element={
+                <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                  <ConsultorConfiguracoes />
                 </ProtectedRoute>
               }
             />
@@ -315,6 +326,15 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <RepositorioDocumentos />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/meu-projeto/configuracoes"
+              element={
+                <ProtectedRoute>
+                  <ClienteConfiguracoes />
                 </ProtectedRoute>
               }
             />

@@ -74,23 +74,6 @@ export function TutorialHelpButton({ userRole = "cliente" }: TutorialHelpButtonP
 
   const onboardingTutorial = useTutorial("onboarding");
 
-  const handleSelectTutorial = (tutorial: TutorialOption) => {
-    setSelectedTutorial(tutorial);
-    setShowDialog(false);
-
-    // Iniciar tutorial
-    if (tutorial.id === "onboarding") {
-      onboardingTutorial.resetTutorial();
-      setTimeout(() => {
-        onboardingTutorial.startTutorial();
-      }, 100);
-    }
-  };
-
-  const availableTutorials = tutorialOptions.filter((t) =>
-    t.roles.includes(userRole)
-  );
-
   // Determinar qual tutorial de onboarding usar baseado no perfil
   const getOnboardingSteps = () => {
     switch (userRole) {
@@ -103,6 +86,23 @@ export function TutorialHelpButton({ userRole = "cliente" }: TutorialHelpButtonP
         return tutorials.clienteOnboarding;
     }
   };
+
+  const handleSelectTutorial = (tutorial: TutorialOption) => {
+    setSelectedTutorial(tutorial);
+    setShowDialog(false);
+
+    // Iniciar tutorial
+    if (tutorial.id === "onboarding") {
+      onboardingTutorial.resetTutorial();
+      setTimeout(() => {
+        onboardingTutorial.startTutorial(getOnboardingSteps());
+      }, 100);
+    }
+  };
+
+  const availableTutorials = tutorialOptions.filter((t) =>
+    t.roles.includes(userRole)
+  );
 
   return (
     <>
