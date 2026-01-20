@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         // Defer Supabase calls with setTimeout to prevent deadlock
         setTimeout(() => {
@@ -63,28 +63,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserData = async (userId: string) => {
     try {
+      console.log('[AuthContext] Fetching user data for:', userId);
+
       // Fetch profile using type assertion
-      const { data: profileData } = await (supabase
+      const { data: profileData, error: profileError } = await (supabase
         .from('profiles' as any) as any)
         .select('*')
         .eq('id', userId)
         .maybeSingle();
+
+      console.log('[AuthContext] Profile result:', { profileData, profileError });
 
       if (profileData) {
         setProfile(profileData as Profile);
       }
 
       // Fetch roles using type assertion
-      const { data: rolesData } = await (supabase
+      const { data: rolesData, error: rolesError } = await (supabase
         .from('user_roles' as any) as any)
         .select('role')
         .eq('user_id', userId);
 
+      console.log('[AuthContext] Roles result:', { rolesData, rolesError });
+
       if (rolesData && Array.isArray(rolesData)) {
-        setRoles(rolesData.map((r: { role: string }) => r.role as AppRole));
+        const mappedRoles = rolesData.map((r: { role: string }) => r.role as AppRole);
+        console.log('[AuthContext] Mapped roles:', mappedRoles);
+        setRoles(mappedRoles);
+      } else {
+        console.warn('[AuthContext] No roles found for user');
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error('[AuthContext] Error fetching user data:', error);
     } finally {
       setLoading(false);
     }
@@ -97,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, metadata?: { nome?: string }) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -115,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = async (email: string) => {
     const redirectUrl = `${window.location.origin}/auth?mode=reset-password`;
-    
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl
     });
