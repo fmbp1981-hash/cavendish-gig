@@ -86,13 +86,14 @@ async function main() {
     profile = { id: u.id, email: u.email, nome };
   }
 
-  // 3) Upsert em user_roles
-  const { error: upsertRoleError } = await supabase
+  // 3) Insert role (se já existir, ignora devido ao UNIQUE constraint)
+  const { error: insertRoleError } = await supabase
     .from("user_roles")
-    .upsert({ user_id: profile.id, role }, { onConflict: "user_id" });
+    .insert({ user_id: profile.id, role });
 
-  if (upsertRoleError) {
-    console.error("Erro gravando user_roles:", upsertRoleError);
+  // Se o erro for de violação de unique constraint (role já existe), ignorar
+  if (insertRoleError && insertRoleError.code !== "23505") {
+    console.error("Erro gravando user_roles:", insertRoleError);
     process.exit(1);
   }
 
