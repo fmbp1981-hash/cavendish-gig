@@ -13,6 +13,21 @@ export default {
       },
     },
     extend: {
+      fontSize: {
+        xs: ['0.75rem', { lineHeight: '1.4' }],
+        sm: ['0.8125rem', { lineHeight: '1.5' }],
+        base: ['0.875rem', { lineHeight: '1.6' }],
+        lg: ['1rem', { lineHeight: '1.5' }],
+        xl: ['1.125rem', { lineHeight: '1.4' }],
+        '2xl': ['1.25rem', { lineHeight: '1.4' }],
+        '3xl': ['1.75rem', { lineHeight: '1.3' }],
+        '4xl': ['2rem', { lineHeight: '1.3' }],
+      },
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+        '128': '32rem',
+      },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
@@ -69,6 +84,8 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) + 4px)",
+        '2xl': "1rem",
       },
       boxShadow: {
         'sm': 'var(--shadow-sm)',
@@ -99,6 +116,16 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-subtle": "pulse-subtle 2s ease-in-out infinite",
         "float": "float 6s ease-in-out infinite",
+        "fade-in": "fadeIn 0.3s ease-in-out",
+        "slide-up": "slideUp 0.3s ease-out",
+        "scale-in": "scaleIn 0.2s ease-out",
+      },
+      transitionDuration: {
+        '150': '150ms',
+        '250': '250ms',
+      },
+      transitionTimingFunction: {
+        'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
       },
     },
   },
