@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBrandingContext } from "@/components/branding/TenantBrandingProvider";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { TutorialHelpButton } from "@/components/tutorial/TutorialHelpButton";
@@ -52,6 +53,7 @@ const navItems = [
 export function ConsultorLayout({ children }: ConsultorLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, profile, signOut, isAdmin } = useAuth();
+  const { companyName, logoUrl } = useBrandingContext();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -78,10 +80,17 @@ export function ConsultorLayout({ children }: ConsultorLayoutProps) {
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           {sidebarOpen && (
             <Link to="/consultor" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">GIG</span>
-              </div>
-              <span className="font-semibold text-foreground">Sistema<span className="text-primary">GIG</span></span>
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain rounded" />
+              ) : (
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                  <span className="text-primary-foreground font-bold text-sm">GIG</span>
+                </div>
+              )}
+              <span className="font-semibold text-foreground text-sm">
+                Sistema<span className="text-primary">GIG</span>
+                {companyName && <span className="text-muted-foreground"> - {companyName}</span>}
+              </span>
             </Link>
           )}
           <Button

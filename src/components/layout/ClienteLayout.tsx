@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBrandingContext } from '@/components/branding/TenantBrandingProvider';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { TutorialHelpButton } from '@/components/tutorial/TutorialHelpButton';
 import {
@@ -36,6 +37,7 @@ const menuItems = [
 
 export function ClienteLayout({ children }: ClienteLayoutProps) {
   const { profile, signOut } = useAuth();
+  const { companyName, logoUrl } = useBrandingContext();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -58,7 +60,19 @@ export function ClienteLayout({ children }: ClienteLayoutProps) {
         {/* Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           {!collapsed && (
-            <span className="font-semibold text-lg text-foreground">Sistema<span className="text-primary">GIG</span></span>
+            <div className="flex items-center gap-2">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain rounded" />
+              ) : (
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                  <span className="text-primary-foreground font-bold text-xs">GIG</span>
+                </div>
+              )}
+              <span className="font-semibold text-sm text-foreground">
+                Sistema<span className="text-primary">GIG</span>
+                {companyName && <span className="text-muted-foreground"> - {companyName}</span>}
+              </span>
+            </div>
           )}
           <Button
             variant="ghost"

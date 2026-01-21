@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBrandingContext } from "@/components/branding/TenantBrandingProvider";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { TutorialHelpButton } from "@/components/tutorial/TutorialHelpButton";
@@ -19,7 +20,8 @@ import {
   UserCog,
   Users2,
   Plug,
-  TrendingUp
+  TrendingUp,
+  Sparkles
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -47,6 +49,7 @@ const navItems = [
   { icon: FileText, label: "Templates", href: "/admin/templates" },
   { icon: TrendingUp, label: "Relatórios", href: "/admin/relatorios/historico" },
   { icon: Plug, label: "Integrações", href: "/admin/integracoes" },
+  { icon: Sparkles, label: "Branding", href: "/admin/branding" },
   { icon: Shield, label: "Segurança", href: "/admin/seguranca" },
   { icon: Settings, label: "Configurações", href: "/admin/configuracoes" },
 ];
@@ -54,6 +57,7 @@ const navItems = [
 export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, profile, signOut } = useAuth();
+  const { companyName, logoUrl } = useBrandingContext();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -80,11 +84,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           {sidebarOpen && (
             <Link to="/admin" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-xs">GIG</span>
-              </div>
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain rounded" />
+              ) : (
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                  <span className="text-primary-foreground font-bold text-xs">GIG</span>
+                </div>
+              )}
               <div className="flex flex-col">
-                <span className="font-semibold text-foreground text-sm">Sistema<span className="text-primary">GIG</span></span>
+                <span className="font-semibold text-foreground text-sm">
+                  Sistema<span className="text-primary">GIG</span>
+                  {companyName && <span className="text-muted-foreground"> - {companyName}</span>}
+                </span>
                 <Badge variant="destructive" className="text-[10px] px-1 py-0">ADMIN</Badge>
               </div>
             </Link>

@@ -49,6 +49,7 @@ import AdminIntegracoes from "./spa/pages/admin/AdminIntegracoes";
 import AdminConsultores from "./spa/pages/admin/AdminConsultores";
 import AdminTemplates from "./spa/pages/admin/Templates";
 import AdminHistoricoRelatorios from "./spa/pages/admin/HistoricoRelatorios";
+import AdminBranding from "./spa/pages/admin/Branding";
 import Help from "./spa/pages/Help";
 
 const queryClient = new QueryClient();
@@ -271,6 +272,15 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
                     <AdminIntegracoes />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/admin/branding"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminBranding />
                   </ProtectedRoute>
                 }
               />

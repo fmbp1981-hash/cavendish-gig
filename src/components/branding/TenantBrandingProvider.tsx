@@ -1,10 +1,25 @@
 "use client";
 
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState, createContext, useContext } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantBranding } from "@/hooks/useTenantBranding";
+
+interface BrandingContextValue {
+  companyName?: string;
+  logoUrl?: string;
+  faviconUrl?: string;
+  isLoading: boolean;
+}
+
+const BrandingContext = createContext<BrandingContextValue>({
+  isLoading: false,
+});
+
+export function useBrandingContext() {
+  return useContext(BrandingContext);
+}
 
 function setCssVar(name: string, value: string | null | undefined) {
   if (!value) return;
@@ -72,6 +87,8 @@ export function TenantBrandingProvider({ children }: { children: ReactNode }) {
       // Clear optional overrides if switching away / no branding
       styleEl.textContent = "";
       if (faviconLinkId) faviconLinkId.remove();
+      // Reset to default title
+      document.title = "Sistema GIG";
       return;
     }
 
@@ -81,6 +98,13 @@ export function TenantBrandingProvider({ children }: { children: ReactNode }) {
 
     // Optional per-tenant CSS overrides
     styleEl.textContent = branding.custom_css || "";
+
+    // Update page title with company name
+    if (branding.company_name) {
+      document.title = `Sistema GIG - ${branding.company_name}`;
+    } else {
+      document.title = "Sistema GIG";
+    }
 
     // Favicon per tenant
     if (branding.favicon_url) {
@@ -97,5 +121,19 @@ export function TenantBrandingProvider({ children }: { children: ReactNode }) {
     }
   }, [branding]);
 
-  return <>{children}</>;
+  const brandingContextValue = useMemo<BrandingContextValue>(
+    () => ({
+      companyName: branding?.company_name,
+      logoUrl: branding?.logo_url,
+      faviconUrl: branding?.favicon_url,
+      isLoading: false,
+    }),
+    [branding]
+  );
+
+  return (
+    <BrandingContext.Provider value={brandingContextValue}>
+      {children}
+    </BrandingContext.Provider>
+  );
 }
