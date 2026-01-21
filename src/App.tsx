@@ -49,6 +49,7 @@ import AdminIntegracoes from "./spa/pages/admin/AdminIntegracoes";
 import AdminConsultores from "./spa/pages/admin/AdminConsultores";
 import AdminTemplates from "./spa/pages/admin/Templates";
 import AdminHistoricoRelatorios from "./spa/pages/admin/HistoricoRelatorios";
+import Help from "./spa/pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,17 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/denuncia" element={<Denuncia />} />
               <Route path="/consulta-protocolo" element={<ConsultaProtocolo />} />
+
+              {/* Help Center - Accessible to all authenticated users */}
+              <Route
+                path="/help"
+                element={
+                  <ProtectedRoute>
+                    <Help />
+                  </ProtectedRoute>
+                }
+              />
+
               <Route
                 path="/onboarding"
                 element={
