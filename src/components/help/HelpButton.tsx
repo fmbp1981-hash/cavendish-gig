@@ -46,10 +46,9 @@ export function HelpButton() {
     setIsOpen(false);
   };
 
-  const handleStartSpecificTutorial = (tutorialType: string, steps: any[]) => {
-    const tutorial = useTutorial(tutorialType);
-    tutorial.stopTutorial();
-    tutorial.startTutorial(steps);
+  const handleStartSpecificTutorial = (steps: any[]) => {
+    stopTutorial();
+    startTutorial(steps);
     setIsOpen(false);
   };
 
@@ -95,10 +94,7 @@ export function HelpButton() {
               <>
                 <DropdownMenuItem
                   onClick={() =>
-                    handleStartSpecificTutorial(
-                      "gerar-documentos-ia",
-                      comoGerarDocumentosIA
-                    )
+                    handleStartSpecificTutorial(comoGerarDocumentosIA)
                   }
                   className="cursor-pointer"
                 >
@@ -111,10 +107,7 @@ export function HelpButton() {
               <>
                 <DropdownMenuItem
                   onClick={() =>
-                    handleStartSpecificTutorial(
-                      "enviar-documentos",
-                      comoEnviarDocumentos
-                    )
+                    handleStartSpecificTutorial(comoEnviarDocumentos)
                   }
                   className="cursor-pointer"
                 >
@@ -123,10 +116,7 @@ export function HelpButton() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
-                    handleStartSpecificTutorial(
-                      "responder-diagnostico",
-                      comoResponderDiagnostico
-                    )
+                    handleStartSpecificTutorial(comoResponderDiagnostico)
                   }
                   className="cursor-pointer"
                 >

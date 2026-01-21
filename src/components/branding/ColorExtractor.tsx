@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Sparkles, Check } from "lucide-react";
@@ -23,13 +23,7 @@ export function ColorExtractor({ logoUrl, onSelectPalette, selectedPalette }: Co
   const [suggestedPalettes, setSuggestedPalettes] = useState<ColorPalette[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (logoUrl) {
-      extractColors();
-    }
-  }, [logoUrl]);
-
-  const extractColors = async () => {
+  const extractColors = useCallback(async () => {
     setIsExtracting(true);
     setError(null);
 
@@ -46,7 +40,13 @@ export function ColorExtractor({ logoUrl, onSelectPalette, selectedPalette }: Co
     } finally {
       setIsExtracting(false);
     }
-  };
+  }, [logoUrl]);
+
+  useEffect(() => {
+    if (logoUrl) {
+      extractColors();
+    }
+  }, [logoUrl, extractColors]);
 
   const isPaletteSelected = (palette: ColorPalette) => {
     return (
