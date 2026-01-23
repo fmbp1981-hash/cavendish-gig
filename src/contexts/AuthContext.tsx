@@ -1,7 +1,11 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import type { Profile, AppRole } from '@/types/database';
+import type { Tables, Database } from '@/integrations/supabase/types';
+
+// Types from Supabase schema
+type Profile = Tables<'profiles'>;
+type AppRole = Database['public']['Enums']['app_role'];
 
 interface AuthContextType {
   user: User | null;
@@ -18,6 +22,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isConsultor: boolean;
   isCliente: boolean;
+  refreshUserData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,26 +34,86 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Prevent duplicate fetches
+  const fetchingRef = useRef(false);
+  const lastFetchedUserIdRef = useRef<string | null>(null);
+
+  const fetchUserData = useCallback(async (userId: string, force = false) => {
+    // Prevent duplicate fetches for the same user
+    if (fetchingRef.current && !force) return;
+    if (lastFetchedUserIdRef.current === userId && !force) return;
+
+    fetchingRef.current = true;
+
+    try {
+      // Fetch profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError.message);
+      } else if (profileData) {
+        setProfile(profileData);
+      }
+
+      // Fetch roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError.message);
+        setRoles([]);
+      } else if (rolesData && rolesData.length > 0) {
+        const mappedRoles = rolesData.map((r) => r.role);
+        setRoles(mappedRoles);
+      } else {
+        // No roles found - this shouldn't happen with the trigger, but handle gracefully
+        setRoles([]);
+      }
+
+      lastFetchedUserIdRef.current = userId;
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    } finally {
+      setLoading(false);
+      fetchingRef.current = false;
+    }
+  }, []);
+
   useEffect(() => {
+    let mounted = true;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
         // Defer Supabase calls with setTimeout to prevent deadlock
         setTimeout(() => {
-          fetchUserData(session.user.id);
+          if (mounted) {
+            fetchUserData(session.user.id);
+          }
         }, 0);
       } else {
         setProfile(null);
         setRoles([]);
+        lastFetchedUserIdRef.current = null;
         setLoading(false);
       }
     });
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -58,47 +123,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchUserData = async (userId: string) => {
-    try {
-      console.log('[AuthContext] Fetching user data for:', userId);
-
-      // Fetch profile using type assertion
-      const { data: profileData, error: profileError } = await (supabase
-        .from('profiles' as any) as any)
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      console.log('[AuthContext] Profile result:', { profileData, profileError });
-
-      if (profileData) {
-        setProfile(profileData as Profile);
-      }
-
-      // Fetch roles using type assertion
-      const { data: rolesData, error: rolesError } = await (supabase
-        .from('user_roles' as any) as any)
-        .select('role')
-        .eq('user_id', userId);
-
-      console.log('[AuthContext] Roles result:', { rolesData, rolesError });
-
-      if (rolesData && Array.isArray(rolesData)) {
-        const mappedRoles = rolesData.map((r: { role: string }) => r.role as AppRole);
-        console.log('[AuthContext] Mapped roles:', mappedRoles);
-        setRoles(mappedRoles);
-      } else {
-        console.warn('[AuthContext] No roles found for user');
-      }
-    } catch (error) {
-      console.error('[AuthContext] Error fetching user data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchUserData]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -139,7 +168,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const hasRole = (role: AppRole) => roles.includes(role);
+  const refreshUserData = useCallback(async () => {
+    if (user?.id) {
+      await fetchUserData(user.id, true);
+    }
+  }, [user?.id, fetchUserData]);
+
+  const hasRole = useCallback((role: AppRole) => roles.includes(role), [roles]);
+
+  // Compute derived values
+  const isAdmin = roles.includes('admin');
+  const isConsultor = roles.includes('consultor') || roles.includes('admin');
+  const isCliente = roles.includes('cliente');
 
   const value: AuthContextType = {
     user,
@@ -153,9 +193,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resetPassword,
     updatePassword,
     hasRole,
-    isAdmin: hasRole('admin'),
-    isConsultor: hasRole('consultor') || hasRole('admin'),
-    isCliente: hasRole('cliente'),
+    isAdmin,
+    isConsultor,
+    isCliente,
+    refreshUserData,
   };
 
   return (

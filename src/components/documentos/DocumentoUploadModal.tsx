@@ -30,9 +30,10 @@ export function DocumentoUploadModal({
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const formatosAceitos = documento.formatos_aceitos.split(',').map(f => f.trim());
+  // formatos_aceitos is string[] from Supabase, with fallback for null
+  const formatosAceitos = documento.formatos_aceitos ?? ['pdf', 'docx'];
   const acceptString = formatosAceitos.map(f => `.${f}`).join(',');
-  const tamanhoMaximoBytes = documento.tamanho_maximo_mb * 1024 * 1024;
+  const tamanhoMaximoBytes = (documento.tamanho_maximo_mb ?? 50) * 1024 * 1024;
 
   const validateFile = useCallback((file: File): string | null => {
     const extension = file.name.split('.').pop()?.toLowerCase();

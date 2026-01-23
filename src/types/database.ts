@@ -1,312 +1,59 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+// Re-export types from Supabase generated types for backwards compatibility
+// This file serves as a bridge to maintain existing imports while using the official Supabase types
 
-export type AppRole = 'admin' | 'consultor' | 'parceiro' | 'cliente';
-export type FaseProjeto = 'diagnostico' | 'implementacao' | 'recorrencia';
-export type TipoProjeto = 'diagnostico_inicial' | 'gig_completo' | 'compliance_avulso' | 'treinamento_avulso';
-export type StatusDocumento = 'pendente' | 'enviado' | 'em_analise' | 'aprovado' | 'rejeitado';
+export type {
+  Json,
+  Database,
+  Tables,
+  TablesInsert,
+  TablesUpdate,
+  Enums,
+} from '@/integrations/supabase/types';
 
-export interface Database {
-  public: {
-    Tables: {
-      organizacoes: {
-        Row: {
-          id: string
-          nome: string
-          cnpj: string | null
-          logo_url: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          nome: string
-          cnpj?: string | null
-          logo_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          nome?: string
-          cnpj?: string | null
-          logo_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      profiles: {
-        Row: {
-          id: string
-          nome: string | null
-          email: string | null
-          avatar_url: string | null
-          organizacao_id: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id: string
-          nome?: string | null
-          email?: string | null
-          avatar_url?: string | null
-          organizacao_id?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          nome?: string | null
-          email?: string | null
-          avatar_url?: string | null
-          organizacao_id?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      user_roles: {
-        Row: {
-          id: string
-          user_id: string
-          role: AppRole
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          role: AppRole
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          role?: AppRole
-          created_at?: string
-        }
-      }
-      projetos: {
-        Row: {
-          id: string
-          organizacao_id: string
-          nome: string
-          tipo: TipoProjeto
-          fase_atual: FaseProjeto
-          consultor_id: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          organizacao_id: string
-          nome: string
-          tipo?: TipoProjeto
-          fase_atual?: FaseProjeto
-          consultor_id?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          organizacao_id?: string
-          nome?: string
-          tipo?: TipoProjeto
-          fase_atual?: FaseProjeto
-          consultor_id?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      documentos: {
-        Row: {
-          id: string
-          organizacao_id: string
-          nome: string
-          url: string | null
-          tipo: string | null
-          tamanho_bytes: number | null
-          uploaded_by: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          organizacao_id: string
-          nome: string
-          url?: string | null
-          tipo?: string | null
-          tamanho_bytes?: number | null
-          uploaded_by?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          organizacao_id?: string
-          nome?: string
-          url?: string | null
-          tipo?: string | null
-          tamanho_bytes?: number | null
-          uploaded_by?: string | null
-          created_at?: string
-        }
-      }
-      documentos_requeridos: {
-        Row: {
-          id: string
-          nome: string
-          descricao: string | null
-          fase: FaseProjeto
-          tipo_projeto: TipoProjeto | null
-          obrigatorio: boolean
-          ordem: number
-          template_url: string | null
-          formatos_aceitos: string
-          tamanho_maximo_mb: number
-          ativo: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          nome: string
-          descricao?: string | null
-          fase: FaseProjeto
-          tipo_projeto?: TipoProjeto | null
-          obrigatorio?: boolean
-          ordem?: number
-          template_url?: string | null
-          formatos_aceitos?: string
-          tamanho_maximo_mb?: number
-          ativo?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          nome?: string
-          descricao?: string | null
-          fase?: FaseProjeto
-          tipo_projeto?: TipoProjeto | null
-          obrigatorio?: boolean
-          ordem?: number
-          template_url?: string | null
-          formatos_aceitos?: string
-          tamanho_maximo_mb?: number
-          ativo?: boolean
-          created_at?: string
-        }
-      }
-      documentos_requeridos_status: {
-        Row: {
-          id: string
-          documento_requerido_id: string
-          projeto_id: string
-          organizacao_id: string
-          status: StatusDocumento
-          documento_id: string | null
-          observacao_rejeicao: string | null
-          enviado_por_id: string | null
-          enviado_em: string | null
-          analisado_por_id: string | null
-          analisado_em: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          documento_requerido_id: string
-          projeto_id: string
-          organizacao_id: string
-          status?: StatusDocumento
-          documento_id?: string | null
-          observacao_rejeicao?: string | null
-          enviado_por_id?: string | null
-          enviado_em?: string | null
-          analisado_por_id?: string | null
-          analisado_em?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          documento_requerido_id?: string
-          projeto_id?: string
-          organizacao_id?: string
-          status?: StatusDocumento
-          documento_id?: string | null
-          observacao_rejeicao?: string | null
-          enviado_por_id?: string | null
-          enviado_em?: string | null
-          analisado_por_id?: string | null
-          analisado_em?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      notificacoes: {
-        Row: {
-          id: string
-          user_id: string
-          tipo: string
-          titulo: string
-          mensagem: string | null
-          lida: boolean
-          link: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          tipo: string
-          titulo: string
-          mensagem?: string | null
-          lida?: boolean
-          link?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          tipo?: string
-          titulo?: string
-          mensagem?: string | null
-          lida?: boolean
-          link?: string | null
-          created_at?: string
-        }
-      }
-    }
-    Functions: {
-      has_role: {
-        Args: { _user_id: string; _role: AppRole }
-        Returns: boolean
-      }
-    }
-    Enums: {
-      app_role: AppRole
-      fase_projeto: FaseProjeto
-      tipo_projeto: TipoProjeto
-      status_documento: StatusDocumento
-    }
-  }
+// Convenient type aliases
+import type { Database, Tables } from '@/integrations/supabase/types';
+
+// Enum types
+export type AppRole = Database['public']['Enums']['app_role'];
+export type FaseProjeto = Database['public']['Enums']['fase_projeto'];
+export type TipoProjeto = Database['public']['Enums']['tipo_projeto'];
+export type StatusDocumento = Database['public']['Enums']['status_documento'];
+
+// Table row types
+export type Profile = Tables<'profiles'>;
+export type UserRole = Tables<'user_roles'>;
+export type Organizacao = Tables<'organizacoes'>;
+export type OrganizationMember = Tables<'organization_members'>;
+export type Projeto = Tables<'projetos'>;
+export type Documento = Tables<'documentos'>;
+export type DocumentoCatalogo = Tables<'documentos_catalogo'>;
+export type DocumentoRequerido = Tables<'documentos_requeridos'>;
+export type DocumentoRequeridoStatus = Tables<'documentos_requeridos_status'>;
+export type Notificacao = Tables<'notificacoes'>;
+export type Tarefa = Tables<'tarefas'>;
+export type Denuncia = Tables<'denuncias'>;
+export type Diagnostico = Tables<'diagnosticos'>;
+export type DiagnosticoPergunta = Tables<'diagnostico_perguntas'>;
+export type DiagnosticoResposta = Tables<'diagnostico_respostas'>;
+export type Treinamento = Tables<'treinamentos'>;
+export type TreinamentoConteudo = Tables<'treinamento_conteudos'>;
+export type TreinamentoQuiz = Tables<'treinamento_quiz'>;
+export type TreinamentoInscricao = Tables<'treinamento_inscricoes'>;
+export type TreinamentoCertificado = Tables<'treinamento_certificados'>;
+export type CodigoEticaVersao = Tables<'codigo_etica_versoes'>;
+export type CodigoEticaAdesao = Tables<'codigo_etica_adesoes'>;
+export type ConsultorOrganizacao = Tables<'consultor_organizacoes'>;
+export type AIGeneration = Tables<'ai_generations'>;
+
+// Extended types with relations (for components that need joined data)
+export interface DocumentoRequeridoComStatus extends DocumentoRequerido {
+  status?: DocumentoRequeridoStatus;
 }
 
-// Helper types
-export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
-export type InsertTables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
-export type UpdateTables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
+export interface ProjetoComOrganizacao extends Projeto {
+  organizacao?: Organizacao;
+}
 
-export type Organizacao = Tables<'organizacoes'>
-export type Profile = Tables<'profiles'>
-export type UserRole = Tables<'user_roles'>
-export type Projeto = Tables<'projetos'>
-export type Documento = Tables<'documentos'>
-export type DocumentoRequerido = Tables<'documentos_requeridos'>
-export type DocumentoRequeridoStatus = Tables<'documentos_requeridos_status'>
-export type Notificacao = Tables<'notificacoes'>
-
-// Extended types with relations
-export interface DocumentoRequeridoComStatus extends DocumentoRequerido {
-  status?: DocumentoRequeridoStatus
+export interface TarefaComResponsavel extends Tarefa {
+  responsavel?: Profile;
 }

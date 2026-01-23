@@ -137,8 +137,8 @@ export function DocumentoRequeridoCard({
               </p>
             )}
             
-            {/* Consultor extra info */}
-            {isConsultor && status?.enviado_em && (
+            {/* Consultor extra info - show when document has been submitted */}
+            {isConsultor && status && currentStatus !== 'pendente' && (
               <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
                 {enviadoPorNome && (
                   <span className="flex items-center gap-1">
@@ -148,7 +148,7 @@ export function DocumentoRequeridoCard({
                 )}
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
-                  {new Date(status.enviado_em).toLocaleDateString('pt-BR')}
+                  {new Date(status.updated_at).toLocaleDateString('pt-BR')}
                 </span>
               </div>
             )}
