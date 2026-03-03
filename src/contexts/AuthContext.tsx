@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
+import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Profile, AppRole } from '@/types/database';
 
@@ -9,11 +9,11 @@ interface AuthContextType {
   profile: Profile | null;
   roles: AppRole[];
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, metadata?: { nome?: string }) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signUp: (email: string, password: string, metadata?: { nome?: string; empresa?: string }) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error: Error | null }>;
-  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
+  resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
   hasRole: (role: AppRole) => boolean;
   isAdmin: boolean;
   isConsultor: boolean;
@@ -29,6 +29,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Fix 3: guard against concurrent double calls on initialization
+  const fetchingUserIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -41,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           fetchUserData(session.user.id);
         }, 0);
       } else {
+        fetchingUserIdRef.current = null;
         setProfile(null);
         setRoles([]);
         setLoading(false);
@@ -62,6 +66,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchUserData = async (userId: string) => {
+    // Fix 3: skip if already fetching for this user
+    if (fetchingUserIdRef.current === userId) return;
+    fetchingUserIdRef.current = userId;
+
     try {
       console.log('[AuthContext] Fetching user data for:', userId);
 
@@ -96,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('[AuthContext] Error fetching user data:', error);
     } finally {
+      fetchingUserIdRef.current = null;
       setLoading(false);
     }
   };
@@ -105,7 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, metadata?: { nome?: string }) => {
+  // Fix 2: accept and pass empresa metadata
+  const signUp = async (email: string, password: string, metadata?: { nome?: string; empresa?: string }) => {
     const redirectUrl = `${window.location.origin}/`;
 
     const { error } = await supabase.auth.signUp({

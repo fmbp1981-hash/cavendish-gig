@@ -45,15 +45,15 @@ const Auth = () => {
     confirmPassword: "",
   });
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (skip during password reset flow)
   useEffect(() => {
-    if (user && !authLoading) {
+    if (user && !authLoading && mode !== "reset-password") {
       const next = getQueryParam("next");
       const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
       const target = safeNext && safeNext !== "/auth" ? safeNext : isAdmin ? "/admin" : isConsultor ? "/consultor" : "/meu-projeto";
       window.location.replace(target);
     }
-  }, [user, authLoading, isAdmin, isConsultor]);
+  }, [user, authLoading, isAdmin, isConsultor, mode]);
 
   const validateForm = () => {
     try {
@@ -109,7 +109,7 @@ const Auth = () => {
           });
         }
       } else {
-        const { error } = await signUp(formData.email, formData.password, { nome: formData.name });
+        const { error } = await signUp(formData.email, formData.password, { nome: formData.name, empresa: formData.company });
         if (error) {
           let errorMessage = "Erro ao criar conta. Tente novamente.";
 

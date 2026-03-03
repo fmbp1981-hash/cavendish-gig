@@ -41,6 +41,9 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
       if (isCliente) {
         return <Navigate to="/meu-projeto" replace />;
       }
+      if (roles.includes('parceiro')) {
+        return <Navigate to="/meu-projeto" replace />;
+      }
       return <Navigate to="/" replace />;
     }
   }
