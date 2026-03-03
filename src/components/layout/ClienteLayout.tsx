@@ -26,13 +26,13 @@ interface ClienteLayoutProps {
 }
 
 const menuItems = [
-  { title: 'Meu Projeto', url: '/meu-projeto', icon: LayoutDashboard, dataTour: 'dashboard' },
-  { title: 'Diagnóstico', url: '/meu-projeto/diagnostico', icon: ClipboardCheck, dataTour: 'menu-diagnosticos' },
-  { title: 'Treinamentos', url: '/meu-projeto/treinamentos', icon: GraduationCap, dataTour: 'menu-treinamentos' },
-  { title: 'Código de Ética', url: '/meu-projeto/codigo-etica', icon: ScrollText },
-  { title: 'Documentos Necessários', url: '/meu-projeto/documentos-necessarios', icon: FileText, badge: true, dataTour: 'menu-documentos-necessarios' },
-  { title: 'Repositório', url: '/meu-projeto/documentos', icon: FolderOpen },
-  { title: 'Configurações', url: '/meu-projeto/configuracoes', icon: Settings },
+  { title: 'Meu Projeto',            url: '/meu-projeto',                       icon: LayoutDashboard, dataTour: 'dashboard' },
+  { title: 'Diagnóstico',            url: '/meu-projeto/diagnostico',           icon: ClipboardCheck,  dataTour: 'menu-diagnosticos' },
+  { title: 'Treinamentos',           url: '/meu-projeto/treinamentos',          icon: GraduationCap,   dataTour: 'menu-treinamentos' },
+  { title: 'Código de Ética',        url: '/meu-projeto/codigo-etica',          icon: ScrollText,      dataTour: 'menu-codigo-etica-cliente' },
+  { title: 'Documentos Necessários', url: '/meu-projeto/documentos-necessarios', icon: FileText,       badge: true, dataTour: 'menu-documentos-necessarios' },
+  { title: 'Repositório',            url: '/meu-projeto/documentos',            icon: FolderOpen,      dataTour: 'menu-repositorio' },
+  { title: 'Configurações',          url: '/meu-projeto/configuracoes',         icon: Settings },
 ];
 
 export function ClienteLayout({ children }: ClienteLayoutProps) {

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { TenantBrandingProvider } from "@/components/branding/TenantBrandingProvider";
+import { TourProvider } from "@/contexts/TourContext";
 
 // Pages
 import Index from "./spa/pages/Index";
@@ -67,6 +68,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <TourProvider>
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<Index />} />
@@ -264,15 +266,6 @@ const App = () => (
               />
 
               <Route
-                path="/admin/seguranca"
-                element={
-                  <ProtectedRoute requiredRoles={["admin"]}>
-                    <AdminConfiguracoes />
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
                 path="/admin/integracoes"
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
@@ -379,6 +372,7 @@ const App = () => (
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </TourProvider>
           </BrowserRouter>
         </TooltipProvider>
       </TenantBrandingProvider>

@@ -38,16 +38,16 @@ interface ConsultorLayoutProps {
 }
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/consultor", dataTour: "dashboard" },
-  { icon: Users, label: "Clientes", href: "/consultor/clientes", dataTour: "menu-organizacoes" },
-  { icon: FileText, label: "Documentos", href: "/consultor/documentos", dataTour: "menu-documentos" },
-  { icon: CheckSquare, label: "Tarefas", href: "/consultor/tarefas", dataTour: "menu-tarefas" },
-  { icon: FileCheck, label: "Adesão Ética", href: "/consultor/adesao-etica" },
-  { icon: BarChart3, label: "Relatórios", href: "/consultor/relatorios", dataTour: "menu-relatorios" },
-  { icon: CalendarPlus, label: "Agendar Reunião", href: "/consultor/agendamento", dataTour: "menu-reunioes" },
-  { icon: AlertTriangle, label: "Denúncias", href: "/consultor/denuncias" },
-  { icon: Sparkles, label: "IA: Código de Ética", href: "/consultor/codigo-etica" },
-  { icon: FileText, label: "IA: Atas", href: "/consultor/atas" },
+  { icon: LayoutDashboard, label: "Dashboard",         href: "/consultor",              dataTour: "dashboard" },
+  { icon: Users,           label: "Clientes",          href: "/consultor/clientes",     dataTour: "menu-organizacoes" },
+  { icon: FileText,        label: "Documentos",        href: "/consultor/documentos",   dataTour: "menu-documentos" },
+  { icon: CheckSquare,     label: "Tarefas",           href: "/consultor/tarefas",      dataTour: "menu-tarefas" },
+  { icon: FileCheck,       label: "Adesão Ética",      href: "/consultor/adesao-etica", dataTour: "menu-adesao-etica" },
+  { icon: BarChart3,       label: "Relatórios",        href: "/consultor/relatorios",   dataTour: "menu-relatorios" },
+  { icon: CalendarPlus,    label: "Agendar Reunião",   href: "/consultor/agendamento",  dataTour: "menu-reunioes" },
+  { icon: AlertTriangle,   label: "Denúncias",         href: "/consultor/denuncias",    dataTour: "menu-denuncias" },
+  { icon: Sparkles,        label: "IA: Código de Ética", href: "/consultor/codigo-etica", dataTour: "menu-codigo-etica" },
+  { icon: FileText,        label: "IA: Atas",          href: "/consultor/atas",         dataTour: "menu-atas" },
 ];
 
 export function ConsultorLayout({ children }: ConsultorLayoutProps) {

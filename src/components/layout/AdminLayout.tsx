@@ -15,7 +15,6 @@ import {
   X,
   ChevronDown,
   Building2,
-  Shield,
   Database,
   UserCog,
   Users2,
@@ -41,19 +40,18 @@ interface AdminLayoutProps {
 }
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
-  { icon: Building2, label: "Organizações", href: "/admin/organizacoes" },
-  { icon: Users, label: "Usuários", href: "/admin/usuarios" },
-  { icon: UserCog, label: "Consultores", href: "/admin/consultores" },
-  { icon: FileText, label: "Documentos", href: "/consultor/documentos" },
-  { icon: Database, label: "Catálogo", href: "/admin/catalogo" },
-  { icon: FileText, label: "Templates", href: "/admin/templates" },
-  { icon: TrendingUp, label: "Relatórios", href: "/admin/relatorios/historico" },
-  { icon: Plug, label: "Integrações", href: "/admin/integracoes" },
-  { icon: Sparkles, label: "Branding", href: "/admin/branding" },
-  { icon: Bug, label: "Logs do Sistema", href: "/admin/logs" },
-  { icon: Shield, label: "Segurança", href: "/admin/seguranca" },
-  { icon: Settings, label: "Configurações", href: "/admin/configuracoes" },
+  { icon: LayoutDashboard, label: "Dashboard",       href: "/admin",                        dataTour: "admin-nav-dashboard" },
+  { icon: Building2,      label: "Organizações",     href: "/admin/organizacoes",           dataTour: "admin-nav-organizacoes" },
+  { icon: Users,          label: "Usuários",          href: "/admin/usuarios",               dataTour: "admin-nav-usuarios" },
+  { icon: UserCog,        label: "Consultores",       href: "/admin/consultores",            dataTour: "admin-nav-consultores" },
+  { icon: FileText,       label: "Documentos",        href: "/consultor/documentos",         dataTour: "admin-nav-documentos" },
+  { icon: Database,       label: "Catálogo",          href: "/admin/catalogo",               dataTour: "admin-nav-catalogo" },
+  { icon: FileText,       label: "Templates",         href: "/admin/templates",              dataTour: "admin-nav-templates" },
+  { icon: TrendingUp,     label: "Relatórios",        href: "/admin/relatorios/historico",   dataTour: "admin-nav-relatorios" },
+  { icon: Plug,           label: "Integrações",       href: "/admin/integracoes",            dataTour: "admin-nav-integracoes" },
+  { icon: Sparkles,       label: "Branding",          href: "/admin/branding",               dataTour: "admin-nav-branding" },
+  { icon: Bug,            label: "Logs do Sistema",   href: "/admin/logs",                   dataTour: "admin-nav-logs" },
+  { icon: Settings,       label: "Configurações",     href: "/admin/configuracoes",          dataTour: "admin-nav-configuracoes" },
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {
@@ -121,6 +119,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <Link
                 key={item.href}
                 to={item.href}
+                data-tour={item.dataTour}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
                   ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
                   : "text-sidebar-foreground opacity-80 hover:opacity-100 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"

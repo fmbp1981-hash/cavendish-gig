@@ -232,6 +232,134 @@
   }
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Driver.js Tour — Tema Cavendish
+──────────────────────────────────────────────────────────────────────────── */
+.driver-popover.gig-tour-popover {
+  background-color: hsl(40 20% 98%);
+  border: 1px solid hsl(40 12% 82%);
+  border-radius: 0.875rem;
+  box-shadow: 0 16px 48px -12px hsl(204 45% 12% / 0.28);
+  min-width: 340px;
+  max-width: 440px;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.driver-popover.gig-tour-popover .driver-popover-title {
+  color: hsl(204 65% 14%);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.driver-popover.gig-tour-popover .driver-popover-description {
+  color: hsl(204 25% 30%);
+  font-size: 0.8125rem;
+  line-height: 1.65;
+}
+
+.driver-popover.gig-tour-popover .driver-popover-description ul {
+  margin: 8px 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.driver-popover.gig-tour-popover .driver-popover-description li {
+  margin-bottom: 4px;
+}
+
+.driver-popover.gig-tour-popover .driver-popover-description code {
+  background: hsl(161 55% 23% / 0.1);
+  color: hsl(161 55% 23%);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
+
+.driver-popover.gig-tour-popover .driver-popover-footer {
+  border-top: 1px solid hsl(40 12% 88%);
+  padding-top: 12px;
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.driver-popover.gig-tour-popover .driver-popover-progress-text {
+  color: hsl(204 20% 55%);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Botão Próximo — Gold Cavendish */
+.driver-popover.gig-tour-popover .driver-popover-next-btn {
+  background-color: hsl(46 87% 39%);
+  color: hsl(204 65% 10%);
+  border: none;
+  border-radius: 0.5rem;
+  padding: 7px 18px;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.driver-popover.gig-tour-popover .driver-popover-next-btn:hover {
+  background-color: hsl(46 87% 33%);
+}
+.driver-popover.gig-tour-popover .driver-popover-next-btn:focus {
+  outline: 2px solid hsl(46 87% 39%);
+  outline-offset: 2px;
+}
+
+/* Botão Anterior — outline */
+.driver-popover.gig-tour-popover .driver-popover-prev-btn {
+  background-color: transparent;
+  color: hsl(204 45% 30%);
+  border: 1px solid hsl(40 12% 80%);
+  border-radius: 0.5rem;
+  padding: 7px 16px;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.driver-popover.gig-tour-popover .driver-popover-prev-btn:hover {
+  background-color: hsl(40 15% 93%);
+}
+
+/* Botão Fechar */
+.driver-popover.gig-tour-popover .driver-popover-close-btn {
+  color: hsl(204 20% 55%);
+  background: transparent;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.driver-popover.gig-tour-popover .driver-popover-close-btn:hover {
+  background-color: hsl(40 15% 90%);
+  color: hsl(204 45% 20%);
+}
+
+/* Overlay — Dark Navy com opacidade */
+.driver-overlay {
+  background-color: hsl(204 65% 8% / 0.72) !important;
+}
+
+/* Highlight border — Forest Green */
+#driver-highlighted-element-stage,
+.driver-active-element {
+  outline: 3px solid hsl(161 55% 23%) !important;
+  outline-offset: 3px !important;
+  border-radius: 0.5rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
