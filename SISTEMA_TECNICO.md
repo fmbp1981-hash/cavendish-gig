@@ -1,7 +1,7 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-02
+**Última atualização:** 2026-03-02 (correção ID Supabase)
 **Versão do sistema:** 0.0.0 (pre-release)
 **Desenvolvido por:** IntelliX.AI
 
@@ -162,8 +162,8 @@ QueryClientProvider
 
 ## 5. Banco de Dados
 
-**Projeto Supabase:** `latslcjmtoppzfwwvtvp`
-**URL:** `https://latslcjmtoppzfwwvtvp.supabase.co`
+**Projeto Supabase:** `fenfgjqlsqzvxloeavdc` (nome: Sistema_CCE)
+**URL:** `https://fenfgjqlsqzvxloeavdc.supabase.co`
 **Config local:** `supabase/config.toml` → `project_id = "fenfgjqlsqzvxloeavdc"`
 
 ### ENUMs
@@ -462,7 +462,7 @@ cavendish-gig-main/
 
 ### Frontend (`.env.local` / Vercel)
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://latslcjmtoppzfwwvtvp.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://fenfgjqlsqzvxloeavdc.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=[chave_anon_do_supabase]
 # ou
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[chave_publishable]
