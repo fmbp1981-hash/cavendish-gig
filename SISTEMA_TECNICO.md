@@ -1,7 +1,7 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-02 (correção ID Supabase)
+**Última atualização:** 2026-03-02 (schema DB completo — 39 tabelas + fix admin redirect)
 **Versão do sistema:** 0.0.0 (pre-release)
 **Desenvolvido por:** IntelliX.AI
 
@@ -584,13 +584,44 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - **Causa:** Interface `AuthContextType` declarava `{ error: Error | null }` mas Supabase retorna `AuthError`
 - **Fix:** `import { AuthError }` adicionado; todos os métodos de auth tipados corretamente com `AuthError | null`
 
+### 2026-03-02 — Admin redirecionado para dashboard errado
+**Arquivo:** `src/spa/pages/Index.tsx`
+
+#### BUG 6 — CRÍTICO: Admin via `/` era enviado para `/dashboard` (ConsultorDashboard) em vez de `/admin`
+- **Causa:** `Index.tsx` tinha `if (isAdmin || isConsultor) → /dashboard`. Como `isConsultor = hasRole('consultor') || hasRole('admin')`, admins também eram incluídos e iam para `/dashboard` (que mapeia para `ConsultorDashboard`)
+- **Fix:** Separado em dois `if` independentes: `isAdmin → /admin`, `isConsultor → /consultor`, default → `/meu-projeto`
+
+### 2026-03-02 — Schema de banco de dados incompleto
+**Contexto:** Apenas 14 das ~39 tabelas estavam presentes no Supabase `fenfgjqlsqzvxloeavdc`
+
+**Migrations aplicadas manualmente via Management API:**
+- `has_role`, `is_admin`, `get_user_tenant_id` functions ✅
+- `denuncias`, `consultor_organizacoes`, `tarefas`, `ai_generations` ✅
+- `diagnostico_perguntas`, `diagnosticos`, `diagnostico_respostas` + 50 perguntas seed ✅
+- `treinamentos`, `treinamento_conteudos`, `treinamento_quiz`, `treinamento_inscricoes`, `treinamento_certificados` ✅
+- RLS policies + triggers para todos os módulos acima ✅
+- Seed: 5 treinamentos, 3 conteúdos, 5 quizzes (Código de Ética) ✅
+- `codigo_etica_versoes`, `codigo_etica_adesoes` + RLS + seed (1 versão inicial) ✅
+- `system_settings` + seed (2 registros) ✅
+- `20251214` `documento_versoes` + functions + triggers ✅
+- `20251215` `relatorio_envios` + functions + views ✅
+- `20251215190000` security/RLS fixes ✅
+- `20251216` `templates`, `template_versoes`, `documentos_gerados` ✅
+- `20251222` `integrations`, `tenant_branding`, `integration_sync`, kanban ✅
+- `20251227` `audit_logs` + triggers em todas as tabelas ✅
+- `20251227000001` `plano_config` ✅
+- `20251227000002` `integration_sync` ✅
+- `20260107` `consultor_pre_registrations` ✅
+
+**Status final:** 39 tabelas no schema público, RLS ativo em todas, seed data carregado.
+
 ---
 
 ## 15. Pendências e Roadmap
 
 ### Alta prioridade
 - [ ] **Configurar variáveis de ambiente no Vercel** (NEXT_PUBLIC_SUPABASE_URL, ANON_KEY)
-- [ ] **Aplicar todas as migrations** no Supabase de produção (`supabase db push --linked`)
+- [x] **Aplicar todas as migrations** no Supabase de produção — CONCLUÍDO em 2026-03-02
 - [ ] **Deploy das Edge Functions** (`supabase functions deploy`)
 - [ ] **Configurar Resend** (domínio verificado + API key)
 - [ ] **Webhook Fireflies** apontar para URL da Edge Function

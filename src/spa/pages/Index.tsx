@@ -22,8 +22,12 @@ const Index = () => {
   }
 
   // Redirect based on role
-  if (isAdmin || isConsultor) {
-    return <Navigate to="/dashboard" replace />;
+  if (isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  if (isConsultor) {
+    return <Navigate to="/consultor" replace />;
   }
 
   // Default to client portal
