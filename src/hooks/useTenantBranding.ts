@@ -20,7 +20,7 @@ export function useTenantBranding(organizacaoId: string | undefined) {
     queryFn: async (): Promise<TenantBranding | null> => {
       if (!organizacaoId) return null;
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("tenant_branding")
         .select("*")
         .eq("organizacao_id", organizacaoId)

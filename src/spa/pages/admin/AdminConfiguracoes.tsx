@@ -91,7 +91,7 @@ export default function AdminConfiguracoes() {
         custom_css: customCss.trim() ? customCss : null,
       };
 
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("tenant_branding")
         .upsert(payload, { onConflict: "organizacao_id" });
 

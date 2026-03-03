@@ -93,9 +93,10 @@ export default function ConsultorTarefas() {
   const reorderMutation = useMutation({
     mutationFn: async (updates: Array<{ id: string; status: string; kanban_order: number; concluido_em?: string | null }>) => {
       if (updates.length === 0) return;
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("tarefas")
-        .upsert(updates, { onConflict: "id" });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .upsert(updates as any[], { onConflict: "id" });
       if (error) throw error;
     },
     onSuccess: () => {

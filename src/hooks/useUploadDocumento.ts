@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { notificarNovoDocumento } from './useNotificacoesEmail';
 import { useUploadToDrive } from './useGoogleDrive';
 
-const sb = supabase as any;
+const sb = supabase;
 
 interface Documento {
   id: string;

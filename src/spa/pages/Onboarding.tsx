@@ -67,7 +67,7 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
-      const { data: result, error } = await (supabase as any).rpc("create_client_onboarding", {
+      const { data: result, error } = await supabase.rpc("create_client_onboarding", {
         p_nome_organizacao: data.nomeOrganizacao,
         p_cnpj: data.cnpj.replace(/\D/g, ""),
         p_tipo_projeto: data.tipoProjeto,

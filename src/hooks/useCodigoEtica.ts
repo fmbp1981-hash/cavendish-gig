@@ -36,13 +36,13 @@ export function useCodigoEticaAtivo() {
   return useQuery({
     queryKey: ["codigo-etica-ativo"],
     queryFn: async () => {
-      const { data, error } = await (supabase
-        .from("codigo_etica_versoes" as any)
+      const { data, error } = await supabase
+        .from("codigo_etica_versoes")
         .select("*")
         .eq("ativo", true)
         .order("vigencia_inicio", { ascending: false })
         .limit(1)
-        .maybeSingle() as any);
+        .maybeSingle();
 
       if (error) throw error;
       return data as CodigoEticaVersao | null;
@@ -58,12 +58,12 @@ export function useMinhaAdesao(versaoId: string | undefined) {
     queryFn: async () => {
       if (!versaoId || !user?.id) return null;
 
-      const { data, error } = await (supabase
-        .from("codigo_etica_adesoes" as any)
+      const { data, error } = await supabase
+        .from("codigo_etica_adesoes")
         .select("*")
         .eq("versao_id", versaoId)
         .eq("user_id", user.id)
-        .maybeSingle() as any);
+        .maybeSingle();
 
       if (error) throw error;
       return data as CodigoEticaAdesao | null;
@@ -80,15 +80,15 @@ export function useRegistrarAdesao() {
     mutationFn: async ({ versaoId, organizacaoId }: { versaoId: string; organizacaoId: string }) => {
       if (!user?.id) throw new Error("Usuário não autenticado");
 
-      const { data, error } = await (supabase
-        .from("codigo_etica_adesoes" as any)
+      const { data, error } = await supabase
+        .from("codigo_etica_adesoes")
         .insert({
           user_id: user.id,
           organizacao_id: organizacaoId,
           versao_id: versaoId,
         })
         .select()
-        .single() as any);
+        .single();
 
       if (error) throw error;
       return data;
@@ -112,15 +112,15 @@ export function useAdesoesOrganizacao(organizacaoId: string | undefined) {
     queryFn: async () => {
       if (!organizacaoId) return [];
 
-      const { data, error } = await (supabase
-        .from("codigo_etica_adesoes" as any)
+      const { data, error } = await supabase
+        .from("codigo_etica_adesoes")
         .select(`
           *,
           profiles:user_id(nome, email),
           codigo_etica_versoes:versao_id(versao, titulo)
         `)
         .eq("organizacao_id", organizacaoId)
-        .order("aceito_em", { ascending: false }) as any);
+        .order("aceito_em", { ascending: false });
 
       if (error) throw error;
       return data as CodigoEticaAdesao[];
@@ -134,15 +134,15 @@ export function useTodasAdesoes() {
   return useQuery({
     queryKey: ["todas-adesoes"],
     queryFn: async () => {
-      const { data, error } = await (supabase
-        .from("codigo_etica_adesoes" as any)
+      const { data, error } = await supabase
+        .from("codigo_etica_adesoes")
         .select(`
           *,
           profiles:user_id(nome, email),
           organizacoes:organizacao_id(nome),
           codigo_etica_versoes:versao_id(versao, titulo)
         `)
-        .order("aceito_em", { ascending: false }) as any);
+        .order("aceito_em", { ascending: false });
 
       if (error) throw error;
       return data as CodigoEticaAdesao[];
@@ -156,33 +156,33 @@ export function useEstatisticasAdesao() {
     queryKey: ["estatisticas-adesao"],
     queryFn: async () => {
       // Buscar organizações
-      const { data: orgs, error: orgsError } = await (supabase
-        .from("organizacoes" as any)
-        .select("id, nome") as any);
+      const { data: orgs, error: orgsError } = await supabase
+        .from("organizacoes")
+        .select("id, nome");
 
       if (orgsError) throw orgsError;
 
       // Buscar membros por organização
-      const { data: members, error: membersError } = await (supabase
-        .from("organization_members" as any)
-        .select("organizacao_id, user_id") as any);
+      const { data: members, error: membersError } = await supabase
+        .from("organization_members")
+        .select("organizacao_id, user_id");
 
       if (membersError) throw membersError;
 
       // Buscar versão ativa
-      const { data: versaoAtiva } = await (supabase
-        .from("codigo_etica_versoes" as any)
+      const { data: versaoAtiva } = await supabase
+        .from("codigo_etica_versoes")
         .select("id")
         .eq("ativo", true)
-        .maybeSingle() as any);
+        .maybeSingle();
 
       if (!versaoAtiva) return [];
 
       // Buscar adesões da versão ativa
-      const { data: adesoes, error: adesoesError } = await (supabase
-        .from("codigo_etica_adesoes" as any)
+      const { data: adesoes, error: adesoesError } = await supabase
+        .from("codigo_etica_adesoes")
         .select("organizacao_id, user_id")
-        .eq("versao_id", versaoAtiva.id) as any);
+        .eq("versao_id", versaoAtiva.id);
 
       if (adesoesError) throw adesoesError;
 

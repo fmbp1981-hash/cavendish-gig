@@ -16,8 +16,8 @@ export function useClienteProjeto() {
       if (!user) return null;
 
       // Get organization membership
-      const { data: membership } = await (supabase
-        .from("organization_members" as any) as any)
+      const { data: membership } = await supabase
+        .from("organization_members")
         .select("organizacao_id")
         .eq("user_id", user.id)
         .maybeSingle();
@@ -25,15 +25,15 @@ export function useClienteProjeto() {
       if (!membership?.organizacao_id) return null;
 
       // Get organization details
-      const { data: organizacao } = await (supabase
-        .from("organizacoes" as any) as any)
+      const { data: organizacao } = await supabase
+        .from("organizacoes")
         .select("*")
         .eq("id", membership.organizacao_id)
         .maybeSingle();
 
       // Get active project
-      const { data: projeto } = await (supabase
-        .from("projetos" as any) as any)
+      const { data: projeto } = await supabase
+        .from("projetos")
         .select("*")
         .eq("organizacao_id", membership.organizacao_id)
         .order("created_at", { ascending: false })
@@ -45,7 +45,7 @@ export function useClienteProjeto() {
       return {
         ...projeto,
         organizacao: organizacao || undefined,
-      } as ProjetoComOrganizacao;
+      } as unknown as ProjetoComOrganizacao;
     },
     enabled: !!user,
   });
@@ -58,8 +58,8 @@ export function useDocumentosRequeridosProjeto(projetoId: string | undefined, or
       if (!projetoId || !organizacaoId) return [];
 
       // Get required documents for the project
-      const { data: documentos, error: docError } = await (supabase
-        .from("documentos_requeridos" as any) as any)
+      const { data: documentos, error: docError } = await supabase
+        .from("documentos_requeridos")
         .select("*")
         .eq("projeto_id", projetoId)
         .order("fase")
@@ -68,10 +68,10 @@ export function useDocumentosRequeridosProjeto(projetoId: string | undefined, or
       if (docError) throw docError;
 
       // Get status for each document
-      const { data: statusList, error: statusError } = await (supabase
-        .from("documentos_requeridos_status" as any) as any)
+      const { data: statusList, error: statusError } = await supabase
+        .from("documentos_requeridos_status")
         .select("*")
-        .eq("documento_requerido_id", documentos?.map((d: any) => d.id) || []);
+        .in("documento_requerido_id", documentos?.map((d: any) => d.id) || []);
 
       if (statusError) console.error("Status fetch error:", statusError);
 

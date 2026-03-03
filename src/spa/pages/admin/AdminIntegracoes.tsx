@@ -38,7 +38,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { HardDrive } from "lucide-react";
 
-const sb = supabase as any;
+const sb = supabase;
 
 interface IntegrationConfig {
   id: string;
@@ -207,7 +207,7 @@ const integrations: IntegrationConfig[] = [
 type IntegrationScope = "system" | "organization";
 
 async function listVaultIntegrations(scope: IntegrationScope) {
-  const { data, error } = await (supabase as any).functions.invoke("integrations", {
+  const { data, error } = await supabase.functions.invoke("integrations", {
     body: { action: "list", scope },
   });
   if (error) throw error;
@@ -231,7 +231,7 @@ async function upsertVaultIntegration(params: {
   const hasSecrets = !!params.secrets && Object.keys(params.secrets).length > 0;
   const hasConfig = typeof params.config !== "undefined";
 
-  const { data, error } = await (supabase as any).functions.invoke("integrations", {
+  const { data, error } = await supabase.functions.invoke("integrations", {
     body: {
       action: "upsert",
       provider: params.provider,
@@ -467,7 +467,7 @@ function AIProviderSelector() {
       if (!providerConfig) throw new Error("Provedor inválido");
 
       // Save to vault via edge function
-      await (supabase as any).functions.invoke("integrations", {
+      await supabase.functions.invoke("integrations", {
         body: {
           action: "upsert",
           provider: "ai-provider",

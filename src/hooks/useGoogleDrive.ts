@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-const sb = supabase as any;
+const sb = supabase;
 
 interface DriveFolder {
     id: string;
@@ -19,7 +19,7 @@ export function useGoogleDriveSettings() {
         queryKey: ['google-drive-settings'],
         queryFn: async () => {
             const { data, error } = await supabase
-                .from('system_settings' as any)
+                .from('system_settings')
                 .select('key, value')
                 .in('key', ['google_drive_enabled', 'google_drive_base_folder_id']);
 
@@ -53,7 +53,7 @@ export function useUpdateDriveSettings() {
             if (enabled !== undefined) {
                 updates.push(
                     supabase
-                        .from('system_settings' as any)
+                        .from('system_settings')
                         .upsert({
                             key: 'google_drive_enabled',
                             value: String(enabled)
@@ -64,7 +64,7 @@ export function useUpdateDriveSettings() {
             if (baseFolderId !== undefined) {
                 updates.push(
                     supabase
-                        .from('system_settings' as any)
+                        .from('system_settings')
                         .upsert({
                             key: 'google_drive_base_folder_id',
                             value: baseFolderId
@@ -88,7 +88,7 @@ export function useCreateClientDriveFolder() {
         }): Promise<CreateFolderResult | null> => {
             // First check if Drive is enabled and get base folder
             const { data: settings } = await supabase
-                .from('system_settings' as any)
+                .from('system_settings')
                 .select('key, value')
                 .in('key', ['google_drive_enabled', 'google_drive_base_folder_id']);
 
@@ -153,7 +153,7 @@ export function useUploadToDrive() {
                 .eq('key', 'google_drive_enabled')
                 .single();
 
-            if ((settings as any)?.value !== 'true') {
+            if (settings?.value !== 'true') {
                 console.log('Google Drive integration is disabled, skipping upload');
                 return { success: false, message: 'Google Drive integration is disabled' };
             }

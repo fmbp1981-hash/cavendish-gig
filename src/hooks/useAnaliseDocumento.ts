@@ -97,8 +97,8 @@ export function useAprovarDocumento() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
-      const { error } = await (supabase
-        .from('documentos_requeridos_status' as any) as any)
+      const { error } = await supabase
+        .from('documentos_requeridos_status')
         .update({
           status: 'aprovado',
           analisado_por: user.id,
@@ -138,8 +138,8 @@ export function useRejeitarDocumento() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
-      const { error } = await (supabase
-        .from('documentos_requeridos_status' as any) as any)
+      const { error } = await supabase
+        .from('documentos_requeridos_status')
         .update({
           status: 'rejeitado',
           observacao_rejeicao: observacao,
@@ -177,8 +177,8 @@ export function useIniciarAnalise() {
 
   return useMutation({
     mutationFn: async (statusId: string) => {
-      const { error } = await (supabase
-        .from('documentos_requeridos_status' as any) as any)
+      const { error } = await supabase
+        .from('documentos_requeridos_status')
         .update({
           status: 'em_analise',
           updated_at: new Date().toISOString()

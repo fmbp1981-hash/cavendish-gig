@@ -73,9 +73,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[AuthContext] Fetching user data for:', userId);
 
-      // Fetch profile using type assertion
-      const { data: profileData, error: profileError } = await (supabase
-        .from('profiles' as any) as any)
+      // Fetch profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
@@ -86,9 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(profileData as Profile);
       }
 
-      // Fetch roles using type assertion
-      const { data: rolesData, error: rolesError } = await (supabase
-        .from('user_roles' as any) as any)
+      // Fetch roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
         .select('role')
         .eq('user_id', userId);
 

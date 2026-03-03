@@ -46,7 +46,7 @@ export interface Database {
           nome: string | null
           email: string | null
           avatar_url: string | null
-          organizacao_id: string | null
+          telefone: string | null
           created_at: string
           updated_at: string
         }
@@ -55,7 +55,7 @@ export interface Database {
           nome?: string | null
           email?: string | null
           avatar_url?: string | null
-          organizacao_id?: string | null
+          telefone?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -64,7 +64,7 @@ export interface Database {
           nome?: string | null
           email?: string | null
           avatar_url?: string | null
-          organizacao_id?: string | null
+          telefone?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -96,7 +96,8 @@ export interface Database {
           nome: string
           tipo: TipoProjeto
           fase_atual: FaseProjeto
-          consultor_id: string | null
+          data_inicio: string | null
+          data_fim_prevista: string | null
           created_at: string
           updated_at: string
         }
@@ -106,7 +107,8 @@ export interface Database {
           nome: string
           tipo?: TipoProjeto
           fase_atual?: FaseProjeto
-          consultor_id?: string | null
+          data_inicio?: string | null
+          data_fim_prevista?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -116,7 +118,8 @@ export interface Database {
           nome?: string
           tipo?: TipoProjeto
           fase_atual?: FaseProjeto
-          consultor_id?: string | null
+          data_inicio?: string | null
+          data_fim_prevista?: string | null
           created_at?: string
           updated_at?: string
         }

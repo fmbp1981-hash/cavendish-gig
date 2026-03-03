@@ -84,6 +84,68 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          checksum: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          new_data: Json | null
+          old_data: Json | null
+          organizacao_id: string | null
+          record_id: string | null
+          table_name: string
+          timestamp: string
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_role: string | null
+        }
+        Insert: {
+          action: string
+          checksum?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          new_data?: Json | null
+          old_data?: Json | null
+          organizacao_id?: string | null
+          record_id?: string | null
+          table_name: string
+          timestamp?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          action?: string
+          checksum?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          new_data?: Json | null
+          old_data?: Json | null
+          organizacao_id?: string | null
+          record_id?: string | null
+          table_name?: string
+          timestamp?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       codigo_etica_adesoes: {
         Row: {
           aceito_em: string
@@ -177,6 +239,36 @@ export type Database = {
           },
         ]
       }
+      consultant_pre_registrations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          nome: string | null
+          used_at: string | null
+          used_by_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          id?: string
+          nome?: string | null
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          nome?: string | null
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Relationships: []
+      }
       consultor_organizacoes: {
         Row: {
           consultor_id: string
@@ -224,8 +316,10 @@ export type Database = {
           envolvidos: string | null
           id: string
           observacoes_internas: string | null
+          organizacao_id: string | null
           status: string
           ticket_id: string
+          ticket_secret: string
         }
         Insert: {
           analisado_em?: string | null
@@ -237,8 +331,10 @@ export type Database = {
           envolvidos?: string | null
           id?: string
           observacoes_internas?: string | null
+          organizacao_id?: string | null
           status?: string
           ticket_id?: string
+          ticket_secret?: string
         }
         Update: {
           analisado_em?: string | null
@@ -250,10 +346,20 @@ export type Database = {
           envolvidos?: string | null
           id?: string
           observacoes_internas?: string | null
+          organizacao_id?: string | null
           status?: string
           ticket_id?: string
+          ticket_secret?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "denuncias_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       diagnostico_perguntas: {
         Row: {
@@ -399,6 +505,157 @@ export type Database = {
           },
         ]
       }
+      documento_comentarios: {
+        Row: {
+          comentario: string
+          created_at: string | null
+          documento_id: string
+          id: string
+          parent_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          comentario: string
+          created_at?: string | null
+          documento_id: string
+          id?: string
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          comentario?: string
+          created_at?: string | null
+          documento_id?: string
+          id?: string
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documento_comentarios_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documento_comentarios_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "documento_comentarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documento_comentarios_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documento_versoes: {
+        Row: {
+          change_description: string | null
+          change_type: string
+          changed_fields: Json | null
+          created_at: string | null
+          created_by: string | null
+          descricao: string | null
+          documento_id: string
+          drive_file_id: string | null
+          id: string
+          mime_type: string | null
+          nome: string
+          organizacao_id: string | null
+          projeto_id: string | null
+          tamanho: number | null
+          tipo: string
+          uploaded_by: string | null
+          url: string
+          version_number: number
+        }
+        Insert: {
+          change_description?: string | null
+          change_type?: string
+          changed_fields?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          documento_id: string
+          drive_file_id?: string | null
+          id?: string
+          mime_type?: string | null
+          nome: string
+          organizacao_id?: string | null
+          projeto_id?: string | null
+          tamanho?: number | null
+          tipo: string
+          uploaded_by?: string | null
+          url: string
+          version_number: number
+        }
+        Update: {
+          change_description?: string | null
+          change_type?: string
+          changed_fields?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          documento_id?: string
+          drive_file_id?: string | null
+          id?: string
+          mime_type?: string | null
+          nome?: string
+          organizacao_id?: string | null
+          projeto_id?: string | null
+          tamanho?: number | null
+          tipo?: string
+          uploaded_by?: string | null
+          url?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documento_versoes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documento_versoes_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documento_versoes_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documento_versoes_projeto_id_fkey"
+            columns: ["projeto_id"]
+            isOneToOne: false
+            referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documento_versoes_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documentos: {
         Row: {
           created_at: string
@@ -506,6 +763,72 @@ export type Database = {
           tipo_projeto?: Database["public"]["Enums"]["tipo_projeto"]
         }
         Relationships: []
+      }
+      documentos_gerados: {
+        Row: {
+          documento_id: string | null
+          gerado_em: string | null
+          gerado_por: string | null
+          id: string
+          organizacao_id: string | null
+          template_id: string
+          variaveis_utilizadas: Json
+        }
+        Insert: {
+          documento_id?: string | null
+          gerado_em?: string | null
+          gerado_por?: string | null
+          id?: string
+          organizacao_id?: string | null
+          template_id: string
+          variaveis_utilizadas: Json
+        }
+        Update: {
+          documento_id?: string | null
+          gerado_em?: string | null
+          gerado_por?: string | null
+          id?: string
+          organizacao_id?: string | null
+          template_id?: string
+          variaveis_utilizadas?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_gerados_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_gerados_gerado_por_fkey"
+            columns: ["gerado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_gerados_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_gerados_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_gerados_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates_populares"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       documentos_requeridos: {
         Row: {
@@ -618,6 +941,142 @@ export type Database = {
           },
         ]
       }
+      integration_sync: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          external_id: string
+          external_url: string | null
+          id: string
+          integration_type: string
+          last_synced_at: string
+          organizacao_id: string | null
+          sync_direction: string | null
+          sync_errors: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          external_id: string
+          external_url?: string | null
+          id?: string
+          integration_type: string
+          last_synced_at?: string
+          organizacao_id?: string | null
+          sync_direction?: string | null
+          sync_errors?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          external_id?: string
+          external_url?: string | null
+          id?: string
+          integration_type?: string
+          last_synced_at?: string
+          organizacao_id?: string | null
+          sync_direction?: string | null
+          sync_errors?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_sync_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          config: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          organizacao_id: string | null
+          provider: string
+          scope: string
+          secrets_encrypted: string | null
+          secrets_version: number
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          organizacao_id?: string | null
+          provider: string
+          scope?: string
+          secrets_encrypted?: string | null
+          secrets_version?: number
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          organizacao_id?: string | null
+          provider?: string
+          scope?: string
+          secrets_encrypted?: string | null
+          secrets_version?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string | null
+          id: string
+          message: string | null
+          name: string
+          phone: string | null
+          service: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          message?: string | null
+          name: string
+          phone?: string | null
+          service?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          message?: string | null
+          name?: string
+          phone?: string | null
+          service?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: []
+      }
       notificacoes: {
         Row: {
           created_at: string
@@ -655,24 +1114,39 @@ export type Database = {
         Row: {
           cnpj: string | null
           created_at: string
+          drive_folder_id: string | null
+          drive_folder_url: string | null
           id: string
           nome: string
+          plano: Database["public"]["Enums"]["plano_tipo"]
+          plano_fim: string | null
+          plano_inicio: string | null
           tenant_id: string
           updated_at: string
         }
         Insert: {
           cnpj?: string | null
           created_at?: string
+          drive_folder_id?: string | null
+          drive_folder_url?: string | null
           id?: string
           nome: string
+          plano?: Database["public"]["Enums"]["plano_tipo"]
+          plano_fim?: string | null
+          plano_inicio?: string | null
           tenant_id?: string
           updated_at?: string
         }
         Update: {
           cnpj?: string | null
           created_at?: string
+          drive_folder_id?: string | null
+          drive_folder_url?: string | null
           id?: string
           nome?: string
+          plano?: Database["public"]["Enums"]["plano_tipo"]
+          plano_fim?: string | null
+          plano_inicio?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -709,6 +1183,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plano_config: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          feat_api_webhooks: boolean
+          feat_canal_denuncias: boolean
+          feat_certificados: boolean
+          feat_codigo_etica: boolean
+          feat_diagnostico: boolean
+          feat_integracao_calendar: boolean
+          feat_integracao_clickup: boolean
+          feat_integracao_drive: boolean
+          feat_integracao_fireflies: boolean
+          feat_integracao_trello: boolean
+          feat_relatorios_mensais: boolean
+          feat_suporte_prioritario: boolean
+          feat_treinamentos: boolean
+          feat_whatsapp_notifications: boolean
+          feat_white_label: boolean
+          id: string
+          limit_ai_generations_mes: number | null
+          limit_documentos_mes: number | null
+          limit_storage_gb: number | null
+          limit_treinamentos: number | null
+          limit_usuarios: number | null
+          nome_exibicao: string
+          plano: Database["public"]["Enums"]["plano_tipo"]
+          preco_mensal: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          feat_api_webhooks?: boolean
+          feat_canal_denuncias?: boolean
+          feat_certificados?: boolean
+          feat_codigo_etica?: boolean
+          feat_diagnostico?: boolean
+          feat_integracao_calendar?: boolean
+          feat_integracao_clickup?: boolean
+          feat_integracao_drive?: boolean
+          feat_integracao_fireflies?: boolean
+          feat_integracao_trello?: boolean
+          feat_relatorios_mensais?: boolean
+          feat_suporte_prioritario?: boolean
+          feat_treinamentos?: boolean
+          feat_whatsapp_notifications?: boolean
+          feat_white_label?: boolean
+          id?: string
+          limit_ai_generations_mes?: number | null
+          limit_documentos_mes?: number | null
+          limit_storage_gb?: number | null
+          limit_treinamentos?: number | null
+          limit_usuarios?: number | null
+          nome_exibicao: string
+          plano: Database["public"]["Enums"]["plano_tipo"]
+          preco_mensal?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          feat_api_webhooks?: boolean
+          feat_canal_denuncias?: boolean
+          feat_certificados?: boolean
+          feat_codigo_etica?: boolean
+          feat_diagnostico?: boolean
+          feat_integracao_calendar?: boolean
+          feat_integracao_clickup?: boolean
+          feat_integracao_drive?: boolean
+          feat_integracao_fireflies?: boolean
+          feat_integracao_trello?: boolean
+          feat_relatorios_mensais?: boolean
+          feat_suporte_prioritario?: boolean
+          feat_treinamentos?: boolean
+          feat_whatsapp_notifications?: boolean
+          feat_white_label?: boolean
+          id?: string
+          limit_ai_generations_mes?: number | null
+          limit_documentos_mes?: number | null
+          limit_storage_gb?: number | null
+          limit_treinamentos?: number | null
+          limit_usuarios?: number | null
+          nome_exibicao?: string
+          plano?: Database["public"]["Enums"]["plano_tipo"]
+          preco_mensal?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -784,12 +1348,149 @@ export type Database = {
           },
         ]
       }
+      relatorio_envios: {
+        Row: {
+          ano_referencia: number
+          assunto: string
+          created_at: string | null
+          created_by: string | null
+          documentos_aprovados: number | null
+          documentos_pendentes: number | null
+          email_copia: string[] | null
+          email_destinatario: string
+          enviado_em: string | null
+          id: string
+          max_tentativas: number | null
+          mes_referencia: number
+          organizacao_id: string
+          periodo_fim: string
+          periodo_inicio: string
+          progresso_projeto: number | null
+          projeto_id: string | null
+          relatorio_html: string | null
+          relatorio_pdf_url: string | null
+          status: Database["public"]["Enums"]["relatorio_envio_status"]
+          tarefas_concluidas: number | null
+          tentativas: number | null
+          total_documentos: number | null
+          total_tarefas: number | null
+          ultimo_erro: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ano_referencia: number
+          assunto: string
+          created_at?: string | null
+          created_by?: string | null
+          documentos_aprovados?: number | null
+          documentos_pendentes?: number | null
+          email_copia?: string[] | null
+          email_destinatario: string
+          enviado_em?: string | null
+          id?: string
+          max_tentativas?: number | null
+          mes_referencia: number
+          organizacao_id: string
+          periodo_fim: string
+          periodo_inicio: string
+          progresso_projeto?: number | null
+          projeto_id?: string | null
+          relatorio_html?: string | null
+          relatorio_pdf_url?: string | null
+          status?: Database["public"]["Enums"]["relatorio_envio_status"]
+          tarefas_concluidas?: number | null
+          tentativas?: number | null
+          total_documentos?: number | null
+          total_tarefas?: number | null
+          ultimo_erro?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ano_referencia?: number
+          assunto?: string
+          created_at?: string | null
+          created_by?: string | null
+          documentos_aprovados?: number | null
+          documentos_pendentes?: number | null
+          email_copia?: string[] | null
+          email_destinatario?: string
+          enviado_em?: string | null
+          id?: string
+          max_tentativas?: number | null
+          mes_referencia?: number
+          organizacao_id?: string
+          periodo_fim?: string
+          periodo_inicio?: string
+          progresso_projeto?: number | null
+          projeto_id?: string | null
+          relatorio_html?: string | null
+          relatorio_pdf_url?: string | null
+          status?: Database["public"]["Enums"]["relatorio_envio_status"]
+          tarefas_concluidas?: number | null
+          tentativas?: number | null
+          total_documentos?: number | null
+          total_tarefas?: number | null
+          ultimo_erro?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relatorio_envios_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relatorio_envios_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relatorio_envios_projeto_id_fkey"
+            columns: ["projeto_id"]
+            isOneToOne: false
+            referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: []
+      }
       tarefas: {
         Row: {
           concluido_em: string | null
           created_at: string
           descricao: string | null
           id: string
+          kanban_order: number
           organizacao_id: string | null
           prazo: string | null
           prioridade: string
@@ -804,6 +1505,7 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           id?: string
+          kanban_order?: number
           organizacao_id?: string | null
           prazo?: string | null
           prioridade?: string
@@ -818,6 +1520,7 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           id?: string
+          kanban_order?: number
           organizacao_id?: string | null
           prazo?: string | null
           prioridade?: string
@@ -847,6 +1550,176 @@ export type Database = {
             columns: ["responsavel_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_versoes: {
+        Row: {
+          change_description: string | null
+          conteudo: string
+          created_at: string | null
+          created_by: string | null
+          formato: string
+          id: string
+          template_id: string
+          variaveis_disponiveis: Json | null
+          versao: number
+        }
+        Insert: {
+          change_description?: string | null
+          conteudo: string
+          created_at?: string | null
+          created_by?: string | null
+          formato: string
+          id?: string
+          template_id: string
+          variaveis_disponiveis?: Json | null
+          versao: number
+        }
+        Update: {
+          change_description?: string | null
+          conteudo?: string
+          created_at?: string | null
+          created_by?: string | null
+          formato?: string
+          id?: string
+          template_id?: string
+          variaveis_disponiveis?: Json | null
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_versoes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_versoes_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_versoes_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates_populares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      templates: {
+        Row: {
+          categoria: Database["public"]["Enums"]["template_categoria"]
+          conteudo: string
+          created_at: string | null
+          created_by: string | null
+          descricao: string | null
+          formato: string
+          id: string
+          is_publico: boolean | null
+          nome: string
+          status: Database["public"]["Enums"]["template_status"]
+          tags: string[] | null
+          thumbnail_url: string | null
+          updated_at: string | null
+          usado_count: number | null
+          variaveis_disponiveis: Json | null
+          versao: number
+        }
+        Insert: {
+          categoria: Database["public"]["Enums"]["template_categoria"]
+          conteudo: string
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          formato?: string
+          id?: string
+          is_publico?: boolean | null
+          nome: string
+          status?: Database["public"]["Enums"]["template_status"]
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          usado_count?: number | null
+          variaveis_disponiveis?: Json | null
+          versao?: number
+        }
+        Update: {
+          categoria?: Database["public"]["Enums"]["template_categoria"]
+          conteudo?: string
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          formato?: string
+          id?: string
+          is_publico?: boolean | null
+          nome?: string
+          status?: Database["public"]["Enums"]["template_status"]
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          usado_count?: number | null
+          variaveis_disponiveis?: Json | null
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_branding: {
+        Row: {
+          accent_hsl: string
+          company_name: string | null
+          created_at: string
+          custom_css: string | null
+          favicon_url: string | null
+          logo_url: string | null
+          organizacao_id: string
+          primary_hsl: string
+          secondary_hsl: string
+          updated_at: string
+        }
+        Insert: {
+          accent_hsl?: string
+          company_name?: string | null
+          created_at?: string
+          custom_css?: string | null
+          favicon_url?: string | null
+          logo_url?: string | null
+          organizacao_id: string
+          primary_hsl?: string
+          secondary_hsl?: string
+          updated_at?: string
+        }
+        Update: {
+          accent_hsl?: string
+          company_name?: string | null
+          created_at?: string
+          custom_css?: string | null
+          favicon_url?: string | null
+          logo_url?: string | null
+          organizacao_id?: string
+          primary_hsl?: string
+          secondary_hsl?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_branding_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: true
+            referencedRelation: "organizacoes"
             referencedColumns: ["id"]
           },
         ]
@@ -1077,6 +1950,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tutorial_progress: {
+        Row: {
+          completed_steps: Json | null
+          created_at: string | null
+          current_step: number | null
+          id: string
+          is_completed: boolean | null
+          last_seen_at: string | null
+          tutorial_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_steps?: Json | null
+          created_at?: string | null
+          current_step?: number | null
+          id?: string
+          is_completed?: boolean | null
+          last_seen_at?: string | null
+          tutorial_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_steps?: Json | null
+          created_at?: string | null
+          current_step?: number | null
+          id?: string
+          is_completed?: boolean | null
+          last_seen_at?: string | null
+          tutorial_type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1098,9 +2007,126 @@ export type Database = {
         }
         Relationships: []
       }
+      users: {
+        Row: {
+          avatar_url: string | null
+          clinic_name: string
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          password: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          clinic_name: string
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          password: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          clinic_name?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          password?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      audit_logs_view: {
+        Row: {
+          action: string | null
+          id: string | null
+          metadata: Json | null
+          new_data: Json | null
+          old_data: Json | null
+          organizacao_nome: string | null
+          record_id: string | null
+          table_name: string | null
+          timestamp: string | null
+          user_email: string | null
+          user_role: string | null
+        }
+        Relationships: []
+      }
+      documento_versoes_resumo: {
+        Row: {
+          change_description: string | null
+          change_type: string | null
+          created_at: string | null
+          created_by: string | null
+          created_by_avatar: string | null
+          created_by_name: string | null
+          documento_atual_nome: string | null
+          documento_id: string | null
+          id: string | null
+          nome: string | null
+          version_number: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documento_versoes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documento_versoes_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      relatorio_envios_recentes: {
+        Row: {
+          ano_referencia: number | null
+          created_at: string | null
+          email_destinatario: string | null
+          enviado_em: string | null
+          id: string | null
+          mes_referencia: number | null
+          organizacao_id: string | null
+          organizacao_nome: string | null
+          progresso_projeto: number | null
+          status: Database["public"]["Enums"]["relatorio_envio_status"] | null
+          tentativas: number | null
+          ultimo_erro: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relatorio_envios_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      templates_populares: {
+        Row: {
+          categoria: Database["public"]["Enums"]["template_categoria"] | null
+          created_by_name: string | null
+          descricao: string | null
+          documentos_gerados_count: number | null
+          id: string | null
+          nome: string | null
+          tags: string[] | null
+          usado_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calcular_scores_diagnostico: {
@@ -1116,18 +2142,42 @@ export type Database = {
         }
         Returns: Json
       }
-      create_notification: {
+      create_document_notification: {
         Args: {
-          p_mensagem?: string
+          p_mensagem: string
           p_metadata?: Json
           p_tipo: string
           p_titulo: string
           p_user_id: string
         }
+        Returns: undefined
+      }
+      create_relatorio_agendamento: {
+        Args: {
+          p_ano: number
+          p_email: string
+          p_mes: number
+          p_organizacao_id: string
+        }
         Returns: string
       }
-      get_project_stats: { Args: { p_projeto_id: string }; Returns: Json }
+      extract_template_variables: {
+        Args: { p_conteudo: string }
+        Returns: string[]
+      }
+      get_next_version_number: {
+        Args: { p_documento_id: string }
+        Returns: number
+      }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
+      get_version_diff: {
+        Args: {
+          p_documento_id: string
+          p_version_from: number
+          p_version_to: number
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1136,16 +2186,82 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      log_audit_action: {
+        Args: {
+          p_action: string
+          p_metadata?: Json
+          p_organizacao_id?: string
+          p_record_id?: string
+          p_table_name?: string
+        }
+        Returns: string
+      }
+      mark_relatorio_enviado: {
+        Args: { p_metricas?: Json; p_pdf_url?: string; p_relatorio_id: string }
+        Returns: boolean
+      }
+      mark_relatorio_failed: {
+        Args: { p_erro: string; p_relatorio_id: string }
+        Returns: boolean
+      }
+      org_check_quota: {
+        Args: {
+          p_current_usage?: number
+          p_organizacao_id: string
+          p_quota_type: string
+        }
+        Returns: Json
+      }
+      org_get_limit: {
+        Args: { p_limit_name: string; p_organizacao_id: string }
+        Returns: number
+      }
+      org_get_plan_info: { Args: { p_organizacao_id: string }; Returns: Json }
+      org_has_feature: {
+        Args: { p_feature: string; p_organizacao_id: string }
+        Returns: boolean
+      }
+      render_template: {
+        Args: { p_template_id: string; p_variaveis: Json }
+        Returns: string
+      }
+      restore_document_version: {
+        Args: { p_documento_id: string; p_version_number: number }
+        Returns: boolean
+      }
+      schedule_monthly_reports: {
+        Args: never
+        Returns: {
+          ano: number
+          email: string
+          mes: number
+          organizacao_id: string
+          organizacao_nome: string
+        }[]
+      }
+      validate_template: { Args: { p_template_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "consultor" | "cliente" | "parceiro"
       fase_projeto: "diagnostico" | "implementacao" | "recorrencia"
+      plano_tipo: "essencial" | "executivo" | "premium"
+      relatorio_envio_status: "pending" | "sending" | "sent" | "failed"
       status_documento:
         | "pendente"
         | "enviado"
         | "em_analise"
         | "aprovado"
         | "rejeitado"
+      template_categoria:
+        | "codigo_etica"
+        | "politica"
+        | "procedimento"
+        | "manual"
+        | "relatorio"
+        | "contrato"
+        | "termo"
+        | "outro"
+      template_status: "rascunho" | "ativo" | "arquivado"
       tipo_projeto: "gig_completo" | "gig_modular" | "consultoria_pontual"
     }
     CompositeTypes: {
@@ -1276,6 +2392,8 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "consultor", "cliente", "parceiro"],
       fase_projeto: ["diagnostico", "implementacao", "recorrencia"],
+      plano_tipo: ["essencial", "executivo", "premium"],
+      relatorio_envio_status: ["pending", "sending", "sent", "failed"],
       status_documento: [
         "pendente",
         "enviado",
@@ -1283,6 +2401,17 @@ export const Constants = {
         "aprovado",
         "rejeitado",
       ],
+      template_categoria: [
+        "codigo_etica",
+        "politica",
+        "procedimento",
+        "manual",
+        "relatorio",
+        "contrato",
+        "termo",
+        "outro",
+      ],
+      template_status: ["rascunho", "ativo", "arquivado"],
       tipo_projeto: ["gig_completo", "gig_modular", "consultoria_pontual"],
     },
   },

@@ -61,11 +61,11 @@ export function useTreinamentos() {
   return useQuery({
     queryKey: ["treinamentos"],
     queryFn: async () => {
-      const { data, error } = await (supabase
-        .from("treinamentos" as any)
+      const { data, error } = await supabase
+        .from("treinamentos")
         .select("*")
         .eq("ativo", true)
-        .order("ordem") as any);
+        .order("ordem");
 
       if (error) throw error;
       return data as Treinamento[];
@@ -78,11 +78,11 @@ export function useTreinamentoConteudos(treinamentoId: string | undefined) {
     queryKey: ["treinamento-conteudos", treinamentoId],
     queryFn: async () => {
       if (!treinamentoId) return [];
-      const { data, error } = await (supabase
-        .from("treinamento_conteudos" as any)
+      const { data, error } = await supabase
+        .from("treinamento_conteudos")
         .select("*")
         .eq("treinamento_id", treinamentoId)
-        .order("ordem") as any);
+        .order("ordem");
 
       if (error) throw error;
       return data as TreinamentoConteudo[];
@@ -96,14 +96,14 @@ export function useTreinamentoQuiz(treinamentoId: string | undefined) {
     queryKey: ["treinamento-quiz", treinamentoId],
     queryFn: async () => {
       if (!treinamentoId) return [];
-      const { data, error } = await (supabase
-        .from("treinamento_quiz" as any)
+      const { data, error } = await supabase
+        .from("treinamento_quiz")
         .select("*")
         .eq("treinamento_id", treinamentoId)
-        .order("ordem") as any);
+        .order("ordem");
 
       if (error) throw error;
-      return data as TreinamentoQuiz[];
+      return data as unknown as TreinamentoQuiz[];
     },
     enabled: !!treinamentoId,
   });
@@ -116,12 +116,12 @@ export function useMinhaInscricao(treinamentoId: string | undefined) {
     queryKey: ["minha-inscricao", treinamentoId, user?.id],
     queryFn: async () => {
       if (!treinamentoId || !user?.id) return null;
-      const { data, error } = await (supabase
-        .from("treinamento_inscricoes" as any)
+      const { data, error } = await supabase
+        .from("treinamento_inscricoes")
         .select("*")
         .eq("treinamento_id", treinamentoId)
         .eq("user_id", user.id)
-        .maybeSingle() as any);
+        .maybeSingle();
 
       if (error) throw error;
       return data as TreinamentoInscricao | null;
@@ -137,10 +137,10 @@ export function useMinhasInscricoes() {
     queryKey: ["minhas-inscricoes", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await (supabase
-        .from("treinamento_inscricoes" as any)
+      const { data, error } = await supabase
+        .from("treinamento_inscricoes")
         .select("*")
-        .eq("user_id", user.id) as any);
+        .eq("user_id", user.id);
 
       if (error) throw error;
       return data as TreinamentoInscricao[];
@@ -156,10 +156,10 @@ export function useMeusCertificados() {
     queryKey: ["meus-certificados", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await (supabase
-        .from("treinamento_certificados" as any)
+      const { data, error } = await supabase
+        .from("treinamento_certificados")
         .select("*, treinamentos:treinamento_id(nome)")
-        .eq("user_id", user.id) as any);
+        .eq("user_id", user.id);
 
       if (error) throw error;
       return data as (TreinamentoCertificado & { treinamentos: { nome: string } })[];
@@ -176,8 +176,8 @@ export function useIniciarTreinamento() {
     mutationFn: async ({ treinamentoId, organizacaoId }: { treinamentoId: string; organizacaoId: string }) => {
       if (!user?.id) throw new Error("Usuário não autenticado");
       
-      const { data, error } = await (supabase
-        .from("treinamento_inscricoes" as any)
+      const { data, error } = await supabase
+        .from("treinamento_inscricoes")
         .insert({
           treinamento_id: treinamentoId,
           user_id: user.id,
@@ -186,7 +186,7 @@ export function useIniciarTreinamento() {
           iniciado_em: new Date().toISOString(),
         })
         .select()
-        .single() as any);
+        .single();
 
       if (error) throw error;
       return data;
@@ -208,14 +208,14 @@ export function useSalvarProgresso() {
 
   return useMutation({
     mutationFn: async ({ inscricaoId, conteudosConcluidos }: { inscricaoId: string; conteudosConcluidos: string[] }) => {
-      const { data, error } = await (supabase
-        .from("treinamento_inscricoes" as any)
+      const { data, error } = await supabase
+        .from("treinamento_inscricoes")
         .update({
           progresso_conteudo: conteudosConcluidos,
         })
         .eq("id", inscricaoId)
         .select()
-        .single() as any);
+        .single();
 
       if (error) throw error;
       return data;
@@ -243,8 +243,8 @@ export function useResponderQuiz() {
       aprovado: boolean;
     }) => {
       // Atualizar inscrição
-      const { data: inscricao, error: inscricaoError } = await (supabase
-        .from("treinamento_inscricoes" as any)
+      const { data: inscricao, error: inscricaoError } = await supabase
+        .from("treinamento_inscricoes")
         .update({
           quiz_nota: nota,
           quiz_aprovado: aprovado,
@@ -254,21 +254,21 @@ export function useResponderQuiz() {
         })
         .eq("id", inscricaoId)
         .select()
-        .single() as any);
+        .single();
 
       if (inscricaoError) throw inscricaoError;
 
       // Se aprovado, criar certificado
       if (aprovado && user?.id) {
-        const { error: certError } = await (supabase
-          .from("treinamento_certificados" as any)
+        const { error: certError } = await supabase
+          .from("treinamento_certificados")
           .insert({
             inscricao_id: inscricaoId,
             user_id: user.id,
             treinamento_id: treinamentoId,
             nome_completo: profile?.nome || "Colaborador",
             nota_final: nota,
-          }) as any);
+          });
 
         if (certError) {
           console.error("Erro ao criar certificado:", certError);

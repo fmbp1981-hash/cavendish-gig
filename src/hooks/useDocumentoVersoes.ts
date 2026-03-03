@@ -54,7 +54,7 @@ export function useDocumentoVersoes(documentoId?: string) {
       if (!documentoId) return [];
 
       const { data, error } = await supabase
-        .from("documento_versoes_resumo" as any)
+        .from("documento_versoes_resumo")
         .select("*")
         .eq("documento_id", documentoId)
         .order("version_number", { ascending: false });
@@ -72,7 +72,7 @@ export function useDocumentoVersoes(documentoId?: string) {
     if (!documentoId) return null;
 
     const { data, error } = await supabase
-      .from("documento_versoes" as any)
+      .from("documento_versoes")
       .select("*")
       .eq("documento_id", documentoId)
       .eq("version_number", versionNumber)
@@ -103,7 +103,7 @@ export function useDocumentoVersoes(documentoId?: string) {
     }) => {
       if (!documentoId) throw new Error("documento_id é obrigatório");
 
-      const { data, error } = await supabase.rpc("get_version_diff" as any, {
+      const { data, error } = await supabase.rpc("get_version_diff", {
         p_documento_id: documentoId,
         p_version_from: versionFrom,
         p_version_to: versionTo,
@@ -134,7 +134,7 @@ export function useDocumentoVersoes(documentoId?: string) {
     mutationFn: async (versionNumber: number) => {
       if (!documentoId) throw new Error("documento_id é obrigatório");
 
-      const { data, error } = await supabase.rpc("restore_document_version" as any, {
+      const { data, error } = await supabase.rpc("restore_document_version", {
         p_documento_id: documentoId,
         p_version_number: versionNumber,
       });

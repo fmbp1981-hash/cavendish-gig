@@ -11,7 +11,7 @@ export function usePlanInfo(organizacaoId: string | undefined) {
     queryFn: async () => {
       if (!organizacaoId) return null;
       
-      const { data, error } = await (supabase as any).rpc("org_get_plan_info", {
+      const { data, error } = await supabase.rpc("org_get_plan_info", {
         p_organizacao_id: organizacaoId,
       });
       
@@ -63,7 +63,7 @@ export function useHasFeature(organizacaoId: string | undefined, feature: string
     queryFn: async () => {
       if (!organizacaoId) return false;
       
-      const { data, error } = await (supabase as any).rpc("org_has_feature", {
+      const { data, error } = await supabase.rpc("org_has_feature", {
         p_organizacao_id: organizacaoId,
         p_feature: feature,
       });
@@ -91,7 +91,7 @@ export function useCheckQuota(
     queryFn: async () => {
       if (!organizacaoId) return null;
       
-      const { data, error } = await (supabase as any).rpc("org_check_quota", {
+      const { data, error } = await supabase.rpc("org_check_quota", {
         p_organizacao_id: organizacaoId,
         p_quota_type: quotaType,
       });

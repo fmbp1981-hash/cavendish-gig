@@ -33,7 +33,7 @@ export function TenantBrandingProvider({ children }: { children: ReactNode }) {
     queryKey: ["tenant-org-membership", user?.id],
     queryFn: async (): Promise<string | null> => {
       if (!user) return null;
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("organization_members")
         .select("organizacao_id")
         .eq("user_id", user.id)

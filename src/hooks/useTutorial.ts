@@ -27,7 +27,7 @@ export function useTutorial(tutorialType: string) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const queryClient = useQueryClient();
 
-  const sb = supabase as any;
+  const sb = supabase;
 
   const { data: progress, isLoading } = useQuery({
     queryKey: ["tutorial-progress", tutorialType],

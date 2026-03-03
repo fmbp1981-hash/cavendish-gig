@@ -75,8 +75,8 @@ export function usePerguntas() {
   return useQuery({
     queryKey: ["diagnostico-perguntas"],
     queryFn: async () => {
-      const { data, error } = await (supabase
-        .from("diagnostico_perguntas" as any) as any)
+      const { data, error } = await supabase
+        .from("diagnostico_perguntas")
         .select("*")
         .order("dimensao")
         .order("ordem");
@@ -93,8 +93,8 @@ export function useDiagnostico(projetoId: string | undefined) {
     queryFn: async () => {
       if (!projetoId) return null;
       
-      const { data, error } = await (supabase
-        .from("diagnosticos" as any) as any)
+      const { data, error } = await supabase
+        .from("diagnosticos")
         .select("*")
         .eq("projeto_id", projetoId)
         .maybeSingle();
@@ -112,8 +112,8 @@ export function useRespostas(diagnosticoId: string | undefined) {
     queryFn: async () => {
       if (!diagnosticoId) return [];
       
-      const { data, error } = await (supabase
-        .from("diagnostico_respostas" as any) as any)
+      const { data, error } = await supabase
+        .from("diagnostico_respostas")
         .select("*")
         .eq("diagnostico_id", diagnosticoId);
 
@@ -129,8 +129,8 @@ export function useIniciarDiagnostico() {
 
   return useMutation({
     mutationFn: async ({ projetoId, organizacaoId }: { projetoId: string; organizacaoId: string }) => {
-      const { data, error } = await (supabase
-        .from("diagnosticos" as any) as any)
+      const { data, error } = await supabase
+        .from("diagnosticos")
         .insert({
           projeto_id: projetoId,
           organizacao_id: organizacaoId,
@@ -168,15 +168,15 @@ export function useSalvarRespostas() {
     }) => {
       // Delete existing answers for these questions
       const perguntaIds = respostas.map(r => r.pergunta_id);
-      await (supabase
-        .from("diagnostico_respostas" as any) as any)
+      await supabase
+        .from("diagnostico_respostas")
         .delete()
         .eq("diagnostico_id", diagnosticoId)
         .in("pergunta_id", perguntaIds);
 
       // Insert new answers
-      const { error: insertError } = await (supabase
-        .from("diagnostico_respostas" as any) as any)
+      const { error: insertError } = await supabase
+        .from("diagnostico_respostas")
         .insert(respostas.map(r => ({
           diagnostico_id: diagnosticoId,
           pergunta_id: r.pergunta_id,
@@ -187,8 +187,8 @@ export function useSalvarRespostas() {
       if (insertError) throw insertError;
 
       // Update etapa atual
-      const { error: updateError } = await (supabase
-        .from("diagnosticos" as any) as any)
+      const { error: updateError } = await supabase
+        .from("diagnosticos")
         .update({ etapa_atual: proximaEtapa })
         .eq("id", diagnosticoId);
 
@@ -211,7 +211,7 @@ export function useFinalizarDiagnostico() {
 
   return useMutation({
     mutationFn: async (diagnosticoId: string) => {
-      const { data, error } = await (supabase.rpc as any)('calcular_scores_diagnostico', {
+      const { data, error } = await supabase.rpc('calcular_scores_diagnostico', {
         p_diagnostico_id: diagnosticoId
       });
 

@@ -26,7 +26,7 @@ export function useDocumentoComentarios(documentoId: string | undefined) {
       if (!documentoId) return [];
 
       const { data, error } = await supabase
-          .from("documento_comentarios" as any)
+          .from("documento_comentarios")
         .select(`
           *,
           profiles:user_id (
@@ -93,7 +93,7 @@ export function useAdicionarComentario() {
       if (!user) throw new Error("Usuário não autenticado");
 
       const { data, error } = await supabase
-          .from("documento_comentarios" as any)
+          .from("documento_comentarios")
         .insert({
           documento_id: documentoId,
           user_id: user.id,
@@ -148,7 +148,7 @@ export function useEditarComentario() {
       documentoId: string;
     }) => {
       const { data, error } = await supabase
-          .from("documento_comentarios" as any)
+          .from("documento_comentarios")
         .update({ comentario: novoComentario })
         .eq("id", comentarioId)
         .select()
@@ -189,7 +189,7 @@ export function useDeletarComentario() {
       documentoId: string;
     }) => {
       const { error } = await supabase
-          .from("documento_comentarios" as any)
+          .from("documento_comentarios")
         .delete()
         .eq("id", comentarioId);
 

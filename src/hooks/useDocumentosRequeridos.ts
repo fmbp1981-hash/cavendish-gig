@@ -40,8 +40,8 @@ export function useDocumentosRequeridos(projetoId: string | undefined) {
       if (!projetoId) return [];
 
       // Buscar documentos requeridos do projeto
-      const { data: documentos, error: docError } = await (supabase
-        .from('documentos_requeridos' as any) as any)
+      const { data: documentos, error: docError } = await supabase
+        .from('documentos_requeridos')
         .select('*')
         .eq('projeto_id', projetoId)
         .order('fase')
@@ -53,8 +53,8 @@ export function useDocumentosRequeridos(projetoId: string | undefined) {
 
       // Buscar status para cada documento
       const docIds = documentos.map((d: any) => d.id);
-      const { data: statusList, error: statusError } = await (supabase
-        .from('documentos_requeridos_status' as any) as any)
+      const { data: statusList, error: statusError } = await supabase
+        .from('documentos_requeridos_status')
         .select('*')
         .in('documento_requerido_id', docIds);
 
@@ -134,8 +134,8 @@ export function useAtualizarStatusDocumento() {
         updateData.analisado_em = new Date().toISOString();
       }
 
-      const { error } = await (supabase
-        .from('documentos_requeridos_status' as any) as any)
+      const { error } = await supabase
+        .from('documentos_requeridos_status')
         .update(updateData)
         .eq('id', statusId);
 
@@ -158,8 +158,8 @@ export function useCriarStatusDocumento() {
       documentoRequeridoId: string;
       documentoId?: string;
     }) => {
-      const { error } = await (supabase
-        .from('documentos_requeridos_status' as any) as any)
+      const { error } = await supabase
+        .from('documentos_requeridos_status')
         .upsert({
           documento_requerido_id: documentoRequeridoId,
           documento_id: documentoId,

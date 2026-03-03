@@ -19,7 +19,7 @@ export function useSaveBranding() {
   return useMutation({
     mutationFn: async (data: SaveBrandingData) => {
       // Verifica se já existe branding para esta organização
-      const { data: existing, error: checkError } = await (supabase as any)
+      const { data: existing, error: checkError } = await supabase
         .from("tenant_branding")
         .select("organizacao_id")
         .eq("organizacao_id", data.organizacao_id)
@@ -31,7 +31,7 @@ export function useSaveBranding() {
 
       // Se existe, faz UPDATE, senão faz INSERT
       if (existing) {
-        const { error: updateError } = await (supabase as any)
+        const { error: updateError } = await supabase
           .from("tenant_branding")
           .update({
             company_name: data.company_name,
@@ -47,7 +47,7 @@ export function useSaveBranding() {
 
         if (updateError) throw updateError;
       } else {
-        const { error: insertError } = await (supabase as any)
+        const { error: insertError } = await supabase
           .from("tenant_branding")
           .insert({
             organizacao_id: data.organizacao_id,

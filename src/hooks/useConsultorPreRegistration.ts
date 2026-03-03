@@ -17,13 +17,13 @@ export function useConsultorPreRegistrations() {
     return useQuery({
         queryKey: ["consultor-pre-registrations"],
         queryFn: async () => {
-            const { data, error } = await (supabase
-                .from("consultant_pre_registrations" as any) as any)
+            const { data, error } = await supabase
+                .from("consultant_pre_registrations")
                 .select("*")
                 .order("created_at", { ascending: false });
 
             if (error) throw error;
-            return data as ConsultorPreRegistration[];
+            return (data || []) as ConsultorPreRegistration[];
         },
     });
 }
@@ -36,8 +36,8 @@ export function useAddConsultorPreRegistration() {
         mutationFn: async ({ email, nome }: { email: string; nome?: string }) => {
             const { data: userData } = await supabase.auth.getUser();
 
-            const { data, error } = await (supabase
-                .from("consultant_pre_registrations" as any) as any)
+            const { data, error } = await supabase
+                .from("consultant_pre_registrations")
                 .insert({
                     email: email.toLowerCase().trim(),
                     nome: nome || null,
@@ -70,8 +70,8 @@ export function useRemoveConsultorPreRegistration() {
 
     return useMutation({
         mutationFn: async (id: string) => {
-            const { error } = await (supabase
-                .from("consultant_pre_registrations" as any) as any)
+            const { error } = await supabase
+                .from("consultant_pre_registrations")
                 .delete()
                 .eq("id", id);
 

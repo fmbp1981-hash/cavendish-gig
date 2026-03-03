@@ -27,7 +27,7 @@ export function useRelatorioEnvios() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const sb = supabase as any;
+  const sb = supabase;
 
   /**
    * Query: Buscar histórico de envios
