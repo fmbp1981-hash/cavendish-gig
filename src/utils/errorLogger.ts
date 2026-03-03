@@ -57,7 +57,7 @@ export function installGlobalErrorHandlers(): void {
     logError({
       level:   "error",
       source:  "frontend",
-      message: reason?.message ?? String(reason) ?? "Unhandled promise rejection",
+      message: reason?.message ?? String(reason ?? "Unhandled promise rejection"),
       details: {
         stack: reason?.stack ?? null,
         type:  "unhandledrejection",

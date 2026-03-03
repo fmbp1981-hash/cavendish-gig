@@ -57,7 +57,7 @@ function hexToHsl(hex: string): string {
 function hslToHex(hsl: string): string {
   const parts = hsl.match(/[\d.]+/g);
   if (!parts || parts.length < 3) return "#1e293b";
-  let h = parseFloat(parts[0]) / 360;
+  const h = parseFloat(parts[0]) / 360;
   const s = parseFloat(parts[1]) / 100;
   const l = parseFloat(parts[2]) / 100;
   if (s === 0) {
