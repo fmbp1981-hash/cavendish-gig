@@ -155,7 +155,6 @@ export function useTemplates() {
     mutationFn: async (novoTemplate: Partial<Template>) => {
       const { data, error } = await sb
         .from("templates")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .insert({
           ...novoTemplate,
           created_by: (await supabase.auth.getUser()).data.user?.id,

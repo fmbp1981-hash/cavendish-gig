@@ -95,7 +95,6 @@ export default function ConsultorTarefas() {
       if (updates.length === 0) return;
       const { error } = await supabase
         .from("tarefas")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .upsert(updates as any[], { onConflict: "id" });
       if (error) throw error;
     },
