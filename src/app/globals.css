@@ -6,97 +6,121 @@
 
 @layer base {
   :root {
-    /* Sistema GIG Design System - IntelliX.AI */
-    /* Base: Black/Navy */
-    --background: 220 30% 6%;
-    --foreground: 0 0% 98%;
+    /* ─────────────────────────────────────────────────────────────
+       Sistema GIG — Cavendish Brand Identity
+       Palette:
+         Forest Green  #1A5B44  HSL 161 55% 23%
+         Dark Navy     #0C2B3C  HSL 204 65% 14%
+         Gold          #B8970D  HSL 46  87% 39%
+         Teal          #2BA88E  HSL 168 59% 42%
+         Cream         #F4F1EB  HSL 40  25% 94%
+    ───────────────────────────────────────────────────────────── */
+
+    /* Base — warm cream canvas */
+    --background: 40 25% 94%;
+    --foreground: 204 45% 12%;
 
     /* Surfaces */
-    --card: 220 25% 10%;
-    --card-foreground: 0 0% 98%;
+    --card: 40 20% 98%;
+    --card-foreground: 204 45% 12%;
 
-    --popover: 220 25% 10%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 40 20% 98%;
+    --popover-foreground: 204 45% 12%;
 
-    /* Primary: Electric Blue */
-    --primary: 210 90% 55%;
-    --primary-foreground: 220 30% 6%;
+    /* Primary — Deep Forest Green */
+    --primary: 161 55% 23%;
+    --primary-foreground: 40 20% 97%;
 
-    /* Secondary: Deep Blue */
-    --secondary: 220 70% 40%;
-    --secondary-foreground: 0 0% 98%;
+    /* Secondary — Brand Teal */
+    --secondary: 168 45% 35%;
+    --secondary-foreground: 40 20% 97%;
 
     /* Muted */
-    --muted: 220 18% 16%;
-    --muted-foreground: 220 12% 70%;
+    --muted: 40 15% 89%;
+    --muted-foreground: 204 20% 45%;
 
-    /* Accent: Premium Gold */
-    --accent: 45 100% 50%;
-    --accent-foreground: 220 30% 6%;
+    /* Accent — Cavendish Gold */
+    --accent: 46 87% 39%;
+    --accent-foreground: 204 65% 10%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 16% 18%;
-    --input: 220 16% 18%;
-    --ring: 210 90% 55%;
+    --border: 40 12% 82%;
+    --input: 40 12% 82%;
+    --ring: 161 55% 23%;
 
     --radius: 0.625rem;
 
-    /* Custom tokens */
-    --surface-elevated: 220 25% 10%;
-    --surface-sunken: 220 30% 6%;
-    --text-subtle: 220 12% 70%;
-    --gradient-primary: linear-gradient(135deg, hsl(210 90% 55%) 0%, hsl(220 70% 40%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(220 30% 6%) 0%, hsl(220 25% 10%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(45 100% 50%) 0%, hsl(40 100% 60%) 100%);
-    --shadow-sm: 0 1px 2px 0 hsl(220 30% 6% / 0.4);
-    --shadow-md: 0 8px 20px -8px hsl(220 30% 6% / 0.6);
-    --shadow-lg: 0 18px 45px -18px hsl(220 30% 6% / 0.75);
-    --shadow-glow: 0 0 40px hsl(210 90% 55% / 0.2);
+    /* Custom surface tokens */
+    --surface-elevated: 40 20% 98%;
+    --surface-sunken: 40 18% 90%;
+    --text-subtle: 204 20% 50%;
 
-    /* Sidebar - Elegant Black */
-    --sidebar-background: 220 35% 7%;
-    --sidebar-foreground: 0 0% 96%;
-    --sidebar-primary: 210 90% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 22% 14%;
-    --sidebar-accent-foreground: 0 0% 96%;
-    --sidebar-border: 220 18% 14%;
-    --sidebar-ring: 210 90% 55%;
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(161 55% 23%) 0%, hsl(168 59% 42%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(40 25% 94%) 0%, hsl(40 20% 98%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(46 87% 39%) 0%, hsl(46 87% 50%) 100%);
+    --gradient-navy: linear-gradient(180deg, hsl(204 65% 14%) 0%, hsl(204 55% 20%) 100%);
+
+    /* Shadows — warm toned */
+    --shadow-sm: 0 1px 3px 0 hsl(204 45% 12% / 0.08);
+    --shadow-md: 0 4px 16px -4px hsl(204 45% 12% / 0.14);
+    --shadow-lg: 0 12px 40px -12px hsl(204 45% 12% / 0.20);
+    --shadow-glow: 0 0 32px hsl(161 55% 23% / 0.18);
+
+    /* ─── Sidebar — Dark Navy ─────────────────────────────────── */
+    --sidebar-background: 204 65% 14%;
+    --sidebar-foreground: 40 25% 90%;
+    --sidebar-primary: 46 87% 39%;
+    --sidebar-primary-foreground: 204 65% 10%;
+    --sidebar-accent: 204 55% 20%;
+    --sidebar-accent-foreground: 40 25% 92%;
+    --sidebar-border: 204 65% 10%;
+    --sidebar-ring: 46 87% 39%;
   }
 
   .dark {
-    --background: 200 18% 10%;
-    --foreground: 210 20% 95%;
+    /* Cavendish Dark Variant — deep forest canvas */
+    --background: 204 55% 8%;
+    --foreground: 40 25% 93%;
 
-    --card: 200 15% 13%;
-    --card-foreground: 210 20% 95%;
+    --card: 204 50% 11%;
+    --card-foreground: 40 25% 93%;
 
-    --popover: 200 15% 13%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 204 50% 11%;
+    --popover-foreground: 40 25% 93%;
 
-    --primary: 209 89% 55%;
-    --primary-foreground: 200 18% 10%;
+    --primary: 161 50% 40%;
+    --primary-foreground: 40 20% 97%;
 
-    --secondary: 134 61% 45%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 168 45% 35%;
+    --secondary-foreground: 40 20% 97%;
 
-    --muted: 200 15% 18%;
-    --muted-foreground: 210 15% 60%;
+    --muted: 204 40% 16%;
+    --muted-foreground: 204 15% 60%;
 
-    --accent: 43 100% 50%;
-    --accent-foreground: 200 18% 10%;
+    --accent: 46 87% 45%;
+    --accent-foreground: 204 65% 10%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 200 15% 20%;
-    --input: 200 15% 20%;
-    --ring: 209 89% 55%;
+    --border: 204 40% 18%;
+    --input: 204 40% 18%;
+    --ring: 161 50% 40%;
 
-    --surface-elevated: 200 15% 15%;
-    --surface-sunken: 200 18% 8%;
+    --surface-elevated: 204 50% 13%;
+    --surface-sunken: 204 55% 6%;
+
+    --sidebar-background: 204 65% 10%;
+    --sidebar-foreground: 40 25% 90%;
+    --sidebar-primary: 46 87% 45%;
+    --sidebar-primary-foreground: 204 65% 8%;
+    --sidebar-accent: 204 55% 16%;
+    --sidebar-accent-foreground: 40 25% 92%;
+    --sidebar-border: 204 65% 7%;
+    --sidebar-ring: 46 87% 45%;
   }
 }
 
@@ -137,6 +161,10 @@
 
   .bg-gradient-primary {
     background: var(--gradient-primary);
+  }
+
+  .bg-gradient-navy {
+    background: var(--gradient-navy);
   }
 
   .shadow-glow {

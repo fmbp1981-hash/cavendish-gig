@@ -3,6 +3,7 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createServiceClient } from "../_shared/supabase.ts";
 import { loadIntegration } from "../_shared/integrations.ts";
+import { logEdgeFunctionError, logToSystem } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -243,6 +244,12 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (!resendApiKey) {
       console.error("RESEND_API_KEY not configured");
+      await logToSystem("warning", {
+        source: "edge_function",
+        functionName: "send-email",
+        message: "Serviço de e-mail não configurado (RESEND_API_KEY ausente)",
+        details: { hint: "Configure em Admin → Integrações → E-mail (Resend)" },
+      });
       return new Response(
         JSON.stringify({ error: "Email service not configured" }),
         { status: 503, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -271,6 +278,7 @@ const handler = async (req: Request): Promise<Response> => {
     );
   } catch (error: any) {
     console.error("Error sending email:", error);
+    await logEdgeFunctionError("send-email", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }

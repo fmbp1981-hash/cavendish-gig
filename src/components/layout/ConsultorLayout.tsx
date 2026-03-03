@@ -73,23 +73,23 @@ export function ConsultorLayout({ children }: ConsultorLayoutProps) {
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 bg-card border-r border-border transition-all duration-300 ${sidebarOpen ? "w-64" : "w-16"
+        className={`fixed inset-y-0 left-0 z-50 bg-sidebar border-r border-sidebar-border transition-all duration-300 ${sidebarOpen ? "w-64" : "w-16"
           } flex flex-col`}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
           {sidebarOpen && (
             <Link to="/consultor" className="flex items-center gap-2">
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain rounded" />
               ) : (
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-sm">GIG</span>
+                <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
+                  <span className="text-sidebar-primary-foreground font-bold text-sm">GIG</span>
                 </div>
               )}
-              <span className="font-semibold text-foreground text-sm">
-                Sistema<span className="text-primary">GIG</span>
-                {companyName && <span className="text-muted-foreground"> - {companyName}</span>}
+              <span className="font-semibold text-sidebar-foreground text-sm">
+                Sistema<span className="text-sidebar-primary">GIG</span>
+                {companyName && <span className="text-sidebar-foreground opacity-60"> - {companyName}</span>}
               </span>
             </Link>
           )}
@@ -97,14 +97,14 @@ export function ConsultorLayout({ children }: ConsultorLayoutProps) {
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="shrink-0"
+            className="shrink-0 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </Button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.href ||
               (item.href !== "/consultor" && location.pathname.startsWith(item.href));
@@ -114,8 +114,8 @@ export function ConsultorLayout({ children }: ConsultorLayoutProps) {
                 to={item.href}
                 data-tour={item.dataTour}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                  : "text-sidebar-foreground opacity-80 hover:opacity-100 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   }`}
               >
                 <item.icon className="h-5 w-5 shrink-0" />
@@ -126,26 +126,26 @@ export function ConsultorLayout({ children }: ConsultorLayoutProps) {
         </nav>
 
         {/* User section */}
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-sidebar-border">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start gap-3 px-3 py-2.5 h-auto">
+              <Button variant="ghost" className="w-full justify-start gap-3 px-3 py-2.5 h-auto text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                  <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-xs">
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
                 {sidebarOpen && (
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-foreground truncate">
+                    <p className="text-sm font-medium text-sidebar-foreground truncate">
                       {profile?.nome || "Consultor"}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-xs text-sidebar-foreground opacity-60 truncate">
                       {user?.email}
                     </p>
                   </div>
                 )}
-                {sidebarOpen && <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                {sidebarOpen && <ChevronDown className="h-4 w-4 text-sidebar-foreground opacity-60" />}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -174,7 +174,7 @@ export function ConsultorLayout({ children }: ConsultorLayoutProps) {
 
           {/* IntelliX.AI Logo - below user section */}
           {sidebarOpen && (
-            <div className="mt-3 pt-3 border-t border-border">
+            <div className="mt-3 pt-3 border-t border-sidebar-border">
               <IntelliXLogo size="sm" />
             </div>
           )}

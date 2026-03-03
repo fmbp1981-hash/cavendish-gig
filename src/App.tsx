@@ -50,7 +50,12 @@ import AdminConsultores from "./spa/pages/admin/AdminConsultores";
 import AdminTemplates from "./spa/pages/admin/Templates";
 import AdminHistoricoRelatorios from "./spa/pages/admin/HistoricoRelatorios";
 import AdminBranding from "./spa/pages/admin/Branding";
+import AdminLogs from "./spa/pages/admin/AdminLogs";
 import Help from "./spa/pages/Help";
+import { installGlobalErrorHandlers } from "./utils/errorLogger";
+
+// Instala captura global de erros não tratados (uma única vez no carregamento)
+installGlobalErrorHandlers();
 
 const queryClient = new QueryClient();
 
@@ -281,6 +286,15 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
                     <AdminBranding />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/admin/logs"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminLogs />
                   </ProtectedRoute>
                 }
               />

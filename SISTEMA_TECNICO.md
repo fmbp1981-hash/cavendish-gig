@@ -1,7 +1,7 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-02 (tipos TS regenerados, 116 `as any` removidos, Edge Functions auditadas, RPC get_project_stats criado)
+**Última atualização:** 2026-03-03 (Edge Functions deployadas · secrets internos · UX Configurações/Branding · sistema de logs de erros · tema Cavendish aplicado)
 **Versão do sistema:** 0.0.0 (pre-release)
 **Desenvolvido por:** IntelliX.AI
 
@@ -612,6 +612,50 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
   - `projetos`: removido `consultor_id: string | null`, adicionados `data_inicio` e `data_fim_prevista`
 - **0 erros TypeScript** após limpeza
 
+### 2026-03-03 — Sistema de Logs de Erros implementado
+- **Tabela `system_logs`** criada no Supabase (migration `20260303000001_create_system_logs.sql`)
+  - Campos: `id`, `level` (error/warning/info), `source`, `function_name`, `message`, `details` (JSONB), `user_id`, `organizacao_id`, `resolved`, `resolved_at`, `resolved_by`, `resolution_notes`, `created_at`
+  - RLS: admins leem/atualizam; autenticados inserem; service_role acesso total
+- **`supabase/functions/_shared/logger.ts`** — utilitário `logToSystem()` e `logEdgeFunctionError()` para Edge Functions
+- **4 Edge Functions atualizadas** com logging automático de erros: `ai-generate`, `send-email`, `integrations`, `google-drive`
+- **`src/utils/errorLogger.ts`** — captura global de `window.error` e `unhandledrejection` no frontend
+- **`src/hooks/useSystemLogs.ts`** — hook com filtros, stats, resolve/reopen
+- **`src/spa/pages/admin/AdminLogs.tsx`** — página completa de logs:
+  - 4 cards de stats (erros críticos, avisos, registros 24h, total resolvidos)
+  - Filtros: nível, origem, status, período, busca textual
+  - Tabela com hover-expand → dialog de detalhes
+  - **Diagnóstico automático**: mapeia erros para "Causa provável" + "Como corrigir" (20+ padrões)
+  - Ações: marcar como resolvido (com nota), reabrir
+- **`AdminLayout.tsx`** — menu "Logs do Sistema" adicionado (ícone Bug)
+- **Rota** `/admin/logs` adicionada ao App.tsx (protegida por role `admin`)
+- Tipos TypeScript regenerados (inclui `system_logs`)
+
+### 2026-03-03 — Tema Cavendish aplicado (visual premium)
+- **Paleta de marca aplicada** ao design system via CSS variables em `src/app/globals.css`:
+  - `--background`: Cream `40 25% 94%` (#F4F1EB) — fundo cálido, profissional
+  - `--primary`: Forest Green `161 55% 23%` (#1A5B44) — cor principal
+  - `--accent`: Cavendish Gold `46 87% 39%` (#B8970D) — destaque premium
+  - `--secondary`: Teal `168 45% 35%` — complementar
+  - `--sidebar-background`: Dark Navy `204 65% 14%` (#0C2B3C) — sidebar escura premium
+  - `--sidebar-primary`: Gold `46 87% 39%` — itens ativos no sidebar
+- **3 layouts atualizados** (AdminLayout, ConsultorLayout, ClienteLayout):
+  - Sidebar migrada de `bg-card/border-border` para `bg-sidebar/border-sidebar-border`
+  - Itens ativos: `bg-sidebar-primary text-sidebar-primary-foreground` (gold + navy)
+  - Hover: `bg-sidebar-accent text-sidebar-accent-foreground` (navy claro)
+  - Botões toggle sidebar: classes sidebar corretas (sem mais conflict com ghost variant)
+  - Badge ADMIN: gold ao invés de destructive red
+  - Badge "Acesso Total" no header: gold/amber ao invés de vermelho
+- `0 erros TypeScript` após todas as mudanças
+
+### 2026-03-03 — Deploy das Edge Functions e configuração de secrets
+- **13 Edge Functions** deployadas via `supabase functions deploy --project-ref fenfgjqlsqzvxloeavdc`
+- **Secrets internos** configurados via `supabase secrets set`:
+  - `INTEGRATIONS_ENCRYPTION_KEY` — chave AES-256-GCM (base64, 32 bytes) para criptografar credenciais no `integrations_vault`
+  - `CRON_SECRET` — token de autorização para o cron job `document-reminders`
+  - `TRANSCRIPTION_WEBHOOK_SECRET` — secret para verificar webhooks do Fireflies
+- Credenciais de integração (OpenAI, Resend, Twilio, Google, Fireflies) serão configuradas pelo usuário via `/admin/integracoes` → armazenadas criptografadas na tabela `integrations`
+- Env vars do Vercel (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) confirmadas como já configuradas para Development/Preview/Production
+
 ### 2026-03-02 — RPC `get_project_stats` criada
 - Edge Function `generate-monthly-report` referenciava `get_project_stats(p_projeto_id)` que não existia no DB
 - Criada via Management API com retorno JSONB:
@@ -693,14 +737,23 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 ## 15. Pendências e Roadmap
 
 ### Alta prioridade
-- [ ] **Configurar variáveis de ambiente no Vercel** — `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` para o projeto `fenfgjqlsqzvxloeavdc`
+- [x] **Configurar variáveis de ambiente no Vercel** — `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` — JÁ ESTAVAM CONFIGURADAS (há 76 dias)
 - [x] **Aplicar todas as migrations** no Supabase de produção — CONCLUÍDO em 2026-03-02
 - [x] **Regenerar tipos TypeScript** — CONCLUÍDO em 2026-03-02 (73.745 chars, 40 tabelas)
 - [x] **Remover `as any`** — CONCLUÍDO em 2026-03-02 (116 instâncias removidas, 0 erros TS)
-- [ ] **Deploy das Edge Functions** (`supabase functions deploy --project-ref fenfgjqlsqzvxloeavdc`)
-- [ ] **Configurar secrets das Edge Functions** — Ver seção 8 para lista completa de secrets
-- [ ] **Configurar Resend** (domínio verificado + API key no Supabase secrets)
-- [ ] **Webhook Fireflies** apontar para `https://fenfgjqlsqzvxloeavdc.supabase.co/functions/v1/process-transcription`
+- [x] **Deploy das Edge Functions** — CONCLUÍDO em 2026-03-03 (13 functions deployadas)
+- [x] **Configurar secrets internos das Edge Functions** — CONCLUÍDO em 2026-03-03:
+  - `INTEGRATIONS_ENCRYPTION_KEY` (AES-256-GCM, 32 bytes base64) ✅
+  - `CRON_SECRET` (hex 32 bytes) ✅
+  - `TRANSCRIPTION_WEBHOOK_SECRET` (hex 32 bytes) ✅
+  - Credenciais de integração (OpenAI, Resend, Twilio, Google) → configurar via painel Admin → Integrações
+- [ ] **Configurar integrações via painel Admin** — Acessar `/admin/integracoes` e inserir as chaves:
+  - Provider `resend`: `RESEND_API_KEY`
+  - Provider `openai`: `OPENAI_API_KEY` (+ selecionar modelo)
+  - Provider `google`: JSON do Service Account
+  - Provider `twilio`: `ACCOUNT_SID` + `AUTH_TOKEN`
+  - Provider `fireflies`: `FIREFLIES_API_KEY`
+- [ ] **Webhook Fireflies** apontar para `https://fenfgjqlsqzvxloeavdc.supabase.co/functions/v1/process-transcription` (header `X-Webhook-Secret: <TRANSCRIPTION_WEBHOOK_SECRET>`)
 - [ ] **Adicionar verificação de webhook** em `trello-sync` e `clickup-sync`
 
 ### Média prioridade

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createServiceClient, createUserClient } from "../_shared/supabase.ts";
 import { encryptJsonAesGcm, importAesGcmKeyFromEnv } from "../_shared/crypto.ts";
+import { logEdgeFunctionError } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -231,6 +232,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
   } catch (error: any) {
     console.error("integrations function error:", error);
+    await logEdgeFunctionError("integrations", error);
     return new Response(JSON.stringify({ error: error.message || "Erro interno" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -53,24 +53,24 @@ export function ClienteLayout({ children }: ClienteLayoutProps) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed lg:sticky top-0 left-0 z-50 h-screen bg-card border-r border-border flex flex-col transition-all duration-300",
+        "fixed lg:sticky top-0 left-0 z-50 h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300",
         collapsed ? "w-16" : "w-64",
         mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         {/* Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
           {!collapsed && (
             <div className="flex items-center gap-2">
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain rounded" />
               ) : (
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-xs">GIG</span>
+                <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
+                  <span className="text-sidebar-primary-foreground font-bold text-xs">GIG</span>
                 </div>
               )}
-              <span className="font-semibold text-sm text-foreground">
-                Sistema<span className="text-primary">GIG</span>
-                {companyName && <span className="text-muted-foreground"> - {companyName}</span>}
+              <span className="font-semibold text-sm text-sidebar-foreground">
+                Sistema<span className="text-sidebar-primary">GIG</span>
+                {companyName && <span className="text-sidebar-foreground opacity-60"> - {companyName}</span>}
               </span>
             </div>
           )}
@@ -78,7 +78,7 @@ export function ClienteLayout({ children }: ClienteLayoutProps) {
             variant="ghost"
             size="icon"
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden lg:flex"
+            className="hidden lg:flex text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
           </Button>
@@ -86,7 +86,7 @@ export function ClienteLayout({ children }: ClienteLayoutProps) {
             variant="ghost"
             size="icon"
             onClick={() => setMobileOpen(false)}
-            className="lg:hidden"
+            className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -100,10 +100,10 @@ export function ClienteLayout({ children }: ClienteLayoutProps) {
               to={item.url}
               data-tour={item.dataTour}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground opacity-80 hover:opacity-100 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
                 collapsed && "justify-center px-2"
               )}
-              activeClassName="bg-primary/10 text-primary font-medium"
+              activeClassName="bg-sidebar-primary text-sidebar-primary-foreground opacity-100 font-medium"
             >
               <item.icon className="h-5 w-5 flex-shrink-0" />
               {!collapsed && <span>{item.title}</span>}
@@ -112,16 +112,16 @@ export function ClienteLayout({ children }: ClienteLayoutProps) {
         </nav>
 
         {/* User section */}
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-sidebar-border">
           <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-sm font-medium text-primary">
+            <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center">
+              <span className="text-sm font-medium text-sidebar-primary">
                 {profile?.nome?.charAt(0) || 'U'}
               </span>
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">
                   {profile?.nome || 'Usuário'}
                 </p>
               </div>
@@ -130,7 +130,7 @@ export function ClienteLayout({ children }: ClienteLayoutProps) {
               variant="ghost"
               size="icon"
               onClick={signOut}
-              className={cn(collapsed && "hidden")}
+              className={cn("text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", collapsed && "hidden")}
             >
               <LogOut className="h-4 w-4" />
             </Button>
@@ -138,7 +138,7 @@ export function ClienteLayout({ children }: ClienteLayoutProps) {
 
           {/* IntelliX.AI Logo - below user name */}
           {!collapsed && (
-            <div className="mt-3 pt-3 border-t border-border">
+            <div className="mt-3 pt-3 border-t border-sidebar-border">
               <IntelliXLogo size="sm" />
             </div>
           )}
