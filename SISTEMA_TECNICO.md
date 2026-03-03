@@ -1,7 +1,7 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-02 (schema DB completo — 39 tabelas + fix admin redirect)
+**Última atualização:** 2026-03-02 (tipos TS regenerados, 116 `as any` removidos, Edge Functions auditadas, RPC get_project_stats criado)
 **Versão do sistema:** 0.0.0 (pre-release)
 **Desenvolvido por:** IntelliX.AI
 
@@ -205,12 +205,28 @@ plano_tipo:    essencial | executivo | premium
 | `system_settings` | Configurações globais do sistema |
 | `tutorial_progress` | Progresso de tutoriais por usuário |
 | `consultant_pre_registrations` | Pré-cadastro de consultores por email |
+| `treinamento_certificados` | Certificados emitidos após aprovação em treinamento |
+| `template_versoes` | Histórico de versões de templates |
+| `documentos_gerados` | Documentos gerados por IA (de templates) |
+| `integration_sync` | Configuração de sync bidirecional (Trello/ClickUp) |
+| `diagnostico_perguntas` | Catálogo de perguntas de diagnóstico de maturidade |
+| `diagnosticos` | Diagnósticos realizados por organização |
+| `diagnostico_respostas` | Respostas individuais de um diagnóstico |
+| `codigo_etica_versoes` | Versões do Código de Ética por organização |
+
+**Total: 40 tabelas no schema `public`, todas com RLS ativo.**
 
 ### Funções e Triggers
-- `handle_new_user()` — Trigger `after insert on auth.users`: cria `profile` + role `cliente` padrão
+- `handle_new_user()` — Trigger `after insert on auth.users`: cria `profile` + role `cliente` padrão; verifica `consultant_pre_registrations` e atribui role `consultor` se aplicável
 - `is_admin(user_id)` — Verifica se usuário tem role `admin` via `user_roles`
 - `has_role(user_id, role)` — Verifica role específica
+- `get_user_tenant_id(user_id)` — Retorna o tenant_id do usuário via organization_members
 - `create_client_onboarding(...)` — RPC SECURITY DEFINER para onboarding completo
+- `get_project_stats(p_projeto_id UUID)` — Retorna JSONB com estatísticas do projeto: total_documentos, documentos_aprovados, documentos_pendentes, total_tarefas, tarefas_concluidas, progresso_projeto (%). Usada pela Edge Function `generate-monthly-report`
+- `render_template(p_template_id, p_variaveis)` — Renderiza template substituindo variáveis `{{nome}}`
+- `validate_template(p_template_id)` — Valida se todas as variáveis de um template estão definidas
+- Triggers de `updated_at` em todas as tabelas com esse campo
+- Triggers de auditoria (`audit_logs`) em tabelas principais (INSERT/UPDATE/DELETE)
 
 ### Row Level Security
 Todas as tabelas têm RLS habilitado. Políticas baseadas em:
@@ -326,21 +342,44 @@ isAdmin, isConsultor, isCliente
 
 Localizadas em `supabase/functions/`. Todas em TypeScript/Deno.
 
-| Function | JWT | Descrição |
-|----------|-----|-----------|
-| `ai-generate` | ✅ sim | Geração de documentos, atas, relatórios com GPT-4 |
-| `google-drive` | ✅ sim | CRUD de pastas e arquivos no Google Drive |
-| `google-calendar` | ✅ sim | Criar eventos com Google Meet |
-| `send-email` | ✅ sim | Envio de emails via Resend |
-| `send-whatsapp` | ✅ sim | Envio de mensagens via Twilio |
-| `process-transcription` | ✅ sim | Ingestão de transcrição do Fireflies + geração de ata |
-| `generate-monthly-report` | ✅ sim | Geração de relatório mensal HTML |
-| `send-monthly-reports` | ✅ sim | Disparo de relatórios mensais por email |
-| `document-reminders` | ✅ sim | Lembretes de documentos pendentes (cron) |
-| `denuncias` | ❌ não | Canal de denúncias público (sem auth) |
-| `integrations` | ✅ sim | Hub de integrações configuradas por org |
-| `clickup-sync` | ✅ sim | Sincronização de tarefas com ClickUp |
-| `trello-sync` | ✅ sim | Sincronização de tarefas com Trello |
+| Function | JWT | Secrets necessários | Descrição |
+|----------|-----|---------------------|-----------|
+| `ai-generate` | ✅ sim | `OPENAI_API_KEY` (ou `LOVABLE_API_KEY`) | Geração de documentos, atas, relatórios com GPT-4 |
+| `google-drive` | ✅ sim | `GOOGLE_SERVICE_ACCOUNT` | CRUD de pastas e arquivos no Google Drive |
+| `google-calendar` | ✅ sim | `GOOGLE_SERVICE_ACCOUNT` | Criar eventos com Google Meet |
+| `send-email` | ✅ sim | `RESEND_API_KEY` | Envio de emails via Resend |
+| `send-whatsapp` | ✅ sim | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Envio de mensagens via Twilio |
+| `process-transcription` | ✅ sim | `OPENAI_API_KEY`, `TRANSCRIPTION_WEBHOOK_SECRET` | Ingestão de transcrição do Fireflies + geração de ata |
+| `generate-monthly-report` | ✅ sim | `OPENAI_API_KEY` | Geração de relatório mensal HTML; chama RPC `get_project_stats` |
+| `send-monthly-reports` | ✅ sim | `RESEND_API_KEY` | Disparo de relatórios mensais por email (cron) |
+| `document-reminders` | ✅ sim | `RESEND_API_KEY`, `CRON_SECRET` | Lembretes de documentos pendentes (cron) |
+| `denuncias` | ❌ não | — | Canal de denúncias público (sem auth) |
+| `integrations` | ✅ sim | `INTEGRATIONS_ENCRYPTION_KEY` | Hub de integrações configuradas por org |
+| `clickup-sync` | ✅ sim | — | Sincronização de tarefas com ClickUp (⚠️ sem verificação de webhook) |
+| `trello-sync` | ✅ sim | — | Sincronização de tarefas com Trello (⚠️ sem verificação de webhook) |
+
+### Issues identificados no audit (2026-03-02)
+- **`trello-sync` e `clickup-sync`:** Não verificam assinatura de webhook — qualquer request com JWT válido pode acionar o sync. Solução: adicionar `X-Webhook-Secret` header + secret via Supabase secrets.
+- **`send-email` e `send-monthly-reports`:** Domínio de email `from` pode estar hardcoded. Externalizar para secret `RESEND_FROM_EMAIL`.
+- **`ai-generate` e `process-transcription`:** Dependem de `LOVABLE_API_KEY` (plataforma Lovable) ou `OPENAI_API_KEY`. No deploy pós-Lovable, usar `OPENAI_API_KEY` diretamente.
+- **`integrations`:** Precisa de `INTEGRATIONS_ENCRYPTION_KEY` para criptografar/descriptografar credenciais do vault.
+
+### Deploy das Edge Functions
+```bash
+# Deploy de todas as functions:
+supabase functions deploy --project-ref fenfgjqlsqzvxloeavdc
+
+# Configurar secrets necessários:
+supabase secrets set --project-ref fenfgjqlsqzvxloeavdc \
+  OPENAI_API_KEY=sk-xxx \
+  RESEND_API_KEY=re_xxx \
+  TWILIO_ACCOUNT_SID=ACxxx \
+  TWILIO_AUTH_TOKEN=xxx \
+  GOOGLE_SERVICE_ACCOUNT='{"type":"service_account",...}' \
+  CRON_SECRET=xxx \
+  TRANSCRIPTION_WEBHOOK_SECRET=xxx \
+  INTEGRATIONS_ENCRYPTION_KEY=xxx
+```
 
 ---
 
@@ -470,11 +509,18 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[chave_publishable]
 
 ### Supabase Secrets (Edge Functions)
 ```bash
-RESEND_API_KEY=re_xxxx
-TWILIO_ACCOUNT_SID=ACxxx
-TWILIO_AUTH_TOKEN=xxx
-GOOGLE_SERVICE_ACCOUNT={"type":"service_account",...}  # JSON completo
-FIREFLIES_API_KEY=ff_xxxx
+# Obrigatórios para deploy funcional:
+OPENAI_API_KEY=sk-xxx                         # ai-generate, process-transcription, generate-monthly-report
+RESEND_API_KEY=re_xxxx                        # send-email, send-monthly-reports, document-reminders
+TWILIO_ACCOUNT_SID=ACxxx                      # send-whatsapp
+TWILIO_AUTH_TOKEN=xxx                         # send-whatsapp
+GOOGLE_SERVICE_ACCOUNT={"type":"..."}         # google-drive, google-calendar (JSON completo)
+CRON_SECRET=xxx                               # document-reminders (header Authorization)
+TRANSCRIPTION_WEBHOOK_SECRET=xxx              # process-transcription (webhook do Fireflies)
+INTEGRATIONS_ENCRYPTION_KEY=xxx              # integrations (AES-256 para credenciais do vault)
+FIREFLIES_API_KEY=ff_xxxx                     # (se Fireflies precisar de API key para polling)
+# Opcional (se usando domínio verificado Resend):
+RESEND_FROM_EMAIL=noreply@cavendish.com.br
 ```
 
 ---
@@ -557,6 +603,25 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - Padrão híbrido: App Router (páginas públicas) + React Router SPA (autenticada)
 - `supabase/client.ts` refatorado: lazy init + proxy SSR para evitar erros no build
 
+### 2026-03-02 — Regeneração de tipos TypeScript e remoção de `as any`
+- **`src/integrations/supabase/types.ts`** regenerado via Management API (GET `/v1/projects/fenfgjqlsqzvxloeavdc/types/typescript`)
+- Arquivo passou de tipos parciais para **73.745 chars** cobrindo todas as 40 tabelas, ENUMs, funções RPC e views
+- **116 instâncias de `as any`** removidas em 22 arquivos: `AuthContext.tsx`, todos os `use*.ts` hooks, componentes de admin/consultor
+- `src/types/database.ts` atualizado para refletir o schema real:
+  - `profiles`: removido `organizacao_id: string | null`, adicionado `telefone: string | null`
+  - `projetos`: removido `consultor_id: string | null`, adicionados `data_inicio` e `data_fim_prevista`
+- **0 erros TypeScript** após limpeza
+
+### 2026-03-02 — RPC `get_project_stats` criada
+- Edge Function `generate-monthly-report` referenciava `get_project_stats(p_projeto_id)` que não existia no DB
+- Criada via Management API com retorno JSONB:
+  - `total_documentos`, `documentos_aprovados`, `documentos_pendentes`
+  - `total_tarefas`, `tarefas_concluidas`, `progresso_projeto` (%)
+  - Calcula progresso baseado em documentos aprovados vs total requeridos
+- Migração completa para Next.js 15 App Router
+- Padrão híbrido: App Router (páginas públicas) + React Router SPA (autenticada)
+- `supabase/client.ts` refatorado: lazy init + proxy SSR para evitar erros no build
+
 ---
 
 ## 14. Bugs Corrigidos
@@ -591,6 +656,14 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - **Causa:** `Index.tsx` tinha `if (isAdmin || isConsultor) → /dashboard`. Como `isConsultor = hasRole('consultor') || hasRole('admin')`, admins também eram incluídos e iam para `/dashboard` (que mapeia para `ConsultorDashboard`)
 - **Fix:** Separado em dois `if` independentes: `isAdmin → /admin`, `isConsultor → /consultor`, default → `/meu-projeto`
 
+### 2026-03-02 — Bug: `.eq()` com array em vez de `.in()`
+**Arquivo:** `src/hooks/useClienteProjeto.ts`
+
+#### BUG 7 — ALTA: Consulta de documentos requeridos usava `.eq()` com array (sempre retornava vazio)
+- **Causa:** `.eq("documento_requerido_id", documentos?.map(d => d.id) || [])` — `.eq()` aceita um único valor escalar, não array
+- **Fix:** Substituído por `.in("documento_requerido_id", documentos?.map(d => d.id) || [])` — operador SQL `IN` correto
+- **Impacto:** Checklist de documentos do cliente (`DocumentosNecessarios.tsx`) não exibia status de nenhum documento
+
 ### 2026-03-02 — Schema de banco de dados incompleto
 **Contexto:** Apenas 14 das ~39 tabelas estavam presentes no Supabase `fenfgjqlsqzvxloeavdc`
 
@@ -613,24 +686,29 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - `20251227000002` `integration_sync` ✅
 - `20260107` `consultor_pre_registrations` ✅
 
-**Status final:** 39 tabelas no schema público, RLS ativo em todas, seed data carregado.
+**Status final:** 40 tabelas no schema público, RLS ativo em todas, seed data carregado.
 
 ---
 
 ## 15. Pendências e Roadmap
 
 ### Alta prioridade
-- [ ] **Configurar variáveis de ambiente no Vercel** (NEXT_PUBLIC_SUPABASE_URL, ANON_KEY)
+- [ ] **Configurar variáveis de ambiente no Vercel** — `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` para o projeto `fenfgjqlsqzvxloeavdc`
 - [x] **Aplicar todas as migrations** no Supabase de produção — CONCLUÍDO em 2026-03-02
-- [ ] **Deploy das Edge Functions** (`supabase functions deploy`)
-- [ ] **Configurar Resend** (domínio verificado + API key)
-- [ ] **Webhook Fireflies** apontar para URL da Edge Function
+- [x] **Regenerar tipos TypeScript** — CONCLUÍDO em 2026-03-02 (73.745 chars, 40 tabelas)
+- [x] **Remover `as any`** — CONCLUÍDO em 2026-03-02 (116 instâncias removidas, 0 erros TS)
+- [ ] **Deploy das Edge Functions** (`supabase functions deploy --project-ref fenfgjqlsqzvxloeavdc`)
+- [ ] **Configurar secrets das Edge Functions** — Ver seção 8 para lista completa de secrets
+- [ ] **Configurar Resend** (domínio verificado + API key no Supabase secrets)
+- [ ] **Webhook Fireflies** apontar para `https://fenfgjqlsqzvxloeavdc.supabase.co/functions/v1/process-transcription`
+- [ ] **Adicionar verificação de webhook** em `trello-sync` e `clickup-sync`
 
 ### Média prioridade
 - [ ] **White-label completo com subdomínio** por organização
 - [ ] **Envio automático de relatórios mensais** (cron no Supabase pg_cron)
 - [ ] **Notificações push / Realtime** no frontend (Supabase Realtime subscriptions)
 - [ ] **Rota `/parceiro`** dedicada para usuários com role `parceiro`
+- [ ] **Externalizar emails `from` hardcoded** nas Edge Functions `send-email` e `send-monthly-reports` para o secret `RESEND_FROM_EMAIL`
 
 ### Baixa prioridade / Future
 - [ ] SSO corporativo (SAML/OAuth2 enterprise)
@@ -649,8 +727,12 @@ O projeto foi inicialmente desenvolvido com Vite + React (SPA pura) e depois mig
 ### Por que `supabase/client.ts` com proxy SSR?
 O Next.js executa imports durante o build (SSR). O cliente Supabase falha se as env vars não estiverem presentes. O proxy com `typeof window !== 'undefined'` garante que o cliente real só seja instanciado no browser, com no-ops no servidor.
 
-### Por que `as any` em `supabase.from('profiles')`?
-Os tipos gerados em `integrations/supabase/types.ts` nem sempre incluem todas as tabelas (depende de regeneração via `supabase gen types`). O `as any` é um workaround temporário. A solução definitiva é rodar `supabase gen types typescript --project-id [ID] > src/integrations/supabase/types.ts` após aplicar as migrations.
+### `as any` no código Supabase — status após 2026-03-02
+O arquivo `integrations/supabase/types.ts` foi regenerado via Management API após aplicar todas as migrations e agora cobre as 40 tabelas completas. As 116 instâncias de `as any` foram removidas e substituídas por:
+- Tipos corretos das tabelas (para queries simples)
+- `as unknown as T` (para joins com tipos compostos que o gerador não infere perfeitamente, ex: `ProjetoComOrganizacao`)
+- `as any` mantido apenas nos 2 casos justificados: upsert parcial em `ConsultorTarefas.tsx` e insert de `Partial<Template>` em `useTemplates.ts` (campo obrigatório `categoria` ausente em criação programática)
+- Para regenerar tipos no futuro: `GET https://api.supabase.com/v1/projects/fenfgjqlsqzvxloeavdc/types/typescript` (header: `Authorization: Bearer sbp_xxx`)
 
 ### Por que `handle_new_user` atribui role `cliente` por padrão?
 Por segurança: nenhum usuário deve ter acesso privilegiado automaticamente. Consultores são pré-cadastrados via `consultant_pre_registrations` e recebem a role no signup. Admins são promovidos manualmente via SQL ou script `tools/grantRole.mjs`.
