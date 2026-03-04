@@ -1,9 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { buildCorsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+const staticHeaders = {
   // GDPR/LGPD: Explicitly do not expose any tracking headers
   "X-Content-Type-Options": "nosniff",
   "Cache-Control": "no-store, no-cache, must-revalidate",
@@ -52,8 +51,17 @@ function sanitizeForAnonymity(req: Request): void {
 }
 
 serve(async (req) => {
+  const corsHeaders = { ...buildCorsHeaders(req.headers.get("origin")), ...staticHeaders };
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Método não permitido" }),
+      { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json", "Allow": "POST" } }
+    );
   }
 
   // CRITICAL: Ensure anonymity - do not log or process identifying headers

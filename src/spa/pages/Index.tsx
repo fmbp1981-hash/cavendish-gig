@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 
 const Index = () => {
-  const { user, loading, isAdmin, isConsultor, isCliente } = useAuth();
+  const { user, loading, isAdmin, isConsultor, roles } = useAuth();
 
   if (loading) {
     return (
@@ -28,6 +28,10 @@ const Index = () => {
 
   if (isConsultor) {
     return <Navigate to="/consultor" replace />;
+  }
+
+  if (roles.includes('parceiro')) {
+    return <Navigate to="/parceiro" replace />;
   }
 
   // Default to client portal

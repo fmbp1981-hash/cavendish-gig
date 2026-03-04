@@ -40,6 +40,9 @@ import RepositorioDocumentos from "./spa/pages/cliente/RepositorioDocumentos";
 import ClienteCodigoEtica from "./spa/pages/cliente/CodigoEtica";
 import ClienteConfiguracoes from "./spa/pages/cliente/ClienteConfiguracoes";
 
+// Parceiro Pages
+import ParceiroDashboard from "./spa/pages/parceiro/ParceiroDashboard";
+
 // Admin Pages
 import AdminDashboard from "./spa/pages/admin/AdminDashboard";
 import AdminUsuarios from "./spa/pages/admin/AdminUsuarios";
@@ -297,6 +300,16 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
                     <Navigate to="/consultor/documentos" replace />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Parceiro routes */}
+              <Route
+                path="/parceiro"
+                element={
+                  <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
+                    <ParceiroDashboard />
                   </ProtectedRoute>
                 }
               />

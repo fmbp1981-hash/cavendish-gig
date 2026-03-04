@@ -7,12 +7,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { loadIntegration } from "../_shared/integrations.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
-};
+import { buildCorsHeaders } from "../_shared/cors.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "GIG Sistema <noreply@cavendish.com.br>";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -312,7 +310,7 @@ async function enviarEmail(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: "GIG Sistema <noreply@cavendish.com.br>",
+        from: FROM_EMAIL,
         to: [para],
         subject: assunto,
         html: html,
@@ -410,6 +408,8 @@ async function processarRelatorio(
  * Handler principal da Edge Function
  */
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req.headers.get("origin"));
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });

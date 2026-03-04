@@ -1,11 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logEdgeFunctionError } from "../_shared/logger.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { buildCorsHeaders } from "../_shared/cors.ts";
 
 interface AIRequest {
   tipo: "codigo_etica" | "analise_documento" | "gerar_ata" | "chat" | "sumarizar_documento" | "detectar_riscos" | "gerar_contrato";
@@ -88,13 +84,27 @@ async function getAIConfig(supabaseService: any): Promise<AIProviderConfig> {
   };
 }
 
+const VALID_TIPOS = ["codigo_etica", "analise_documento", "gerar_ata", "chat", "sumarizar_documento", "detectar_riscos", "gerar_contrato"] as const;
+const AI_TIMEOUT_MS = 25_000;
+
+/** Wrapper de fetch com AbortController para timeout */
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Call AI based on provider
 async function callAI(config: AIProviderConfig, systemPrompt: string, userPrompt: string): Promise<{ text: string; tokens: number }> {
   let response: Response;
 
   if (config.provider === "gemini") {
     // Google Gemini API
-    response = await fetch(`${config.baseUrl}/models/${config.model}:generateContent?key=${config.apiKey}`, {
+    response = await fetchWithTimeout(`${config.baseUrl}/models/${config.model}:generateContent?key=${config.apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -121,7 +131,7 @@ async function callAI(config: AIProviderConfig, systemPrompt: string, userPrompt
 
   } else if (config.provider === "openai" || config.provider === "lovable") {
     // OpenAI-compatible API (includes Lovable Gateway)
-    response = await fetch(`${config.baseUrl}/chat/completions`, {
+    response = await fetchWithTimeout(`${config.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${config.apiKey}`,
@@ -156,7 +166,7 @@ async function callAI(config: AIProviderConfig, systemPrompt: string, userPrompt
 
   } else if (config.provider === "claude") {
     // Anthropic Claude API
-    response = await fetch(`${config.baseUrl}/messages`, {
+    response = await fetchWithTimeout(`${config.baseUrl}/messages`, {
       method: "POST",
       headers: {
         "x-api-key": config.apiKey,
@@ -189,6 +199,8 @@ async function callAI(config: AIProviderConfig, systemPrompt: string, userPrompt
 }
 
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req.headers.get("origin"));
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -218,7 +230,22 @@ serve(async (req) => {
     const aiConfig = await getAIConfig(supabaseService);
     console.log(`Using AI provider: ${aiConfig.provider} (${aiConfig.model})`);
 
-    const { tipo, input_data, projeto_id, organizacao_id, stream = false }: AIRequest = await req.json();
+    const body = await req.json() as AIRequest;
+    const { tipo, input_data, projeto_id, organizacao_id, stream = false } = body;
+
+    // Validação de schema
+    if (!tipo || !VALID_TIPOS.includes(tipo as typeof VALID_TIPOS[number])) {
+      return new Response(
+        JSON.stringify({ error: `Tipo inválido. Use: ${VALID_TIPOS.join(", ")}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!input_data || typeof input_data !== "object" || Array.isArray(input_data)) {
+      return new Response(
+        JSON.stringify({ error: "input_data deve ser um objeto" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Construir prompt baseado no tipo
     let systemPrompt = "";

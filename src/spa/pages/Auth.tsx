@@ -432,6 +432,8 @@ const Auth = () => {
                 name="email"
                 type="email"
                 placeholder="seu@email.com"
+                autoComplete="email"
+                autoFocus={mode === "login"}
                 value={formData.email}
                 onChange={handleInputChange}
                 className={`h-11 ${errors.email ? "border-destructive" : ""}`}

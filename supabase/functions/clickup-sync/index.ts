@@ -1,20 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { buildCorsHeaders } from "../_shared/cors.ts";
 
 /**
  * ClickUp Integration Edge Function
  * Syncs tasks between Cavendish GIG and ClickUp workspaces
- * 
+ *
  * Features:
  * - Create ClickUp tasks from internal tasks
  * - Sync task status back to internal tasks
- * - Webhook receiver for ClickUp updates
+ * - Webhook receiver for ClickUp updates (requires X-Webhook-Secret header)
  */
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 interface ClickUpConfig {
   api_token: string;
@@ -137,6 +133,8 @@ async function getLists(config: ClickUpConfig, folderId: string): Promise<any[]>
 }
 
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req.headers.get("origin"));
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -287,8 +285,18 @@ serve(async (req) => {
       }
 
       case "webhook": {
+        // Validate webhook secret to prevent unauthorized sync triggers
+        const webhookSecret = Deno.env.get("WEBHOOK_SECRET");
+        if (webhookSecret) {
+          const receivedSecret = req.headers.get("X-Webhook-Secret");
+          if (receivedSecret !== webhookSecret) {
+            return new Response(
+              JSON.stringify({ error: "Não autorizado" }),
+              { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
         // Handle ClickUp webhook callbacks
-        console.log("[ClickUp Webhook]", body.webhook_data);
         return new Response(
           JSON.stringify({ success: true }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

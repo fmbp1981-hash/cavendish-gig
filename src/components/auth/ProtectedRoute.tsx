@@ -42,7 +42,7 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
         return <Navigate to="/meu-projeto" replace />;
       }
       if (roles.includes('parceiro')) {
-        return <Navigate to="/meu-projeto" replace />;
+        return <Navigate to="/parceiro" replace />;
       }
       return <Navigate to="/" replace />;
     }

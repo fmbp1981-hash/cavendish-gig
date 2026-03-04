@@ -5,10 +5,9 @@ import { createServiceClient } from "../_shared/supabase.ts";
 import { loadIntegration } from "../_shared/integrations.ts";
 import { logEdgeFunctionError, logToSystem } from "../_shared/logger.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { buildCorsHeaders } from "../_shared/cors.ts";
+
+const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "Cavendish GIG <noreply@cavendishgig.com.br>";
 
 interface EmailRequest {
   type: "documento_aprovado" | "documento_rejeitado" | "documento_enviado" | "lembrete_documentos";
@@ -193,7 +192,7 @@ const getEmailTemplate = (type: string, data: EmailRequest["data"]) => {
 };
 
 const handler = async (req: Request): Promise<Response> => {
-  console.log("send-email function called");
+  const corsHeaders = buildCorsHeaders(req.headers.get("origin"));
 
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -259,18 +258,15 @@ const handler = async (req: Request): Promise<Response> => {
     const resend = new Resend(resendApiKey);
     const { type, to, data }: EmailRequest = await req.json();
 
-    console.log(`Sending ${type} email`);
 
     const template = getEmailTemplate(type, data);
 
     const emailResponse = await resend.emails.send({
-      from: "Cavendish GIG <noreply@cavendishgig.com>",
+      from: FROM_EMAIL,
       to: [to],
       subject: template.subject,
       html: template.html,
     });
-
-    console.log("Email sent successfully:", emailResponse);
 
     return new Response(
       JSON.stringify({ success: true, id: emailResponse.data?.id }),

@@ -1,20 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { buildCorsHeaders } from "../_shared/cors.ts";
 
 /**
  * Trello Integration Edge Function
  * Syncs tasks between Cavendish GIG and Trello boards
- * 
+ *
  * Features:
  * - Create Trello cards from internal tasks
  * - Sync card status back to internal tasks
- * - Webhook receiver for Trello updates
+ * - Webhook receiver for Trello updates (requires X-Webhook-Secret header)
  */
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 interface TrelloConfig {
   api_key: string;
@@ -112,6 +108,8 @@ async function getBoardLists(config: TrelloConfig): Promise<any[]> {
 }
 
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req.headers.get("origin"));
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -247,9 +245,19 @@ serve(async (req) => {
       }
 
       case "webhook": {
+        // Validate webhook secret to prevent unauthorized sync triggers
+        const webhookSecret = Deno.env.get("WEBHOOK_SECRET");
+        if (webhookSecret) {
+          const receivedSecret = req.headers.get("X-Webhook-Secret");
+          if (receivedSecret !== webhookSecret) {
+            return new Response(
+              JSON.stringify({ error: "Não autorizado" }),
+              { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
         // Handle Trello webhook callbacks
         // This would update local tasks when Trello cards change
-        console.log("[Trello Webhook]", body.webhook_data);
         return new Response(
           JSON.stringify({ success: true }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -1,7 +1,7 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-03 (Edge Functions deployadas · secrets internos · UX Configurações/Branding · sistema de logs de erros · tema Cavendish aplicado)
+**Última atualização:** 2026-03-04 (Suite E2E + 9 bugs corrigidos · ALLOWED_ORIGIN + WEBHOOK_SECRET · email from externalizado · rota /parceiro criada · pg_cron configurado)
 **Versão do sistema:** 0.0.0 (pre-release)
 **Desenvolvido por:** IntelliX.AI
 
@@ -355,11 +355,21 @@ Localizadas em `supabase/functions/`. Todas em TypeScript/Deno.
 | `document-reminders` | ✅ sim | `RESEND_API_KEY`, `CRON_SECRET` | Lembretes de documentos pendentes (cron) |
 | `denuncias` | ❌ não | — | Canal de denúncias público (sem auth) |
 | `integrations` | ✅ sim | `INTEGRATIONS_ENCRYPTION_KEY` | Hub de integrações configuradas por org |
-| `clickup-sync` | ✅ sim | — | Sincronização de tarefas com ClickUp (⚠️ sem verificação de webhook) |
-| `trello-sync` | ✅ sim | — | Sincronização de tarefas com Trello (⚠️ sem verificação de webhook) |
+| `clickup-sync` | ✅ sim | `WEBHOOK_SECRET` | Sincronização de tarefas com ClickUp |
+| `trello-sync` | ✅ sim | `WEBHOOK_SECRET` | Sincronização de tarefas com Trello |
 
-### Issues identificados no audit (2026-03-02)
-- **`trello-sync` e `clickup-sync`:** Não verificam assinatura de webhook — qualquer request com JWT válido pode acionar o sync. Solução: adicionar `X-Webhook-Secret` header + secret via Supabase secrets.
+### Utilitário compartilhado `_shared/cors.ts`
+- Criado em 2026-03-04 para centralizar headers CORS em todas as Edge Functions
+- Lê `ALLOWED_ORIGIN` env var (ex: `https://sistema-gig.vercel.app`) com fallback para `*`
+- Suporta múltiplas origens separadas por vírgula
+- Retorna header `Vary: Origin` quando em modo restrito (não `*`)
+- Importado por: `denuncias`, `ai-generate`, `trello-sync`, `clickup-sync`
+
+### Issues identificados e resolvidos (audit E2E 2026-03-04)
+- **`trello-sync` e `clickup-sync`:** Verificação de webhook adicionada (`X-Webhook-Secret` header + `WEBHOOK_SECRET` secret) ✅
+- **`denuncias`:** Guard POST-only adicionado (retorna 405 para GET/outros métodos) ✅
+- **`ai-generate`:** Timeout de 25s adicionado via `AbortController`; validação de schema (`VALID_TIPOS`, tipo de `input_data`) adicionada ✅
+- **CORS em todas as 4 functions acima:** Migrado de `"*"` hardcoded para `buildCorsHeaders()` com `ALLOWED_ORIGIN` env var ✅
 - **`send-email` e `send-monthly-reports`:** Domínio de email `from` pode estar hardcoded. Externalizar para secret `RESEND_FROM_EMAIL`.
 - **`ai-generate` e `process-transcription`:** Dependem de `LOVABLE_API_KEY` (plataforma Lovable) ou `OPENAI_API_KEY`. No deploy pós-Lovable, usar `OPENAI_API_KEY` diretamente.
 - **`integrations`:** Precisa de `INTEGRATIONS_ENCRYPTION_KEY` para criptografar/descriptografar credenciais do vault.
@@ -378,7 +388,9 @@ supabase secrets set --project-ref fenfgjqlsqzvxloeavdc \
   GOOGLE_SERVICE_ACCOUNT='{"type":"service_account",...}' \
   CRON_SECRET=xxx \
   TRANSCRIPTION_WEBHOOK_SECRET=xxx \
-  INTEGRATIONS_ENCRYPTION_KEY=xxx
+  INTEGRATIONS_ENCRYPTION_KEY=xxx \
+  WEBHOOK_SECRET=<hex-32-bytes> \
+  ALLOWED_ORIGIN=https://<vercel-domain>.vercel.app
 ```
 
 ---
@@ -519,6 +531,8 @@ CRON_SECRET=xxx                               # document-reminders (header Autho
 TRANSCRIPTION_WEBHOOK_SECRET=xxx              # process-transcription (webhook do Fireflies)
 INTEGRATIONS_ENCRYPTION_KEY=xxx              # integrations (AES-256 para credenciais do vault)
 FIREFLIES_API_KEY=ff_xxxx                     # (se Fireflies precisar de API key para polling)
+WEBHOOK_SECRET=<hex-32-bytes>                # trello-sync + clickup-sync (verificação de webhook) ← CONFIGURADO em 2026-03-04
+ALLOWED_ORIGIN=https://<vercel-domain>       # CORS restrito para todas as Edge Functions (a configurar pós-deploy Vercel)
 # Opcional (se usando domínio verificado Resend):
 RESEND_FROM_EMAIL=noreply@cavendish.com.br
 ```
@@ -647,6 +661,61 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
   - Badge "Acesso Total" no header: gold/amber ao invés de vermelho
 - `0 erros TypeScript` após todas as mudanças
 
+### 2026-03-04 — Suite E2E completa (217 testes) e correção de 9 bugs
+- **Suite E2E executada** com metodologia VibeCODE 8 fases (217 testes, 187 passaram — 86.2%)
+  - Fase 1 Smoke: 47/48 | Fase 2 Funcional: 9/18 (falsos positivos de hydration SPA) | Fase 3 Negativos: 29/30
+  - Fase 4 Edge Cases: 22/22 (100%) | Fase 5 Segurança: 15/28 (dev artifacts) | Fase 6 UI/UX: 37/40
+  - Fase 7 Stress: 20/20 (100%) | Fase 8 AI Security: 8/11 → **9 bugs reais identificados**
+- **Relatório:** `tests/RELATORIO_E2E.md`
+- **Scripts criados:** `tests/test_01_smoke.py` a `tests/test_08_ai_security.py`
+
+#### Bugs corrigidos (2026-03-04):
+
+**BUG-01 CRÍTICO — `denuncias` retornava 500 no GET**
+- Edge Function não tinha guard de método; GET chamava `req.json()` sem body e explodía
+- Fix: guard POST-only antes de qualquer lógica (retorna 405 para outros métodos)
+- Arquivo: `supabase/functions/denuncias/index.ts`
+
+**BUG-02 CRÍTICO — `trello-sync`/`clickup-sync` sem verificação de webhook**
+- Ação `webhook` aceitava qualquer request com JWT válido sem verificar origem
+- Fix: verificação do header `X-Webhook-Secret` contra o secret `WEBHOOK_SECRET` (condicional — sem o secret, segue sem verificação para backward compat)
+- Arquivo: `supabase/functions/trello-sync/index.ts`, `supabase/functions/clickup-sync/index.ts`
+
+**BUG-03 CRÍTICO — CORS `*` hardcoded nas Edge Functions**
+- `"Access-Control-Allow-Origin": "*"` estava hardcoded em `denuncias`, `ai-generate`, `trello-sync`, `clickup-sync`
+- Fix: criado `supabase/functions/_shared/cors.ts` com `buildCorsHeaders()` que lê `ALLOWED_ORIGIN` env var (fallback `*`)
+- Suporta múltiplas origens separadas por vírgula + header `Vary: Origin` no modo restrito
+
+**BUG-04 ALTO — `console.log` expondo dados sensíveis no AuthContext**
+- 4 `console.log` expunham `userId`, `profileData`, `rolesData`, `mappedRoles` no console do browser
+- Fix: todos removidos; mantidos apenas `console.error` para erros reais
+- Arquivo: `src/contexts/AuthContext.tsx`
+
+**BUG-05 ALTO — `ai-generate` sem timeout nas chamadas à IA**
+- Chamadas `fetch()` para OpenAI/Gemini/Claude podiam travar indefinidamente
+- Fix: `fetchWithTimeout(url, options, 25_000)` com `AbortController` + `clearTimeout` no finally
+- Arquivo: `supabase/functions/ai-generate/index.ts`
+
+**BUG-06 ALTO — `ai-generate` sem validação de schema de entrada**
+- Campo `tipo` aceitava qualquer string; `input_data` aceitava qualquer tipo (null, array, etc.)
+- Fix: constante `VALID_TIPOS` com 7 tipos válidos; validação retorna 400 para tipo inválido ou `input_data` não-objeto
+
+**BUG-07 MÉDIO — Navegação por Tab não funciona corretamente em `/auth`**
+- Campo de email não recebia foco automático no carregamento, dificultando navegação por teclado
+- Fix: `autoFocus={mode === "login"}` e `autoComplete="email"` adicionados ao campo
+- Arquivo: `src/spa/pages/Auth.tsx`
+
+**BUG-08 MÉDIO — Favicon ausente nos metadados do Next.js**
+- `layout.tsx` não tinha configuração de `icons`, apenas title/description
+- Fix: `icons: { icon: '/favicon.ico', apple: '/apple-touch-icon.png' }` adicionado
+- Arquivo: `src/app/layout.tsx` (favicon.ico já existia em `/public/`)
+
+**BUG-09 — Falso positivo** (placeholder já existia — teste rodou antes da hydration SPA)
+
+- **4 Edge Functions re-deployadas** após as correções: `denuncias`, `ai-generate`, `trello-sync`, `clickup-sync`
+- **`WEBHOOK_SECRET` configurado** via `supabase secrets set` (hex 32 bytes)
+- **`ALLOWED_ORIGIN`** a configurar quando o domínio Vercel for definido
+
 ### 2026-03-03 — Deploy das Edge Functions e configuração de secrets
 - **13 Edge Functions** deployadas via `supabase functions deploy --project-ref fenfgjqlsqzvxloeavdc`
 - **Secrets internos** configurados via `supabase secrets set`:
@@ -754,7 +823,15 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
   - Provider `twilio`: `ACCOUNT_SID` + `AUTH_TOKEN`
   - Provider `fireflies`: `FIREFLIES_API_KEY`
 - [ ] **Webhook Fireflies** apontar para `https://fenfgjqlsqzvxloeavdc.supabase.co/functions/v1/process-transcription` (header `X-Webhook-Secret: <TRANSCRIPTION_WEBHOOK_SECRET>`)
-- [ ] **Adicionar verificação de webhook** em `trello-sync` e `clickup-sync`
+- [x] **Adicionar verificação de webhook** em `trello-sync` e `clickup-sync` — CONCLUÍDO em 2026-03-04 (`WEBHOOK_SECRET` configurado)
+- [x] **Externalizar email `from`** nas Edge Functions `send-email`/`send-monthly-reports` — CONCLUÍDO em 2026-03-04 (usa `RESEND_FROM_EMAIL` env var; fallback: `noreply@cavendish.com.br`)
+- [x] **Rota `/parceiro`** dedicada — CONCLUÍDO em 2026-03-04 (página `ParceiroDashboard.tsx`, layout `ClienteLayout`, redirect correto em `Index.tsx` e `ProtectedRoute.tsx`)
+- [x] **Envio automático de relatórios mensais** (pg_cron) — CONCLUÍDO em 2026-03-04:
+  - `pg_cron` já habilitado no projeto
+  - Job `monthly-reports` criado: `0 11 1 * *` (dia 1, 11:00 UTC = 08:00 BRT)
+  - Chama `public.trigger_monthly_reports()` (SECURITY DEFINER) que lê CRON_SECRET da `system_settings` e chama a Edge Function via `pg_net`
+  - Migrations: `20260304000001_pg_cron_monthly_reports.sql`, `20260304000002_cron_wrapper_function.sql`
+- [x] **Notificações Realtime** — JÁ ESTAVA IMPLEMENTADO em `useNotificacoes.ts` (subscriptions INSERT + UPDATE + refetchInterval 30s)
 
 ### Média prioridade
 - [ ] **White-label completo com subdomínio** por organização

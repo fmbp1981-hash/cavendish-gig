@@ -71,8 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchingUserIdRef.current = userId;
 
     try {
-      console.log('[AuthContext] Fetching user data for:', userId);
-
       // Fetch profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -80,7 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('id', userId)
         .maybeSingle();
 
-      console.log('[AuthContext] Profile result:', { profileData, profileError });
+      if (profileError) {
+        console.error('[AuthContext] Profile fetch error:', profileError.message);
+      }
 
       if (profileData) {
         setProfile(profileData as Profile);
@@ -92,17 +92,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('role')
         .eq('user_id', userId);
 
-      console.log('[AuthContext] Roles result:', { rolesData, rolesError });
+      if (rolesError) {
+        console.error('[AuthContext] Roles fetch error:', rolesError.message);
+      }
 
       if (rolesData && Array.isArray(rolesData)) {
         const mappedRoles = rolesData.map((r: { role: string }) => r.role as AppRole);
-        console.log('[AuthContext] Mapped roles:', mappedRoles);
         setRoles(mappedRoles);
-      } else {
-        console.warn('[AuthContext] No roles found for user');
       }
     } catch (error) {
-      console.error('[AuthContext] Error fetching user data:', error);
+      console.error('[AuthContext] Error fetching user data:', error instanceof Error ? error.message : error);
     } finally {
       fetchingUserIdRef.current = null;
       setLoading(false);
