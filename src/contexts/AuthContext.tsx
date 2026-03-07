@@ -9,6 +9,7 @@ interface AuthContextType {
   profile: Profile | null;
   roles: AppRole[];
   loading: boolean;
+  rolesReady: boolean;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUp: (email: string, password: string, metadata?: { nome?: string; empresa?: string }) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
@@ -28,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rolesReady, setRolesReady] = useState(false);
 
   // Fix 3: guard against concurrent double calls on initialization
   const fetchingUserIdRef = useRef<string | null>(null);
@@ -39,9 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        // Reset loading on fresh sign-in so redirect waits for roles to be fetched
+        // Reset loading and rolesReady on fresh sign-in so redirect waits for roles to be fetched
         if (event === 'SIGNED_IN') {
           setLoading(true);
+          setRolesReady(false);
         }
         // Defer Supabase calls with setTimeout to prevent deadlock
         setTimeout(() => {
@@ -51,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchingUserIdRef.current = null;
         setProfile(null);
         setRoles([]);
+        setRolesReady(false);
         setLoading(false);
       }
     });
@@ -108,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('[AuthContext] Error fetching user data:', error instanceof Error ? error.message : error);
     } finally {
       fetchingUserIdRef.current = null;
+      setRolesReady(true);
       setLoading(false);
     }
   };
@@ -160,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile,
     roles,
     loading,
+    rolesReady,
     signIn,
     signUp,
     signOut,

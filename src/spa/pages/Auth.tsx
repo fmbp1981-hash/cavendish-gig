@@ -20,7 +20,7 @@ const registerSchema = loginSchema.extend({
 });
 
 const Auth = () => {
-  const { signIn, signUp, resetPassword, updatePassword, user, loading: authLoading, isAdmin, isConsultor } = useAuth();
+  const { signIn, signUp, resetPassword, updatePassword, user, loading: authLoading, isAdmin, isConsultor, rolesReady } = useAuth();
   const { toast } = useToast();
 
   const getQueryParam = (key: string) => {
@@ -46,14 +46,15 @@ const Auth = () => {
   });
 
   // Redirect if already authenticated (skip during password reset flow)
+  // rolesReady garante que nunca redirecionamos antes dos roles serem carregados
   useEffect(() => {
-    if (user && !authLoading && mode !== "reset-password") {
+    if (user && !authLoading && rolesReady && mode !== "reset-password") {
       const next = getQueryParam("next");
       const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
       const target = safeNext && safeNext !== "/auth" ? safeNext : isAdmin ? "/admin" : isConsultor ? "/consultor" : "/meu-projeto";
       window.location.replace(target);
     }
-  }, [user, authLoading, isAdmin, isConsultor, mode]);
+  }, [user, authLoading, rolesReady, isAdmin, isConsultor, mode]);
 
   const validateForm = () => {
     try {
