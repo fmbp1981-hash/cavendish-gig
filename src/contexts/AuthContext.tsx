@@ -34,11 +34,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
+        // Reset loading on fresh sign-in so redirect waits for roles to be fetched
+        if (event === 'SIGNED_IN') {
+          setLoading(true);
+        }
         // Defer Supabase calls with setTimeout to prevent deadlock
         setTimeout(() => {
           fetchUserData(session.user.id);
