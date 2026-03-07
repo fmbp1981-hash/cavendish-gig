@@ -27,6 +27,10 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Extract organizacao_id from query params (e.g. ?organizacao_id=uuid)
+    const url = new URL(req.url);
+    const organizacaoId = url.searchParams.get("organizacao_id") || null;
+
     // Webhook authentication (Fireflies or similar)
     const service = createServiceClient();
     const integration = await loadIntegration(service, "fireflies", "system", null);
@@ -52,7 +56,7 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const webhookData: FirefliesWebhook = await req.json();
-    console.log("Received transcription webhook");
+    console.log("Received transcription webhook for org:", organizacaoId);
 
     // Generate meeting minutes using AI
     const aiPrompt = `Você é um especialista em Governança Corporativa. Baseado na transcrição abaixo, gere uma ata de reunião profissional.
@@ -119,10 +123,17 @@ Formato: Markdown profissional`;
         meeting_id: webhookData.meetingId,
         meeting_title: webhookData.title,
         meeting_datetime: webhookData.dateTime,
+        organizacao_id: organizacaoId,
       },
       output_text: generatedMinutes,
       status: "completed",
+      ...(organizacaoId ? { organizacao_id: organizacaoId } : {}),
     });
+
+    // Save ata as a document in the organization's document repository
+    if (organizacaoId) {
+      await saveAtaAsDocument(supabase, webhookData, generatedMinutes, organizacaoId);
+    }
 
     // Log the generation
     console.log("Meeting minutes generated successfully");
@@ -145,5 +156,67 @@ Formato: Markdown profissional`;
     );
   }
 };
+
+async function saveAtaAsDocument(
+  supabase: ReturnType<typeof createClient>,
+  webhookData: FirefliesWebhook,
+  generatedMinutes: string,
+  organizacaoId: string
+): Promise<void> {
+  try {
+    // Find active project for this organization
+    const { data: projetos } = await supabase
+      .from("projetos")
+      .select("id")
+      .eq("organizacao_id", organizacaoId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const projetoId = projetos?.[0]?.id || null;
+
+    // Upload markdown to Supabase Storage
+    const timestamp = Date.now();
+    const safeId = webhookData.meetingId.replace(/[^a-zA-Z0-9-_]/g, "_");
+    const storagePath = `${organizacaoId}/atas/${safeId}-${timestamp}.md`;
+    const markdownBytes = new TextEncoder().encode(generatedMinutes);
+
+    const { error: uploadError } = await supabase.storage
+      .from("documentos")
+      .upload(storagePath, markdownBytes, {
+        contentType: "text/markdown",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("Storage upload error:", uploadError);
+      return;
+    }
+
+    // Format the meeting date for display
+    const meetingDate = webhookData.dateTime
+      ? new Date(webhookData.dateTime).toLocaleDateString("pt-BR")
+      : new Date().toLocaleDateString("pt-BR");
+
+    // Insert document record linked to the organization
+    const { error: insertError } = await supabase.from("documentos").insert({
+      organizacao_id: organizacaoId,
+      ...(projetoId ? { projeto_id: projetoId } : {}),
+      nome: `Ata - ${webhookData.title}`,
+      descricao: `Ata de reunião gerada automaticamente via FireFlies.ai — ${meetingDate}`,
+      tipo: "text/markdown",
+      tamanho_bytes: markdownBytes.length,
+      storage_path: storagePath,
+      url: storagePath,
+    });
+
+    if (insertError) {
+      console.error("Document insert error:", insertError);
+    } else {
+      console.log("Ata saved to document repository:", storagePath);
+    }
+  } catch (err) {
+    console.error("Error saving ata as document:", err);
+  }
+}
 
 serve(handler);

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DocumentoPreviewButton } from "@/components/documentos/DocumentoPreviewButton";
 import { GoogleDrivePreviewButton } from "@/components/documentos/GoogleDrivePreviewButton";
 import { DocumentoHistorico } from "@/components/documentos/DocumentoHistorico";
@@ -19,7 +20,9 @@ import {
   Search,
   FolderOpen,
   FileCheck,
-  Calendar
+  Calendar,
+  Mic,
+  Eye,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -39,8 +42,12 @@ type DocumentoAprovadoRow = DocumentoRequeridoStatusRow & {
   documentos: Pick<DocumentoRow, "id" | "nome" | "url" | "storage_path" | "drive_file_id" | "tipo" | "tamanho_bytes" | "created_at"> | null;
 };
 
+type AtaRow = Pick<Database["public"]["Tables"]["documentos"]["Row"],
+  "id" | "nome" | "descricao" | "storage_path" | "tamanho_bytes" | "created_at">;
+
 export default function RepositorioDocumentos() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [ataVisualizando, setAtaVisualizando] = useState<{ nome: string; conteudo: string } | null>(null);
   const { data: projeto } = useClienteProjeto();
 
   const { data: documentosAprovados, isLoading } = useQuery({
@@ -84,6 +91,44 @@ export default function RepositorioDocumentos() {
     },
     enabled: !!projeto?.id,
   });
+
+  const { data: atasReuniao, isLoading: isLoadingAtas } = useQuery({
+    queryKey: ["atas-reuniao", projeto?.organizacao_id],
+    queryFn: async () => {
+      if (!projeto?.organizacao_id) return [];
+
+      const { data, error } = await supabase
+        .from("documentos")
+        .select("id, nome, descricao, storage_path, tamanho_bytes, created_at")
+        .eq("organizacao_id", projeto.organizacao_id)
+        .like("nome", "Ata - %")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as AtaRow[];
+    },
+    enabled: !!projeto?.organizacao_id,
+  });
+
+  const filteredAtas = atasReuniao?.filter(ata =>
+    ata.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleVisualizarAta = async (storagePath: string, nome: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("documentos")
+        .download(storagePath);
+
+      if (error) throw error;
+
+      const text = await data.text();
+      setAtaVisualizando({ nome, conteudo: text });
+    } catch (error) {
+      console.error("Error loading ata:", error);
+      toast.error("Erro ao carregar ata");
+    }
+  };
 
   const filteredDocuments = documentosAprovados?.filter(doc =>
     doc.documentos_requeridos?.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -267,7 +312,103 @@ export default function RepositorioDocumentos() {
             </CardContent>
           </Card>
         )}
+        {/* Atas de Reunião */}
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Mic className="h-5 w-5 text-orange-500" />
+              Atas de Reunião
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Atas geradas automaticamente via FireFlies.ai
+            </p>
+          </div>
+
+          {isLoadingAtas ? (
+            <div className="space-y-3">
+              {[1, 2].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
+            </div>
+          ) : filteredAtas && filteredAtas.length > 0 ? (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="space-y-3">
+                  {filteredAtas.map((ata) => (
+                    <div
+                      key={ata.id}
+                      className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                          <Mic className="h-5 w-5 text-orange-500" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{ata.nome}</p>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            {ata.descricao && <span>{ata.descricao}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {ata.created_at && format(new Date(ata.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-orange-600 border-orange-300">
+                          FireFlies
+                        </Badge>
+                        {ata.storage_path && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleVisualizarAta(ata.storage_path!, ata.nome)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Visualizar
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownload(ata.storage_path!, `${ata.nome}.md`)}
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Baixar
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-8">
+                <Mic className="h-10 w-10 text-muted-foreground mb-3" />
+                <p className="font-medium">Nenhuma ata disponível</p>
+                <p className="text-sm text-muted-foreground text-center mt-1">
+                  As atas geradas via FireFlies.ai aparecerão aqui automaticamente após as reuniões.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
+
+      {/* Modal visualização da ata */}
+      <Dialog open={!!ataVisualizando} onOpenChange={() => setAtaVisualizando(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{ataVisualizando?.nome}</DialogTitle>
+          </DialogHeader>
+          <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed p-4 rounded-lg bg-muted">
+            {ataVisualizando?.conteudo}
+          </pre>
+        </DialogContent>
+      </Dialog>
     </ClienteLayout>
   );
 }

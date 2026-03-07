@@ -170,7 +170,8 @@ const integrations: IntegrationConfig[] = [
       "Crie uma conta em fireflies.ai",
       "Acesse Settings → API & Integrations",
       "Gere uma nova API Key",
-      "Configure o webhook URL: supabase.co/functions/v1/process-transcription",
+      "Configure o webhook URL: [URL-DO-PROJETO].supabase.co/functions/v1/process-transcription?organizacao_id=[ID_DA_ORGANIZACAO]",
+      "Substitua [ID_DA_ORGANIZACAO] pelo UUID da organização do cliente (visível na URL ao acessar o cliente no painel)",
       "Configure o header x-webhook-secret com o mesmo valor salvo em TRANSCRIPTION_WEBHOOK_SECRET"
     ]
   },

@@ -30,6 +30,7 @@ import ConsultorDenuncias from "./spa/pages/consultor/ConsultorDenuncias";
 import ConsultorTarefas from "./spa/pages/consultor/ConsultorTarefas";
 import ConsultorCodigoEtica from "./spa/pages/consultor/ConsultorCodigoEtica";
 import ConsultorAtas from "./spa/pages/consultor/ConsultorAtas";
+import ConsultorClienteDetalhe from "./spa/pages/consultor/ConsultorClienteDetalhe";
 import ConsultorAgendamento from "./spa/pages/consultor/ConsultorAgendamento";
 import ConsultorAdesaoEtica from "./spa/pages/consultor/ConsultorAdesaoEtica";
 import ConsultorRelatorios from "./spa/pages/consultor/ConsultorRelatorios";
@@ -122,6 +123,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["admin", "consultor"]}>
                     <ConsultorClientes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/clientes/:id"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorClienteDetalhe />
                   </ProtectedRoute>
                 }
               />
