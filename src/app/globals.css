@@ -330,6 +330,9 @@
 
 /* Botão Fechar */
 .driver-popover.gig-tour-popover .driver-popover-close-btn {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto !important;
   color: hsl(204 20% 55%);
   background: transparent;
   border: none;
