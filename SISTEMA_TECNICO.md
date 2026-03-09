@@ -1,7 +1,7 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-04 (Suite E2E + 9 bugs corrigidos · ALLOWED_ORIGIN + WEBHOOK_SECRET · email from externalizado · rota /parceiro criada · pg_cron configurado)
+**Última atualização:** 2026-03-09 (Agente IntelliX AI · Calendário Unificado Google Calendar · Fix dupla numeração Google Drive · Fix botão fechar Tour)
 **Versão do sistema:** 0.0.0 (pre-release)
 **Desenvolvido por:** IntelliX.AI
 
@@ -617,6 +617,74 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - Padrão híbrido: App Router (páginas públicas) + React Router SPA (autenticada)
 - `supabase/client.ts` refatorado: lazy init + proxy SSR para evitar erros no build
 
+### 2026-03-09 — Página de detalhe do cliente consultor + estado rolesReady
+- **Nova página** `src/spa/pages/consultor/ConsultorClienteDetalhe.tsx` para a rota `/consultor/clientes/:id`
+  - Exibe nome da organização, projeto ativo e seções de Documentos + Atas de Reunião
+  - A rota já era linkada em `ConsultorClientes.tsx` mas não tinha página correspondente
+- **Estado `rolesReady`** adicionado ao `AuthContext`:
+  - Desacopla "loading de sessão" de "roles carregados", eliminando race condition no redirect pós-login
+  - `rolesReady: false` por padrão; seta `true` no `finally` de `fetchUserData`
+  - Reset explícito em `SIGNED_IN` e no sign-out
+  - `Auth.tsx` e `ProtectedRoute.tsx` atualizados para aguardar `rolesReady` antes de redirecionar
+- **Rota `/consultor/clientes/:id`** registrada em `App.tsx`
+
+### 2026-03-09 — Integração FireFlies → Ata automática no repositório de documentos
+- **Edge Function `process-transcription`** atualizada para aceitar `organizacao_id` via query param
+- Após gerar a ata em markdown (via Gemini), faz upload para Supabase Storage (bucket `documentos`)
+  - Path: `{organizacao_id}/atas/{meetingId}-{timestamp}.md`
+- Insere registro na tabela `documentos` com `tipo: "text/markdown"` e `nome: "Ata - {título}"`
+- Mantém insert em `ai_generations` para auditoria
+- **`RepositorioDocumentos.tsx`** (cliente) — seção "Atas de Reunião" adicionada:
+  - Query: `documentos` onde `nome LIKE 'Ata - %'`
+  - Cards com título, data, download e visualização de markdown
+- **`ConsultorClienteDetalhe.tsx`** — aba "Atas" mostra as atas da organização
+- **Fluxo completo:** FireFlies grava reunião → webhook → `process-transcription?organizacao_id=<uuid>` → ata em Storage → visível para consultor e cliente
+
+### 2026-03-09 — Correções de UI: numeração Google Drive e botão fechar Tour
+
+#### Fix dupla numeração nas instruções do Google Drive
+- **Arquivo:** `src/spa/pages/admin/AdminIntegracoes.tsx`
+- **Causa:** Array `instructions` do Google Drive continha prefixos manuais ("1.", "2."…"14.") e era renderizado em `<ol className="list-decimal ...">`, gerando dupla numeração ("1. 1.", "2. 2.", etc.)
+- **Fix:** Removidos os prefixos numéricos das 14 strings — o `<ol>` já numera automaticamente
+- Corrige as duas ocorrências de renderização (lista principal e dialog de configuração)
+
+#### Fix botão fechar "X" do Tour (driver.js)
+- **Arquivo:** `src/app/globals.css`
+- **Causa:** CSS do `.driver-popover-close-btn` não declarava `pointer-events` nem `z-index`, deixando o botão susceptível a ser coberto por outros elementos
+- **Fix:** Adicionado `position: relative`, `z-index: 10` e `pointer-events: auto !important` ao seletor
+- O Tour agora pode ser fechado a qualquer momento sem precisar concluir todos os passos
+
+### 2026-03-09 — Agente de IA IntelliX (chat interno) + Calendário unificado
+
+#### Agente IntelliX AI — Chat flutuante nativo
+- **`supabase/functions/ai-generate/index.ts`** — case `"chat"` completamente reescrito:
+  - Com `organizacao_id`: busca em paralelo organização (nome/segmento/porte), projeto ativo (fase/status/previsão), tarefas pendentes com prazo/prioridade, e status de documentos (aprovados/pendentes)
+  - Sem `organizacao_id`: busca todas as organizações do consultor e tarefas de sua responsabilidade
+  - Monta system prompt rico com os dados reais do sistema em tempo real
+  - Suporte a conversas multi-turn: `input_data.historico[]` é formatado e concatenado ao userPrompt
+- **`src/components/agente/AgenteChat.tsx`** — novo componente (chat flutuante):
+  - Botão âmbar flutuante no canto inferior direito (`fixed z-50 bottom-6 right-6`)
+  - Painel de 560px com histórico de mensagens, avatar diferenciado por role
+  - Envio com Enter (Shift+Enter = nova linha), botão limpar conversa, minimizar e fechar
+  - Usa `useAIGenerate` com `tipo: "chat"`, não-streaming (compatível com todos os provedores)
+  - Mensagem inicial de boas-vindas como contexto para o usuário
+- **`ConsultorLayout.tsx`** — `<AgenteChat />` adicionado, visível em todas as páginas do consultor
+
+#### Calendário Unificado (`/consultor/agenda`)
+- **`src/spa/pages/consultor/ConsultorAgenda.tsx`** — nova página com `react-big-calendar`:
+  - Localizado em português (pt-BR) com `date-fns` localizer
+  - Views: Mês / Semana / Dia / Agenda, navegação por Anterior/Próximo/Hoje
+  - 3 fontes de dados integradas:
+    - 🟢 **Reuniões GIG** (verde `#10b981`) — eventos Google Calendar detectados pelo título (contêm "reunião", "acompanhamento", "kickoff", "gig")
+    - 🔵 **Google Calendar** (azul `#3b82f6`) — demais eventos via `listarEventosCalendario()`
+    - 🟠 **Tarefas com prazo** (laranja `#f97316`) — `tarefas` com `prazo IS NOT NULL` e `status != concluida`
+  - Botão "Sincronizar Google Calendar" com ícone de loading durante refresh
+  - Clique em evento abre painel de detalhes (título, tipo, data início/fim, descrição, prioridade)
+  - Alerta visível quando Google Calendar não está configurado (graceful degradation)
+- **`ConsultorLayout.tsx`** — item "Agenda" (ícone Calendar) adicionado ao nav lateral após "Agendar Reunião"
+- **`App.tsx`** — rota `/consultor/agenda` registrada
+- **`package.json`** — dependência `react-big-calendar` adicionada
+
 ### 2026-03-02 — Regeneração de tipos TypeScript e remoção de `as any`
 - **`src/integrations/supabase/types.ts`** regenerado via Management API (GET `/v1/projects/fenfgjqlsqzvxloeavdc/types/typescript`)
 - Arquivo passou de tipos parciais para **73.745 chars** cobrindo todas as 40 tabelas, ENUMs, funções RPC e views
@@ -739,6 +807,20 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 
 ## 14. Bugs Corrigidos
 
+### 2026-03-09 — Correções de UI
+
+#### BUG UI-01 — Dupla numeração nas instruções do Google Drive (`AdminIntegracoes.tsx`)
+- **Sintoma:** Lista do Google Drive exibia "1. 1. Acesse…", "2. 2. Clique…" etc.
+- **Causa:** Array `instructions` continha prefixos manuais ("1.", "2."…) E o container era `<ol className="list-decimal">`, gerando numeração dupla
+- **Fix:** Removidos os 14 prefixos numéricos das strings — a numeração automática do `<ol>` é suficiente
+- **Arquivo:** `src/spa/pages/admin/AdminIntegracoes.tsx` (linhas 189–203)
+
+#### BUG UI-02 — Botão fechar "X" do Tour não respondia a cliques (`driver.js`)
+- **Sintoma:** Botão X visível no popover do Tour mas inativo ao clique — era necessário concluir todos os passos para sair
+- **Causa:** CSS do `.driver-popover-close-btn` sem `pointer-events` e sem `z-index`, tornando o botão interceptável por overlay ou elementos adjacentes
+- **Fix:** Adicionado `position: relative; z-index: 10; pointer-events: auto !important;` ao seletor do close button
+- **Arquivo:** `src/app/globals.css`
+
 ### 2026-03-02 — Correções no sistema de autenticação
 **Arquivo:** `src/contexts/AuthContext.tsx`, `src/spa/pages/Auth.tsx`, `src/components/auth/ProtectedRoute.tsx`
 
@@ -834,18 +916,26 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - [x] **Notificações Realtime** — JÁ ESTAVA IMPLEMENTADO em `useNotificacoes.ts` (subscriptions INSERT + UPDATE + refetchInterval 30s)
 
 ### Média prioridade
+- [ ] **Configurar `ALLOWED_ORIGIN`** no Vercel quando domínio de produção for definido
+- [ ] **Webhook Fireflies** apontar para `.../process-transcription?organizacao_id=<ID>` (header `X-Webhook-Secret`)
+- [ ] **Configurar Google Calendar** via painel Admin → Integrações (JSON Service Account) para que a agenda funcione em produção
 - [ ] **White-label completo com subdomínio** por organização
-- [ ] **Envio automático de relatórios mensais** (cron no Supabase pg_cron)
-- [ ] **Notificações push / Realtime** no frontend (Supabase Realtime subscriptions)
-- [ ] **Rota `/parceiro`** dedicada para usuários com role `parceiro`
-- [ ] **Externalizar emails `from` hardcoded** nas Edge Functions `send-email` e `send-monthly-reports` para o secret `RESEND_FROM_EMAIL`
+
+### Média prioridade
+- [x] **Envio automático de relatórios mensais** — CONCLUÍDO (pg_cron 2026-03-04)
+- [x] **Notificações push / Realtime** — JÁ IMPLEMENTADO em `useNotificacoes.ts`
+- [x] **Rota `/parceiro`** — CONCLUÍDO em 2026-03-04
+- [x] **Externalizar emails `from`** — CONCLUÍDO em 2026-03-04
 
 ### Baixa prioridade / Future
 - [ ] SSO corporativo (SAML/OAuth2 enterprise)
 - [ ] Analytics avançado (cohort, funil)
 - [ ] i18n multi-idioma
 - [ ] Templates com editor drag-and-drop
-- [ ] Chatbot interno
+- [x] **Chatbot / Agente de IA interno** — CONCLUÍDO em 2026-03-09 (IntelliX Chat flutuante com contexto de sistema em tempo real)
+- [ ] **Agente executar ações via chat** — IntelliX responde perguntas; próximo passo: executar ações (criar tarefa, agendar reunião, aprovar doc) via tool-calling
+- [ ] **Persistência do histórico de chat** — atualmente em memória (perde ao fechar); considerar tabela `agente_conversas` no Supabase
+- [ ] **IntelliX para clientes** — estender o AgenteChat ao ClienteLayout para que clientes consultem seus documentos e tarefas via chat
 
 ---
 
