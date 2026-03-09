@@ -5,6 +5,7 @@ import { useBrandingContext } from "@/components/branding/TenantBrandingProvider
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { TutorialHelpButton } from "@/components/tutorial/TutorialHelpButton";
+import { AgenteChat } from "@/components/agente/AgenteChat";
 import {
   LayoutDashboard,
   Users,
@@ -20,7 +21,8 @@ import {
   Sparkles,
   CalendarPlus,
   FileCheck,
-  BarChart3
+  BarChart3,
+  Calendar
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -45,6 +47,7 @@ const navItems = [
   { icon: FileCheck,       label: "Adesão Ética",      href: "/consultor/adesao-etica", dataTour: "menu-adesao-etica" },
   { icon: BarChart3,       label: "Relatórios",        href: "/consultor/relatorios",   dataTour: "menu-relatorios" },
   { icon: CalendarPlus,    label: "Agendar Reunião",   href: "/consultor/agendamento",  dataTour: "menu-reunioes" },
+  { icon: Calendar,        label: "Agenda",            href: "/consultor/agenda",       dataTour: "menu-agenda" },
   { icon: AlertTriangle,   label: "Denúncias",         href: "/consultor/denuncias",    dataTour: "menu-denuncias" },
   { icon: Sparkles,        label: "IA: Código de Ética", href: "/consultor/codigo-etica", dataTour: "menu-codigo-etica" },
   { icon: FileText,        label: "IA: Atas",          href: "/consultor/atas",         dataTour: "menu-atas" },
@@ -199,6 +202,9 @@ export function ConsultorLayout({ children }: ConsultorLayoutProps) {
           {children}
         </div>
       </main>
+
+      {/* IntelliX AI floating chat agent */}
+      <AgenteChat />
     </div>
   );
 }

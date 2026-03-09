@@ -397,12 +397,122 @@ Formate em Markdown.`;
 Inclua TODAS as 11 cláusulas do modelo oficial CCE.`;
         break;
 
-      case "chat":
-      default:
-        systemPrompt = `Você é um assistente especializado em governança corporativa, compliance e gestão empresarial.
-Responda de forma clara, profissional e objetiva.`;
-        userPrompt = String(input_data.mensagem || input_data.prompt || "");
+      case "chat": {
+        // Build system context from live system data
+        let contextLines: string[] = [];
+
+        if (organizacao_id) {
+          // Context for a specific organization
+          const [orgRes, projetoRes, tarefasRes, docsRes] = await Promise.all([
+            supabaseService
+              .from("organizacoes")
+              .select("nome, segmento, porte")
+              .eq("id", organizacao_id)
+              .single(),
+            supabaseService
+              .from("projetos")
+              .select("nome, fase_atual, data_fim_prevista, status")
+              .eq("organizacao_id", organizacao_id)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .single(),
+            supabaseService
+              .from("tarefas")
+              .select("titulo, status, prazo, prioridade")
+              .eq("organizacao_id", organizacao_id)
+              .neq("status", "concluida")
+              .order("prazo")
+              .limit(15),
+            supabaseService
+              .from("documentos_requeridos_status")
+              .select("status")
+              .eq("organizacao_id", organizacao_id),
+          ]);
+
+          if (orgRes.data) {
+            contextLines.push(`Organização ativa: ${orgRes.data.nome} (${orgRes.data.segmento || "sem segmento"}, porte: ${orgRes.data.porte || "não informado"})`);
+          }
+          if (projetoRes.data) {
+            const projeto = projetoRes.data;
+            contextLines.push(`Projeto atual: ${projeto.nome} | Fase: ${projeto.fase_atual || "não definida"} | Status: ${projeto.status || "ativo"} | Previsão de fim: ${projeto.data_fim_prevista || "não definida"}`);
+          }
+          if (tarefasRes.data && tarefasRes.data.length > 0) {
+            contextLines.push(`\nTarefas pendentes (${tarefasRes.data.length}):`);
+            tarefasRes.data.forEach((t: any) => {
+              const prazo = t.prazo ? new Date(t.prazo).toLocaleDateString("pt-BR") : "sem prazo";
+              contextLines.push(`  - [${t.prioridade || "normal"}] ${t.titulo} — prazo: ${prazo} (${t.status})`);
+            });
+          } else {
+            contextLines.push("Tarefas pendentes: nenhuma");
+          }
+          if (docsRes.data) {
+            const total = docsRes.data.length;
+            const aprovados = docsRes.data.filter((d: any) => d.status === "aprovado").length;
+            const pendentes = docsRes.data.filter((d: any) => d.status === "pendente" || d.status === "enviado").length;
+            contextLines.push(`Documentos: ${aprovados}/${total} aprovados, ${pendentes} pendentes`);
+          }
+        } else {
+          // General consultant context — all their organizations
+          const [orgsRes, tarefasRes] = await Promise.all([
+            supabaseService
+              .from("organizacoes")
+              .select("nome, segmento")
+              .eq("consultor_responsavel_id", user.id)
+              .limit(30),
+            supabaseService
+              .from("tarefas")
+              .select("titulo, status, prazo, prioridade, organizacao_id")
+              .eq("responsavel_id", user.id)
+              .neq("status", "concluida")
+              .not("prazo", "is", null)
+              .order("prazo")
+              .limit(20),
+          ]);
+
+          if (orgsRes.data && orgsRes.data.length > 0) {
+            contextLines.push(`Organizações sob sua gestão (${orgsRes.data.length}):`);
+            orgsRes.data.forEach((o: any) => {
+              contextLines.push(`  - ${o.nome}${o.segmento ? ` (${o.segmento})` : ""}`);
+            });
+          } else {
+            contextLines.push("Nenhuma organização atribuída a você ainda.");
+          }
+          if (tarefasRes.data && tarefasRes.data.length > 0) {
+            const urgentes = tarefasRes.data.filter((t: any) => t.prioridade === "alta" || t.prioridade === "urgente");
+            contextLines.push(`\nTarefas pendentes sob sua responsabilidade: ${tarefasRes.data.length} (${urgentes.length} urgentes/alta prioridade)`);
+            tarefasRes.data.slice(0, 10).forEach((t: any) => {
+              const prazo = t.prazo ? new Date(t.prazo).toLocaleDateString("pt-BR") : "sem prazo";
+              contextLines.push(`  - [${t.prioridade || "normal"}] ${t.titulo} — prazo: ${prazo}`);
+            });
+          }
+        }
+
+        const contextData = contextLines.length > 0
+          ? contextLines.join("\n")
+          : "Nenhum dado disponível no momento.";
+
+        systemPrompt = `Você é o IntelliX — assistente de IA nativo do Sistema GIG (Governança, Integridade e Gestão).
+Você tem acesso em tempo real aos dados do sistema e pode responder perguntas sobre organizações, projetos, tarefas, documentos e qualquer informação do sistema.
+Seja objetivo, profissional e direto. Responda sempre em português brasileiro.
+Se o usuário pedir para executar uma ação que você não pode realizar diretamente, explique o que ele precisa fazer no sistema.
+
+DADOS ATUAIS DO SISTEMA (atualizado agora):
+${contextData}`;
+
+        // Build user prompt with conversation history
+        const historico = (input_data.historico as Array<{ role: string; content: string }>) || [];
+        const mensagemAtual = String(input_data.mensagem || input_data.prompt || "");
+
+        if (historico.length > 0) {
+          const historicoFormatado = historico
+            .map((h) => `${h.role === "user" ? "Usuário" : "IntelliX"}: ${h.content}`)
+            .join("\n");
+          userPrompt = `Histórico da conversa:\n${historicoFormatado}\n\nUsuário: ${mensagemAtual}`;
+        } else {
+          userPrompt = mensagemAtual;
+        }
         break;
+      }
     }
 
     const startTime = Date.now();
