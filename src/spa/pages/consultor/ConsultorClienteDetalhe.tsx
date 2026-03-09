@@ -51,7 +51,7 @@ export default function ConsultorClienteDetalhe() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("documentos")
-        .select("id, nome, url, created_at, metadata")
+        .select("id, nome, url, created_at")
         .eq("organizacao_id", organizacaoId!)
         .like("nome", "Ata - %")
         .order("created_at", { ascending: false });
