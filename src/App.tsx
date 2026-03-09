@@ -14,7 +14,6 @@ import Auth from "./spa/pages/Auth";
 import Denuncia from "./spa/pages/Denuncia";
 import ConsultaProtocolo from "./spa/pages/ConsultaProtocolo";
 import Onboarding from "./spa/pages/Onboarding";
-import Dashboard from "./spa/pages/Dashboard";
 import MeuProjeto from "./spa/pages/cliente/MeuProjeto";
 import DocumentosNecessarios from "./spa/pages/cliente/DocumentosNecessarios";
 import ClienteDiagnostico from "./spa/pages/cliente/Diagnostico";

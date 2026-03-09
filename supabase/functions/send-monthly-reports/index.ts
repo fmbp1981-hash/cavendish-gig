@@ -5,12 +5,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
-import { loadIntegration } from "../_shared/integrations.ts";
-
+import { sendEmail } from "../_shared/email.ts";
 import { buildCorsHeaders } from "../_shared/cors.ts";
-
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "GIG Sistema <noreply@cavendish.com.br>";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -281,54 +277,6 @@ function gerarRelatorioHTML(
   `;
 }
 
-/**
- * Envia email via Resend
- */
-async function enviarEmail(
-  para: string,
-  assunto: string,
-  html: string
-): Promise<boolean> {
-  try {
-    const integration = await loadIntegration(supabase, "resend", "system", null);
-    if (integration && !integration.enabled) {
-      console.error("Resend disabled via integrations vault");
-      return false;
-    }
-
-    let apiKey = (integration?.secrets as any)?.RESEND_API_KEY || RESEND_API_KEY || "";
-
-    if (!apiKey) {
-      console.error("RESEND_API_KEY não configurada");
-      return false;
-    }
-
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        from: FROM_EMAIL,
-        to: [para],
-        subject: assunto,
-        html: html,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("Erro ao enviar email:", error);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error("Erro ao enviar email:", error);
-    return false;
-  }
-}
 
 /**
  * Processa envio de relatório para uma organização
@@ -376,8 +324,8 @@ async function processarRelatorio(
       return false;
     }
 
-    // 4. Enviar email
-    const enviado = await enviarEmail(org.email, relatorio.assunto, html);
+    // 4. Enviar email via shared hub
+    const enviado = await sendEmail(supabase, org.email, relatorio.assunto, html);
 
     if (enviado) {
       // 5. Marcar como enviado

@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
-import { loadIntegration } from "../_shared/integrations.ts";
+import { sendEmail } from "../_shared/email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -113,60 +112,32 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Send reminder emails
-    const integration = await loadIntegration(supabase, "resend", "system", null);
-    if (integration && !integration.enabled) {
-      console.log("Resend disabled via integrations vault, skipping email sending");
-      return new Response(
-        JSON.stringify({ success: true, skipped: true, reason: "resend_disabled" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    const resendApiKey = (integration?.secrets as any)?.RESEND_API_KEY || Deno.env.get("RESEND_API_KEY") || "";
+    // Send reminder emails via shared hub
     let emailsSent = 0;
     const errors: string[] = [];
 
-    if (resendApiKey) {
-      const resend = new Resend(resendApiKey);
-      for (const org of Object.values(orgPending)) {
-        if (org.pending_count > 0 && org.emails.length > 0) {
-          console.log(`Sending reminder to ${org.organizacao_nome}: ${org.pending_count} pending docs`);
-
-          try {
-            const to = org.emails[0];
-            const pendingCount = org.pending_count;
-            const userName = org.user_names[0] || undefined;
-
-            const subject = `📋 Lembrete: ${pendingCount} documentos pendentes`;
-            const html = `
-              <div style="font-family:Segoe UI,Tahoma,Geneva,Verdana,sans-serif;max-width:600px;margin:0 auto;">
-                <h2 style="margin:0 0 12px 0;">📋 Documentos Pendentes</h2>
-                <p>Olá${userName ? `, ${userName}` : ''},</p>
-                <p>Você possui <strong>${pendingCount}</strong> documentos pendentes para envio.</p>
-                <p>Atenciosamente,<br/><strong>Equipe Cavendish GIG</strong></p>
-              </div>
-            `;
-
-            const sendResult = await resend.emails.send({
-              from: "Cavendish GIG <noreply@cavendishgig.com>",
-              to: [to],
-              subject,
-              html,
-            });
-
-            if (!sendResult.data?.id) {
-              errors.push(`${org.organizacao_nome}: falha ao enviar email`);
-            } else {
-              emailsSent++;
-            }
-          } catch (e: any) {
-            errors.push(`${org.organizacao_nome}: ${e.message}`);
-          }
+    for (const org of Object.values(orgPending)) {
+      if (org.pending_count > 0 && org.emails.length > 0) {
+        console.log(`Sending reminder to ${org.organizacao_nome}: ${org.pending_count} pending docs`);
+        const to = org.emails[0];
+        const pendingCount = org.pending_count;
+        const userName = org.user_names[0] || "";
+        const subject = `📋 Lembrete: ${pendingCount} documentos pendentes`;
+        const html = `
+          <div style="font-family:Segoe UI,Tahoma,Geneva,Verdana,sans-serif;max-width:600px;margin:0 auto;">
+            <h2 style="margin:0 0 12px 0;">📋 Documentos Pendentes</h2>
+            <p>Olá${userName ? `, ${userName}` : ''},</p>
+            <p>Você possui <strong>${pendingCount}</strong> documentos pendentes para envio.</p>
+            <p>Atenciosamente,<br/><strong>Equipe Cavendish GIG</strong></p>
+          </div>
+        `;
+        const sent = await sendEmail(supabase, to, subject, html);
+        if (sent) {
+          emailsSent++;
+        } else {
+          errors.push(`${org.organizacao_nome}: falha ao enviar email`);
         }
       }
-    } else {
-      console.log("RESEND_API_KEY not configured, skipping email sending");
     }
 
     const summary = {

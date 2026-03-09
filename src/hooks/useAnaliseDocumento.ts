@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { notificarDocumentoAprovado, notificarDocumentoRejeitado } from './useNotificacoesEmail';
+import { notificarDocumentoAprovado, notificarDocumentoRejeitado } from './emailNotifications';
 
 interface DocumentoContext {
   documentoNome: string;
