@@ -91,6 +91,7 @@ O **Sistema GIG** (Gestão Integrada de Governança) é uma plataforma SaaS/whit
 | jsPDF + html2canvas | — | Exportação PDF client-side |
 | react-pdf / pdfjs-dist | — | Visualização PDF |
 | date-fns | 3.x | Manipulação de datas |
+| react-big-calendar | 1.x | Calendário interativo (mês/semana/dia) — adicionado 2026-03-09 |
 
 ### Backend
 | Tecnologia | Uso |
@@ -248,7 +249,7 @@ Todas as tabelas têm RLS habilitado. Políticas baseadas em:
 
 ### Métodos disponíveis via `useAuth()`
 ```ts
-user, session, profile, roles, loading
+user, session, profile, roles, loading, rolesReady  // rolesReady: true após fetch de roles concluir
 signIn(email, password)
 signUp(email, password, { nome?, empresa? })
 signOut()
@@ -257,6 +258,8 @@ updatePassword(newPassword)
 hasRole(role: AppRole)
 isAdmin, isConsultor, isCliente
 ```
+
+> **`rolesReady`** (adicionado 2026-03-09): estado booleano que sinaliza explicitamente quando os roles do usuário foram carregados do banco. Desacopla "sessão ativa" de "roles prontos", eliminando race condition onde `Auth.tsx` redirecionava antes de saber a role real. `ProtectedRoute` e `Auth.tsx` aguardam `rolesReady === true` antes de tomar decisão de navegação.
 
 ### Roles e redirecionamentos
 | Role | Dashboard padrão |
@@ -302,12 +305,14 @@ isAdmin, isConsultor, isCliente
 |------|--------|-----------|
 | `/consultor` | `ConsultorDashboard.tsx` | Dashboard multi-cliente com gráficos |
 | `/consultor/clientes` | `ConsultorClientes.tsx` | Gestão de clientes |
+| `/consultor/clientes/:id` | `ConsultorClienteDetalhe.tsx` | Detalhe da organização: docs + atas (adicionado 2026-03-09) |
 | `/consultor/documentos` | `ConsultorDocumentos.tsx` | Revisão de documentos |
 | `/consultor/denuncias` | `ConsultorDenuncias.tsx` | Gestão de denúncias |
 | `/consultor/tarefas` | `ConsultorTarefas.tsx` | Kanban de tarefas |
 | `/consultor/codigo-etica` | `ConsultorCodigoEtica.tsx` | Geração de Código de Ética |
-| `/consultor/atas` | `ConsultorAtas.tsx` | Atas geradas por IA |
+| `/consultor/atas` | `ConsultorAtas.tsx` | Atas geradas por IA (manual) |
 | `/consultor/agendamento` | `ConsultorAgendamento.tsx` | Agendamento Google Calendar |
+| `/consultor/agenda` | `ConsultorAgenda.tsx` | Calendário unificado: Google Cal + tarefas + reuniões (adicionado 2026-03-09) |
 | `/consultor/adesao-etica` | `ConsultorAdesaoEtica.tsx` | Monitoramento de adesões |
 | `/consultor/relatorios` | `ConsultorRelatorios.tsx` | Relatórios mensais em PDF |
 | `/consultor/configuracoes` | `ConsultorConfiguracoes.tsx` | Configurações do consultor |
@@ -335,6 +340,8 @@ isAdmin, isConsultor, isCliente
 - **Preview de PDF:** Visualização in-app com zoom e paginação (react-pdf)
 - **Comentários em documentos:** Threads com 3 níveis de respostas
 - **Histórico de versões:** Versionamento automático de documentos via trigger
+- **IntelliX AI Chat** *(adicionado 2026-03-09)*: assistente de IA flutuante (botão âmbar, canto inferior direito) com acesso a dados reais do sistema (orgs, projetos, tarefas, documentos); conversas multi-turn; visível em todas as páginas do consultor
+- **Calendário Unificado** *(adicionado 2026-03-09)*: `/consultor/agenda` com `react-big-calendar`; agrega Google Calendar (🔵 azul / 🟢 reuniões GIG) e tarefas com prazo (🟠 laranja); views mês/semana/dia em pt-BR
 
 ---
 
@@ -344,9 +351,9 @@ Localizadas em `supabase/functions/`. Todas em TypeScript/Deno.
 
 | Function | JWT | Secrets necessários | Descrição |
 |----------|-----|---------------------|-----------|
-| `ai-generate` | ✅ sim | `OPENAI_API_KEY` (ou `LOVABLE_API_KEY`) | Geração de documentos, atas, relatórios com GPT-4 |
+| `ai-generate` | ✅ sim | `OPENAI_API_KEY` (ou `LOVABLE_API_KEY`) | Geração de documentos, atas, relatórios; **chat IntelliX com contexto de sistema** (org, projeto, tarefas, docs) |
 | `google-drive` | ✅ sim | `GOOGLE_SERVICE_ACCOUNT` | CRUD de pastas e arquivos no Google Drive |
-| `google-calendar` | ✅ sim | `GOOGLE_SERVICE_ACCOUNT` | Criar eventos com Google Meet |
+| `google-calendar` | ✅ sim | `GOOGLE_SERVICE_ACCOUNT` | Criar/listar/deletar eventos com Google Meet; listagem usada pela página `/consultor/agenda` |
 | `send-email` | ✅ sim | `RESEND_API_KEY` | Envio de emails via Resend |
 | `send-whatsapp` | ✅ sim | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Envio de mensagens via Twilio |
 | `process-transcription` | ✅ sim | `OPENAI_API_KEY`, `TRANSCRIPTION_WEBHOOK_SECRET` | Ingestão de transcrição do Fireflies + geração de ata |
@@ -460,14 +467,18 @@ cavendish-gig-main/
 │   │   ├── Help.tsx
 │   │   ├── NotFound.tsx
 │   │   ├── admin/                       ← 10 páginas admin
-│   │   ├── consultor/                   ← 11 páginas consultor
+│   │   ├── consultor/                   ← 13 páginas consultor
+│   │   │   ├── ConsultorClienteDetalhe.tsx  ← Detalhe org: docs + atas (adicionado 2026-03-09)
+│   │   │   └── ConsultorAgenda.tsx          ← Calendário unificado Google Cal + tarefas (adicionado 2026-03-09)
 │   │   └── cliente/                     ← 8 páginas cliente
 │   ├── components/
+│   │   ├── agente/                      ← IntelliX AI Chat (adicionado 2026-03-09)
+│   │   │   └── AgenteChat.tsx           ← Botão flutuante + painel de chat
 │   │   ├── auth/
 │   │   │   └── ProtectedRoute.tsx
 │   │   ├── layout/
 │   │   │   ├── AdminLayout.tsx
-│   │   │   ├── ConsultorLayout.tsx
+│   │   │   ├── ConsultorLayout.tsx      ← Inclui <AgenteChat /> + item "Agenda" no nav
 │   │   │   └── ClienteLayout.tsx
 │   │   ├── analytics/                   ← 5 componentes de gráficos
 │   │   ├── branding/
@@ -920,12 +931,6 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - [ ] **Webhook Fireflies** apontar para `.../process-transcription?organizacao_id=<ID>` (header `X-Webhook-Secret`)
 - [ ] **Configurar Google Calendar** via painel Admin → Integrações (JSON Service Account) para que a agenda funcione em produção
 - [ ] **White-label completo com subdomínio** por organização
-
-### Média prioridade
-- [x] **Envio automático de relatórios mensais** — CONCLUÍDO (pg_cron 2026-03-04)
-- [x] **Notificações push / Realtime** — JÁ IMPLEMENTADO em `useNotificacoes.ts`
-- [x] **Rota `/parceiro`** — CONCLUÍDO em 2026-03-04
-- [x] **Externalizar emails `from`** — CONCLUÍDO em 2026-03-04
 
 ### Baixa prioridade / Future
 - [ ] SSO corporativo (SAML/OAuth2 enterprise)
