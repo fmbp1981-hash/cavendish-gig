@@ -23,6 +23,8 @@ import NotFound from "./spa/pages/NotFound";
 
 // Consultor Pages
 import ConsultorDashboard from "./spa/pages/consultor/ConsultorDashboard";
+import ConsultorClienteDetalhe from "./spa/pages/consultor/ConsultorClienteDetalhe";
+import ConsultorAgenda from "./spa/pages/consultor/ConsultorAgenda";
 import ConsultorClientes from "./spa/pages/consultor/ConsultorClientes";
 import ConsultorDocumentos from "./spa/pages/consultor/ConsultorDocumentos";
 import ConsultorDenuncias from "./spa/pages/consultor/ConsultorDenuncias";
@@ -125,6 +127,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/consultor/clientes/:id"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorClienteDetalhe />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/consultor/documentos"
                 element={
                   <ProtectedRoute requiredRoles={["admin", "consultor"]}>
@@ -161,6 +171,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["admin", "consultor"]}>
                     <ConsultorAtas />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/agenda"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorAgenda />
                   </ProtectedRoute>
                 }
               />

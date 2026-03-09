@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { BaseLayout, NavItem } from "./BaseLayout";
+import { AgenteChat } from "@/components/agente/AgenteChat";
 import {
   LayoutDashboard,
   Users,
@@ -11,6 +12,7 @@ import {
   CheckSquare,
   Sparkles,
   CalendarPlus,
+  CalendarDays,
   FileCheck,
   BarChart3,
   BookOpen,
@@ -42,6 +44,7 @@ const navItems: NavItem[] = [
   { icon: FileText,        label: "Rel. Regulatórios",    href: "/consultor/relatorios-reg",     dataTour: "menu-relatorios-reg" },
   { icon: Search,          label: "Consulta CEIS",        href: "/consultor/ceis",               dataTour: "menu-ceis" },
   { icon: BarChart3,       label: "Relatórios",           href: "/consultor/relatorios",         dataTour: "menu-relatorios" },
+  { icon: CalendarDays,    label: "Agenda",               href: "/consultor/agenda",             dataTour: "menu-agenda" },
   { icon: CalendarPlus,    label: "Agendar Reunião",      href: "/consultor/agendamento",        dataTour: "menu-reunioes" },
   { icon: AlertTriangle,   label: "Denúncias",            href: "/consultor/denuncias",          dataTour: "menu-denuncias" },
   { icon: Sparkles,        label: "IA: Código de Ética",  href: "/consultor/codigo-etica",       dataTour: "menu-codigo-etica" },
@@ -76,6 +79,7 @@ export function ConsultorLayout({ children }: ConsultorLayoutProps) {
       extraMenuItems={extraMenuItems}
     >
       {children}
+      <AgenteChat />
     </BaseLayout>
   );
 }

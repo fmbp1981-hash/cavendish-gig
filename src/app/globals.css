@@ -341,6 +341,9 @@
   justify-content: center;
   cursor: pointer;
   transition: background-color 0.15s;
+  position: relative;
+  z-index: 9999;
+  pointer-events: auto !important;
 }
 .driver-popover.gig-tour-popover .driver-popover-close-btn:hover {
   background-color: hsl(40 15% 90%);

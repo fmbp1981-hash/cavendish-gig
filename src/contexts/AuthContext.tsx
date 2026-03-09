@@ -9,6 +9,8 @@ interface AuthContextType {
   profile: Profile | null;
   roles: AppRole[];
   loading: boolean;
+  /** true somente após fetchUserData completar (com sucesso ou erro). Garante que roles estão carregados. */
+  rolesReady: boolean;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUp: (email: string, password: string, metadata?: { nome?: string; empresa?: string }) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
@@ -28,17 +30,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rolesReady, setRolesReady] = useState(false);
 
-  // Fix 3: guard against concurrent double calls on initialization
+  // Guard against concurrent double calls on initialization
   const fetchingUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
+        // Reset rolesReady on new sign-in so redirect waits for roles
+        if (event === 'SIGNED_IN') {
+          setRolesReady(false);
+          setLoading(true);
+        }
         // Defer Supabase calls with setTimeout to prevent deadlock
         setTimeout(() => {
           fetchUserData(session.user.id);
@@ -47,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchingUserIdRef.current = null;
         setProfile(null);
         setRoles([]);
+        setRolesReady(false);
         setLoading(false);
       }
     });
@@ -105,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       fetchingUserIdRef.current = null;
       setLoading(false);
+      setRolesReady(true); // sempre sinaliza que tentou carregar (mesmo em erro de rede)
     }
   };
 
@@ -156,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile,
     roles,
     loading,
+    rolesReady,
     signIn,
     signUp,
     signOut,

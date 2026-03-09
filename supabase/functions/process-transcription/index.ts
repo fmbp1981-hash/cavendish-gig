@@ -51,6 +51,10 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // organizacao_id pode vir como query param (configurado pelo admin no webhook URL do Fireflies)
+    const url = new URL(req.url);
+    const organizacaoId = url.searchParams.get("organizacao_id") || null;
+
     const webhookData: FirefliesWebhook = await req.json();
     console.log("Received transcription webhook");
 
@@ -112,7 +116,7 @@ Formato: Markdown profissional`;
     const aiJson = await aiResp.json();
     const generatedMinutes = aiJson.choices?.[0]?.message?.content || "Ata não gerada";
 
-    // Store generation for auditability
+    // Salva em ai_generations para auditoria
     await supabase.from("ai_generations").insert({
       tipo: "ata_reuniao",
       input_data: {
@@ -124,7 +128,57 @@ Formato: Markdown profissional`;
       status: "completed",
     });
 
-    // Log the generation
+    // Salva no repositório de documentos da organização (visível na seção de Atas)
+    if (organizacaoId) {
+      const meetingDate = webhookData.dateTime
+        ? new Date(webhookData.dateTime).toLocaleDateString("pt-BR")
+        : new Date().toLocaleDateString("pt-BR");
+      const nomeAta = `Ata - ${webhookData.title} (${meetingDate})`;
+
+      // Busca um projeto ativo da organização para vincular o documento
+      const { data: projeto } = await supabase
+        .from("projetos")
+        .select("id")
+        .eq("organizacao_id", organizacaoId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const conteudoBlob = new TextEncoder().encode(generatedMinutes);
+      const storagePath = `${organizacaoId}/atas/${webhookData.meetingId}.md`;
+
+      // Upload do conteúdo markdown no Storage
+      await supabase.storage
+        .from("documentos")
+        .upload(storagePath, conteudoBlob, {
+          contentType: "text/markdown",
+          upsert: true,
+        });
+
+      const { data: publicUrl } = supabase.storage
+        .from("documentos")
+        .getPublicUrl(storagePath);
+
+      // Insere o registro na tabela documentos
+      await supabase.from("documentos").insert({
+        nome: nomeAta,
+        tipo: "ata_reuniao",
+        url: publicUrl.publicUrl,
+        organizacao_id: organizacaoId,
+        projeto_id: projeto?.id || null,
+        status: "aprovado",
+        metadata: {
+          meeting_id: webhookData.meetingId,
+          meeting_datetime: webhookData.dateTime,
+          duration_minutes: webhookData.duration,
+          attendees: webhookData.attendees || [],
+          source: "fireflies",
+        },
+      });
+
+      console.log(`Ata salva no repositório de documentos: ${nomeAta}`);
+    }
+
     console.log("Meeting minutes generated successfully");
 
     // Return the generated minutes

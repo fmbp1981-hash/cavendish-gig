@@ -186,20 +186,20 @@ const integrations: IntegrationConfig[] = [
     inputType: "password",
     status: "available",
     instructions: [
-      "1. Acesse console.cloud.google.com e faça login com sua conta Google",
-      "2. Clique em 'Selecionar projeto' → 'Novo Projeto' → Nomeie como 'Cavendish-GIG' → Criar",
-      "3. No menu lateral, vá em 'APIs e Serviços' → 'Biblioteca'",
-      "4. Pesquise 'Google Drive API' → Clique nela → 'Ativar'",
-      "5. Vá em 'APIs e Serviços' → 'Credenciais' → 'Criar credenciais' → 'Conta de serviço'",
-      "6. Preencha: Nome='gig-drive-service', ID será gerado automaticamente → 'Criar e Continuar'",
-      "7. Em 'Conceder acesso', pule (não é necessário) → 'Concluir'",
-      "8. Na lista de contas de serviço, clique no email criado (ex: gig-drive-service@...iam.gserviceaccount.com)",
-      "9. Vá na aba 'Chaves' → 'Adicionar chave' → 'Criar nova chave' → 'JSON' → 'Criar'",
-      "10. Um arquivo JSON será baixado. Abra-o e copie TODO o conteúdo",
-      "11. Cole o JSON completo no campo abaixo",
-      "12. No Google Drive, crie uma pasta raiz (ex: 'Clientes GIG')",
-      "13. Clique com botão direito na pasta → 'Compartilhar' → Cole o email da conta de serviço → 'Editor' → 'Enviar'",
-      "14. Copie o ID da pasta da URL (após /folders/) e cole na configuração 'ID da Pasta Raiz' abaixo"
+      "Acesse console.cloud.google.com e faça login com sua conta Google",
+      "Clique em 'Selecionar projeto' → 'Novo Projeto' → Nomeie como 'Cavendish-GIG' → Criar",
+      "No menu lateral, vá em 'APIs e Serviços' → 'Biblioteca'",
+      "Pesquise 'Google Drive API' → Clique nela → 'Ativar'",
+      "Vá em 'APIs e Serviços' → 'Credenciais' → 'Criar credenciais' → 'Conta de serviço'",
+      "Preencha: Nome='gig-drive-service', ID será gerado automaticamente → 'Criar e Continuar'",
+      "Em 'Conceder acesso', pule (não é necessário) → 'Concluir'",
+      "Na lista de contas de serviço, clique no email criado (ex: gig-drive-service@...iam.gserviceaccount.com)",
+      "Vá na aba 'Chaves' → 'Adicionar chave' → 'Criar nova chave' → 'JSON' → 'Criar'",
+      "Um arquivo JSON será baixado. Abra-o e copie TODO o conteúdo",
+      "Cole o JSON completo no campo abaixo",
+      "No Google Drive, crie uma pasta raiz (ex: 'Clientes GIG')",
+      "Clique com botão direito na pasta → 'Compartilhar' → Cole o email da conta de serviço → 'Editor' → 'Enviar'",
+      "Copie o ID da pasta da URL (após /folders/) e cole na configuração 'ID da Pasta Raiz' abaixo"
     ]
   },
 ];
@@ -381,12 +381,12 @@ const aiProviders = [
     color: "bg-blue-500",
     secretName: "GEMINI_API_KEY",
     instructions: [
-      "1. Acesse aistudio.google.com/apikey",
-      "2. Faça login com sua conta Google",
-      "3. Clique em 'Create API key'",
-      "4. Selecione um projeto existente ou crie um novo",
-      "5. Copie a API Key gerada",
-      "6. Cole no campo abaixo"
+      "Acesse aistudio.google.com/apikey",
+      "Faça login com sua conta Google",
+      "Clique em 'Create API key'",
+      "Selecione um projeto existente ou crie um novo",
+      "Copie a API Key gerada",
+      "Cole no campo abaixo"
     ]
   },
   {
@@ -396,13 +396,13 @@ const aiProviders = [
     color: "bg-green-500",
     secretName: "OPENAI_API_KEY",
     instructions: [
-      "1. Acesse platform.openai.com",
-      "2. Faça login ou crie uma conta",
-      "3. Vá em 'API keys' no menu lateral",
-      "4. Clique em 'Create new secret key'",
-      "5. Dê um nome (ex: 'Cavendish GIG')",
-      "6. Copie a chave imediatamente (só aparece uma vez!)",
-      "7. Cole no campo abaixo",
+      "Acesse platform.openai.com",
+      "Faça login ou crie uma conta",
+      "Vá em 'API keys' no menu lateral",
+      "Clique em 'Create new secret key'",
+      "Dê um nome (ex: 'Cavendish GIG')",
+      "Copie a chave imediatamente (só aparece uma vez!)",
+      "Cole no campo abaixo",
       "Obs: Requer créditos pagos na conta OpenAI"
     ]
   },
@@ -413,13 +413,13 @@ const aiProviders = [
     color: "bg-orange-500",
     secretName: "ANTHROPIC_API_KEY",
     instructions: [
-      "1. Acesse console.anthropic.com",
-      "2. Faça login ou crie uma conta",
-      "3. Vá em 'API Keys' no menu",
-      "4. Clique em 'Create Key'",
-      "5. Dê um nome (ex: 'Cavendish GIG')",
-      "6. Copie a chave gerada",
-      "7. Cole no campo abaixo",
+      "Acesse console.anthropic.com",
+      "Faça login ou crie uma conta",
+      "Vá em 'API Keys' no menu",
+      "Clique em 'Create Key'",
+      "Dê um nome (ex: 'Cavendish GIG')",
+      "Copie a chave gerada",
+      "Cole no campo abaixo",
       "Obs: Requer plano pago da Anthropic"
     ]
   }

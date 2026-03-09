@@ -8,10 +8,11 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps) {
-  const { user, loading, roles, isAdmin, isConsultor, isCliente } = useAuth();
+  const { user, loading, rolesReady, roles, isAdmin, isConsultor, isCliente } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  // Aguarda loading E rolesReady antes de renderizar conteúdo protegido
+  if (loading || (user && !rolesReady)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">

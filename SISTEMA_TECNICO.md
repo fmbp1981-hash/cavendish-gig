@@ -1,7 +1,7 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-04 (Suite E2E + 9 bugs corrigidos · ALLOWED_ORIGIN + WEBHOOK_SECRET · email from externalizado · rota /parceiro criada · pg_cron configurado)
+**Última atualização:** 2026-03-09 (rolesReady no AuthContext · FireFlies→documentos · AgenteChat · ConsultorAgenda · ConsultorClienteDetalhe · BaseLayout · 9 migrations compliance · fixes UI)
 **Versão do sistema:** 0.0.0 (pre-release)
 **Desenvolvido por:** IntelliX.AI
 
@@ -91,6 +91,7 @@ O **Sistema GIG** (Gestão Integrada de Governança) é uma plataforma SaaS/whit
 | jsPDF + html2canvas | — | Exportação PDF client-side |
 | react-pdf / pdfjs-dist | — | Visualização PDF |
 | date-fns | 3.x | Manipulação de datas |
+| react-big-calendar | 1.x | Calendário unificado (ConsultorAgenda) |
 
 ### Backend
 | Tecnologia | Uso |
@@ -249,6 +250,7 @@ Todas as tabelas têm RLS habilitado. Políticas baseadas em:
 ### Métodos disponíveis via `useAuth()`
 ```ts
 user, session, profile, roles, loading
+rolesReady   // true somente após fetchUserData completar — garante que roles foram carregados do banco
 signIn(email, password)
 signUp(email, password, { nome?, empresa? })
 signOut()
@@ -257,6 +259,11 @@ updatePassword(newPassword)
 hasRole(role: AppRole)
 isAdmin, isConsultor, isCliente
 ```
+
+**`rolesReady` — proteção contra race condition:**
+- `Auth.tsx`: redirect só ocorre quando `user && !authLoading && rolesReady` — impede redirect com `roles=[]`
+- `ProtectedRoute.tsx`: exibe spinner enquanto `loading || (user && !rolesReady)` — rotas protegidas não renderizam com roles incompletos
+- Reset em `SIGNED_IN` e no logout — dupla proteção mesmo que `loading` seja refatorado no futuro
 
 ### Roles e redirecionamentos
 | Role | Dashboard padrão |
@@ -302,6 +309,8 @@ isAdmin, isConsultor, isCliente
 |------|--------|-----------|
 | `/consultor` | `ConsultorDashboard.tsx` | Dashboard multi-cliente com gráficos |
 | `/consultor/clientes` | `ConsultorClientes.tsx` | Gestão de clientes |
+| `/consultor/clientes/:id` | `ConsultorClienteDetalhe.tsx` | **[NOVO]** Detalhe do cliente: atas FireFlies + documentos |
+| `/consultor/agenda` | `ConsultorAgenda.tsx` | **[NOVO]** Calendário unificado (Google Calendar + tarefas) |
 | `/consultor/documentos` | `ConsultorDocumentos.tsx` | Revisão de documentos |
 | `/consultor/denuncias` | `ConsultorDenuncias.tsx` | Gestão de denúncias |
 | `/consultor/tarefas` | `ConsultorTarefas.tsx` | Kanban de tarefas |
@@ -344,12 +353,12 @@ Localizadas em `supabase/functions/`. Todas em TypeScript/Deno.
 
 | Function | JWT | Secrets necessários | Descrição |
 |----------|-----|---------------------|-----------|
-| `ai-generate` | ✅ sim | `OPENAI_API_KEY` (ou `LOVABLE_API_KEY`) | Geração de documentos, atas, relatórios com GPT-4 |
+| `ai-generate` | ✅ sim | `OPENAI_API_KEY` (ou `LOVABLE_API_KEY`) | Geração de documentos, atas, relatórios, chat multi-turn (case `"chat"` com contexto do sistema: orgs, tarefas, docs) |
 | `google-drive` | ✅ sim | `GOOGLE_SERVICE_ACCOUNT` | CRUD de pastas e arquivos no Google Drive |
-| `google-calendar` | ✅ sim | `GOOGLE_SERVICE_ACCOUNT` | Criar eventos com Google Meet |
+| `google-calendar` | ✅ sim | `GOOGLE_SERVICE_ACCOUNT` | Criar eventos com Google Meet; `action: "list_events"` usado por `ConsultorAgenda` |
 | `send-email` | ✅ sim | `RESEND_API_KEY` | Envio de emails via Resend |
 | `send-whatsapp` | ✅ sim | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Envio de mensagens via Twilio |
-| `process-transcription` | ✅ sim | `OPENAI_API_KEY`, `TRANSCRIPTION_WEBHOOK_SECRET` | Ingestão de transcrição do Fireflies + geração de ata |
+| `process-transcription` | ✅ sim | `OPENAI_API_KEY`, `TRANSCRIPTION_WEBHOOK_SECRET` | Webhook do Fireflies: gera ata via IA, salva em `ai_generations` + insere em `documentos` (visível no repositório da org). URL: `.../process-transcription?organizacao_id=<uuid>` |
 | `generate-monthly-report` | ✅ sim | `OPENAI_API_KEY` | Geração de relatório mensal HTML; chama RPC `get_project_stats` |
 | `send-monthly-reports` | ✅ sim | `RESEND_API_KEY` | Disparo de relatórios mensais por email (cron) |
 | `document-reminders` | ✅ sim | `RESEND_API_KEY`, `CRON_SECRET` | Lembretes de documentos pendentes (cron) |
@@ -460,15 +469,20 @@ cavendish-gig-main/
 │   │   ├── Help.tsx
 │   │   ├── NotFound.tsx
 │   │   ├── admin/                       ← 10 páginas admin
-│   │   ├── consultor/                   ← 11 páginas consultor
+│   │   ├── consultor/                   ← 13 páginas consultor
+│   │   │   ├── ConsultorClienteDetalhe.tsx  ← [NOVO] Atas FireFlies + docs por cliente
+│   │   │   └── ConsultorAgenda.tsx          ← [NOVO] Calendário unificado react-big-calendar
 │   │   └── cliente/                     ← 8 páginas cliente
 │   ├── components/
 │   │   ├── auth/
-│   │   │   └── ProtectedRoute.tsx
+│   │   │   └── ProtectedRoute.tsx       ← spinner enquanto loading || (user && !rolesReady)
+│   │   ├── agente/
+│   │   │   └── AgenteChat.tsx           ← [NOVO] Chat flutuante IntelliX AI (botão âmbar)
 │   │   ├── layout/
-│   │   │   ├── AdminLayout.tsx
-│   │   │   ├── ConsultorLayout.tsx
-│   │   │   └── ClienteLayout.tsx
+│   │   │   ├── BaseLayout.tsx           ← [NOVO] Componente base compartilhado pelos 3 layouts
+│   │   │   ├── AdminLayout.tsx          ← usa BaseLayout
+│   │   │   ├── ConsultorLayout.tsx      ← usa BaseLayout + renderiza <AgenteChat />
+│   │   │   └── ClienteLayout.tsx        ← usa BaseLayout
 │   │   ├── analytics/                   ← 5 componentes de gráficos
 │   │   ├── branding/
 │   │   │   └── TenantBrandingProvider.tsx
@@ -482,7 +496,7 @@ cavendish-gig-main/
 │   │   ├── templates/
 │   │   └── ui/                          ← shadcn/ui components
 │   ├── contexts/
-│   │   └── AuthContext.tsx              ← Estado de auth, user, roles, profile
+│   │   └── AuthContext.tsx              ← Estado de auth, user, roles, profile, rolesReady
 │   ├── hooks/                           ← ~30 custom hooks
 │   ├── config/
 │   │   └── tutorials.ts                 ← 5 tutoriais interativos (47 steps)
@@ -724,6 +738,66 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
   - `TRANSCRIPTION_WEBHOOK_SECRET` — secret para verificar webhooks do Fireflies
 - Credenciais de integração (OpenAI, Resend, Twilio, Google, Fireflies) serão configuradas pelo usuário via `/admin/integracoes` → armazenadas criptografadas na tabela `integrations`
 - Env vars do Vercel (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) confirmadas como já configuradas para Development/Preview/Production
+
+### 2026-03-09 — AgenteChat IntelliX AI + Calendário Unificado
+- **`src/components/agente/AgenteChat.tsx`** — Chat flutuante no Portal do Consultor
+  - Botão âmbar fixo no canto inferior direito em todas as páginas do consultor
+  - Sugestões de perguntas na tela inicial; conversa multi-turn com histórico
+  - Chama `ai-generate` com `tipo: "chat"` passando histórico de mensagens e contexto do usuário
+  - Minimizar / fechar / limpar conversa
+- **`src/components/layout/ConsultorLayout.tsx`** — `<AgenteChat />` inserido no layout
+- **`src/spa/pages/consultor/ConsultorAgenda.tsx`** — Calendário unificado
+  - `react-big-calendar` (instalado: `^1.19.4`) com locale PT-BR
+  - Fontes: Google Calendar (verde = reuniões GIG, azul = outros) + Tarefas com prazo (laranja)
+  - Views: Mês / Semana / Dia / Agenda; botão "Sincronizar"
+  - Clique no evento abre painel de detalhes
+- **`src/spa/pages/consultor/ConsultorClienteDetalhe.tsx`** — Detalhe do cliente
+  - Aba "Atas de Reunião": lista atas geradas via FireFlies (documentos com `nome LIKE 'Ata - %'`)
+  - Aba "Documentos": lista documentos aprovados da organização
+  - Visualizar ata em modal + baixar como `.md`
+- **Rota `/consultor/agenda`** e **`/consultor/clientes/:id`** registradas no `App.tsx`
+- **Item "Agenda"** (`CalendarDays`) adicionado ao menu lateral do ConsultorLayout
+
+### 2026-03-09 — `rolesReady` no AuthContext (proteção definitiva contra race condition)
+- **`src/contexts/AuthContext.tsx`** — estado `rolesReady: boolean` adicionado à interface e ao provider
+  - `rolesReady = false` na inicialização e ao receber evento `SIGNED_IN`
+  - `rolesReady = true` somente no `finally` de `fetchUserData` (mesmo em erro de rede)
+- **`src/spa/pages/Auth.tsx`** — redirect depende de `rolesReady`: `user && !authLoading && rolesReady`
+- **`src/components/auth/ProtectedRoute.tsx`** — spinner enquanto `loading || (user && !rolesReady)`
+
+### 2026-03-09 — FireFlies → repositório de documentos
+- **`supabase/functions/process-transcription/index.ts`** atualizado:
+  - Lê `?organizacao_id=<uuid>` da URL do webhook
+  - Após gerar a ata: upload do markdown em `documentos/{organizacao_id}/atas/{meetingId}.md` no Storage
+  - Insere registro em `documentos` com `nome = "Ata - {título} ({data})"`, `tipo = "ata_reuniao"`, `status = "aprovado"`
+  - Mantém insert em `ai_generations` para auditoria
+- Ata fica visível na aba "Atas de Reunião" em `ConsultorClienteDetalhe` e no `RepositorioDocumentos` do cliente
+
+### 2026-03-09 — Refatoração de layouts (BaseLayout) + hub de email
+- **`src/components/layout/BaseLayout.tsx`** — componente base compartilhado
+  - Eliminou ~600 linhas duplicadas entre AdminLayout, ConsultorLayout e ClienteLayout
+  - Props: `navItems`, `homeHref`, `headerTitle`, `userRole`, `settingsHref`, `extraMenuItems`, `children`
+- **`supabase/functions/_shared/email.ts`** — `sendEmail()` centralizado
+  - Lê API key do integrations vault; fallback para `RESEND_API_KEY` env var
+  - Usado por `document-reminders` e `send-monthly-reports` (código duplicado removido)
+- **`src/hooks/emailNotifications.ts`** — hook frontend para disparar emails via `send-email` Edge Function
+- **Removidos:** `src/lib/supabase.ts` (antigo), `src/hooks/useNotificacoesEmail.ts`, `src/spa/pages/Dashboard.tsx` (obsoletos)
+
+### 2026-03-09 — 9 novas migrations (módulos de compliance avançado)
+- `20260304000010_politicas.sql` — `politicas` (gestão de políticas corporativas)
+- `20260304000011_conflito_interesses.sql`
+- `20260304000012_lgpd.sql`
+- `20260304000013_riscos.sql` — `riscos` (gestão formal de riscos)
+- `20260304000014_due_diligence.sql`
+- `20260304000015_kpis.sql` — `kpis_compliance`
+- `20260304000016_incidentes.sql`
+- `20260304000017_auditorias.sql` — `auditorias_internas` + não conformidades
+- `20260304000018_relatorios_regulatorios.sql` — tipos: CGU, CVM, BACEN, ANPD, TCU, CADE
+- **Pendente:** aplicar no Supabase via `supabase db push`
+
+### 2026-03-09 — Fixes de UI
+- **Fix dupla numeração Google Drive** (`src/spa/pages/admin/AdminIntegracoes.tsx`): strings de instrução tinham prefixo manual `"1. texto"` dentro de `<ol list-decimal>`, gerando `1. 1. texto`. Prefixos removidos com `sed`.
+- **Fix botão X do Tour** (`src/app/globals.css`): `.driver-popover-close-btn` recebia `position: relative; z-index: 9999; pointer-events: auto !important` — botão agora recebe cliques corretamente.
 
 ### 2026-03-02 — RPC `get_project_stats` criada
 - Edge Function `generate-monthly-report` referenciava `get_project_stats(p_projeto_id)` que não existia no DB
