@@ -67,7 +67,7 @@ export default function ConsultorClienteDetalhe() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("documentos")
-        .select("id, nome, url, status, created_at")
+        .select("id, nome, url, tipo, created_at")
         .eq("organizacao_id", organizacaoId!)
         .not("nome", "like", "Ata - %")
         .order("created_at", { ascending: false });
@@ -254,17 +254,8 @@ export default function ConsultorClienteDetalhe() {
                           </p>
                         </div>
                       </div>
-                      <Badge
-                        variant={
-                          doc.status === "aprovado"
-                            ? "default"
-                            : doc.status === "rejeitado"
-                            ? "destructive"
-                            : "secondary"
-                        }
-                        className="text-xs capitalize"
-                      >
-                        {doc.status}
+                      <Badge variant="secondary" className="text-xs capitalize">
+                        {doc.tipo || "documento"}
                       </Badge>
                     </CardContent>
                   </Card>
