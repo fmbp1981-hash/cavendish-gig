@@ -857,6 +857,38 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - **Fix:** Bloco `try/catch` em torno de `getAIConfig()` retorna 503 com a mensagem amigável em vez de 500. `AgenteChat.tsx` agora exibe `data.error` como mensagem `⚠️` no chat.
 - **Arquivo:** `supabase/functions/ai-generate/index.ts`
 
+### 2026-03-10 — Bateria E2E completa + correção de 6 bugs TypeScript (Fases Premium 1–4)
+
+**Arquivo:** `tests/e2e_gig_completo.py` (nova bateria, 8 fases, 33 testes + build check)
+
+#### BUG 11 — CRÍTICO: `types.ts` desatualizado (56 erros TypeScript)
+- **Causa:** Migrações Premium (Fases 1–4) criaram novas tabelas mas `src/integrations/supabase/types.ts` não foi regenerado. TypeScript não conhecia as tabelas, causando 56 erros de tipo.
+- **Fix:** `npx supabase gen types typescript --project-id fenfgjqlsqzvxloeavdc > types.ts`
+
+#### BUG 12 — CRÍTICO: `usePoliticas.ts` vazio (arquivo 1 linha sem exports)
+- **Causa:** Arquivo criado vazio; `PoliticasTab.tsx` importava dele e falha `TS2306: not a module`
+- **Fix:** Implementação completa do hook com `usePoliticas`, `useCriarPolitica`, `useAtualizarPolitica`, `useAvancarStatusPolitica`, `useRevogarPolitica`, `usePoliticaAceites`, `usePoliticaAdesaoStats`
+
+#### BUG 13 — CRÍTICO: `organization_id` em vez de `organizacao_id` (dados nunca salvos)
+- **Causa:** `DueDiligenceTab.tsx` e `ESGDashboard.tsx` usavam `organization_id` mas as tabelas `fornecedores` e `esg_indicadores` usam `organizacao_id` — inserts falhavam silenciosamente
+- **Fix:** `organization_id` → `organizacao_id` em `DueDiligenceTab.tsx:76` e `ESGDashboard.tsx:72`
+
+#### BUG 14 — ALTO: Join inválido `organization_members → profiles` sem FK
+- **Causa:** `useConflitosInteresse.ts` usava `.select("user_id, profiles:user_id(nome, email)")` mas não existe FK de `organization_members.user_id` para `profiles` — PostgREST retornava `SelectQueryError`
+- **Fix:** Reescrita da função `usePendentesDeclaracao` com query separada para `profiles` via `.in("id", pendenteIds)`
+
+#### BUG 15 — ALTO: Joins sem FK em useRiscos/useInvestigacoes causavam `SelectQueryError`
+- **Causa:** `profiles:responsavel_id(nome)`, `profiles:criado_por(nome)`, `profiles:avaliado_por(nome)` — colunas sem FK declarada para `profiles`
+- **Fix:** Casts `as unknown as Type[]` para contornar o TypeScript; runtime funciona via relação implícita auth.users
+
+#### BUG 16 — ALTO: Tabela `riscos` com coluna duplicada `organization_id` obrigatória
+- **Causa:** Migração criou `riscos` com DOIS campos: `organizacao_id` (nullable) E `organization_id` (NOT NULL) — o insert em `useRiscos.ts` só passava `organizacao_id` e falhava por `organization_id` ser required
+- **Fix:** `.insert({ ...payload, organization_id: payload.organizacao_id, ... })` — ambos recebem o mesmo valor até o schema ser limpo
+
+**Avisos de segurança identificados (não-bloqueantes):**
+- Falta header `Content-Security-Policy` na produção → protege contra XSS
+- `X-Powered-By: Next.js` exposto → pode ser removido no `next.config`
+
 #### BUG 10 — ALTA: Tour X button não limpava sessão / cross-page nav sessão zerada imediatamente
 - **Causa 1:** `onDestroyStarted` (chamado por `d.destroy()`) limpava `sessionStorage` mesmo durante navegação cross-page, zerando a sessão que `onNextClick`/`onPrevClick` acabara de salvar → tour nunca retomava na próxima página
 - **Causa 2:** driver.js v1.4 não chama `onDestroyStarted` quando o usuário clica no X do popover → sessão ficava presa no storage e o tour reiniciava na próxima navegação
