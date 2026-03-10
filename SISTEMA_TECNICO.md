@@ -1,7 +1,7 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-10 — Sessão completa: bugs E2E corrigidos (BUGs 11–16), Security Headers (CSP + poweredByHeader), crash dos novos menus corrigido (AdminAuditTrail colunas erradas, ErrorBoundary, Select value="" → "__all__"), Tour atualizado (46 passos, 4 novos), documento de apresentação PDF gerado.
+**Última atualização:** 2026-03-10 — Verificação de módulos: Gestão de Riscos, Compliance Calendar e LGPD Compliance Module confirmados como 100% implementados (código + DB + frontend) — pendências 3, 4 e 5 marcadas como concluídas. Manual do sistema (docs/MANUAL_SISTEMA_GIG.md) e apresentação Gamma (docs/APRESENTACAO_GAMMA_GIG.md) criados/atualizados.
 **Versão do sistema:** 0.0.0 (pre-release) — branch `feature/gig-premium-phase1`, 9 commits à frente do main
 **Desenvolvido por:** IntelliX.AI
 
@@ -785,6 +785,14 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - **`src/hooks/emailNotifications.ts`** — hook frontend para disparar emails via `send-email` Edge Function
 - **Removidos:** `src/lib/supabase.ts` (antigo), `src/hooks/useNotificacoesEmail.ts`, `src/spa/pages/Dashboard.tsx` (obsoletos)
 
+### 2026-03-10 — Verificação e confirmação dos módulos Premium (Riscos, Calendar, LGPD)
+- Confirmado que **Gestão de Riscos**, **Compliance Calendar** e **LGPD Module** estavam 100% implementados desde 2026-03-09 mas não marcados como concluídos no SISTEMA_TECNICO.md
+- **Gestão de Riscos:** 3 tabelas (riscos, riscos_mitigacao, riscos_avaliacoes) + 5 componentes (heatmap 5×5, detalhes, form, mitigações) + hook completo → tab em `/consultor/compliance`
+- **Compliance Calendar:** tabela `compliance_obrigacoes` + ~30 obrigações pré-seeded (LGPD, Lei 12.846, trabalhistas, tributárias, etc.) + página dedicada `ComplianceCalendar.tsx` + hook com cálculo automático de datas → rota `/consultor/compliance-calendar`
+- **LGPD Module:** 2 tabelas (lgpd_inventario / ROPA + lgpd_solicitacoes / DSR) + componente LGPDTab com ciclo de vida completo de DSR + prazo de 15 dias ANPD com alertas → tab em `/consultor/compliance`
+- Seção 15 (Pendências) atualizada: itens 3, 4 e 5 marcados como `[x]` com detalhamento completo
+- `docs/MANUAL_SISTEMA_GIG.md` (v2.0, 1.057 linhas) e `docs/APRESENTACAO_GAMMA_GIG.md` criados (com design system completo extraído do HTML)
+
 ### 2026-03-09 — 9 novas migrations (módulos de compliance avançado)
 - `20260304000010_politicas.sql` — `politicas` (gestão de políticas corporativas)
 - `20260304000011_conflito_interesses.sql`
@@ -997,9 +1005,21 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - [x] **Notificações Realtime** — JÁ ESTAVA IMPLEMENTADO em `useNotificacoes.ts` (subscriptions INSERT + UPDATE + refetchInterval 30s)
 
 ### 🔴 CRÍTICO — Gaps identificados vs. mercado GRC (ver Seção 16)
-- [ ] **Módulo de Gestão de Riscos** — Risk Register + Heatmap 5×5 + Planos de mitigação (tabelas: `riscos`, `riscos_mitigacao`, `riscos_avaliacoes`)
-- [ ] **Compliance Calendar** — Agenda regulatória com obrigações LGPD/Lei 12.846/CVM + alertas de vencimento
-- [ ] **LGPD Compliance Module** — Inventário de dados (ROPA), consentimentos, DSR workflow, DPIA
+- [x] **Módulo de Gestão de Riscos** — CONCLUÍDO em 2026-03-09
+  - Tabelas: `riscos`, `riscos_mitigacao`, `riscos_avaliacoes` (migrations `20260304000013_riscos.sql` + `20260309000001_riscos_complemento.sql`)
+  - Componentes: `src/components/riscos/` (RiscosTab, RiscoHeatmap 5×5, RiscoDetalhes, RiscoFormDialog, RiscoMitigacaoList)
+  - Hook: `src/hooks/useRiscos.ts` (CRUD completo + histórico de avaliações)
+  - Acesso: tab "riscos" em `/consultor/compliance`
+- [x] **Compliance Calendar** — CONCLUÍDO em 2026-03-09
+  - Tabela: `compliance_obrigacoes` (migration `20260309000005_compliance_calendar.sql`) com ~30 obrigações pré-seeded (LGPD, Lei 12.846, SPED, eSocial, AGO, etc.)
+  - Página dedicada: `src/spa/pages/consultor/ComplianceCalendar.tsx`
+  - Hook: `src/hooks/useComplianceCalendar.ts` (CRUD + cálculo automático de próxima data + alertas de vencimento)
+  - Rota: `/consultor/compliance-calendar` (menu lateral com ícone CalendarCheck)
+- [x] **LGPD Compliance Module** — CONCLUÍDO em 2026-03-09
+  - Tabelas: `lgpd_inventario` (ROPA) + `lgpd_solicitacoes` (DSR) (migration `20260304000012_lgpd.sql`)
+  - Componente: `src/components/lgpd/LGPDTab.tsx` (2 abas: inventário de dados + DSR workflow completo)
+  - Hook: `src/hooks/useLGPD.ts` (CRUD inventário, ciclo de vida DSR, prazo 15 dias ANPD com alertas)
+  - Acesso: tab "lgpd" em `/consultor/compliance`
 - [ ] **Gestão de Investigações** — Fluxo formal atrelado ao canal de denúncias (Recebida→Concluída) com SLA e evidências sigilosas
 
 ### 🔴 ALTA — Gaps competitivos importantes
