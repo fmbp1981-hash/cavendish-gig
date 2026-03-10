@@ -146,10 +146,10 @@ export default function AdminAuditTrail() {
               </div>
               <div className="space-y-1.5 w-36">
                 <Label className="text-xs">Ação</Label>
-                <Select value={searchOp} onValueChange={v => { setSearchOp(v); setPage(0); }}>
+                <Select value={searchOp || "__all__"} onValueChange={v => { setSearchOp(v === "__all__" ? "" : v); setPage(0); }}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Todas" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas</SelectItem>
+                    <SelectItem value="__all__">Todas</SelectItem>
                     <SelectItem value="INSERT">INSERT</SelectItem>
                     <SelectItem value="UPDATE">UPDATE</SelectItem>
                     <SelectItem value="DELETE">DELETE</SelectItem>

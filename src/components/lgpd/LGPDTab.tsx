@@ -294,12 +294,12 @@ export function LGPDTab() {
     <div className="space-y-6">
       {/* Seletor */}
       <div className="flex flex-wrap items-center gap-3">
-        <Select value={selectedOrg} onValueChange={setSelectedOrg}>
+        <Select value={selectedOrg || "__all__"} onValueChange={v => setSelectedOrg(v === "__all__" ? "" : v)}>
           <SelectTrigger className="w-[220px]">
             <SelectValue placeholder="Todas as organizações" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas as organizações</SelectItem>
+            <SelectItem value="__all__">Todas as organizações</SelectItem>
             {(orgs ?? []).map((org: any) => (
               <SelectItem key={org.id} value={org.id}>{org.nome}</SelectItem>
             ))}

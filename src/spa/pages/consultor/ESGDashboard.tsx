@@ -242,12 +242,12 @@ export default function ESGDashboard() {
             <p className="text-muted-foreground">Indicadores Ambientais, Sociais e de Governança</p>
           </div>
           <div className="flex items-center gap-3">
-            <Select value={selectedOrg} onValueChange={setSelectedOrg}>
+            <Select value={selectedOrg || "__all__"} onValueChange={v => setSelectedOrg(v === "__all__" ? "" : v)}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Selecione a organização" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="__all__">Todas</SelectItem>
                 {(orgs ?? []).map((org: any) => (
                   <SelectItem key={org.id} value={org.id}>{org.nome}</SelectItem>
                 ))}

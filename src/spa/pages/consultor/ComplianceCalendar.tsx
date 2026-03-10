@@ -263,12 +263,12 @@ export default function ComplianceCalendar() {
 
         {/* Filtros */}
         <div className="flex flex-wrap items-center gap-3">
-          <Select value={selectedOrg} onValueChange={setSelectedOrg}>
+          <Select value={selectedOrg || "__all__"} onValueChange={v => setSelectedOrg(v === "__all__" ? "" : v)}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="+ Obrig. específicas da org" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Apenas obrigações globais</SelectItem>
+              <SelectItem value="__all__">Apenas obrigações globais</SelectItem>
               {(orgs ?? []).map((org: any) => (
                 <SelectItem key={org.id} value={org.id}>{org.nome}</SelectItem>
               ))}
@@ -288,12 +288,12 @@ export default function ComplianceCalendar() {
           </Select>
 
           {orgaos.length > 0 && (
-            <Select value={filtroOrgao} onValueChange={setFiltroOrgao}>
+            <Select value={filtroOrgao || "__all__"} onValueChange={v => setFiltroOrgao(v === "__all__" ? "" : v)}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Filtrar órgão" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os órgãos</SelectItem>
+                <SelectItem value="__all__">Todos os órgãos</SelectItem>
                 {orgaos.map(o => (
                   <SelectItem key={o} value={o}>{o}</SelectItem>
                 ))}
