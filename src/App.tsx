@@ -64,6 +64,7 @@ import AdminLogs from "./spa/pages/admin/AdminLogs";
 import AdminDocumentos from "./spa/pages/admin/AdminDocumentos";
 import Help from "./spa/pages/Help";
 import { installGlobalErrorHandlers } from "./utils/errorLogger";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Instala captura global de erros não tratados (uma única vez no carregamento)
 installGlobalErrorHandlers();
@@ -217,7 +218,7 @@ const App = () => (
                 path="/consultor/compliance"
                 element={
                   <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                    <ConsultorCompliance />
+                    <ErrorBoundary><ConsultorCompliance /></ErrorBoundary>
                   </ProtectedRoute>
                 }
               />
@@ -225,7 +226,7 @@ const App = () => (
                 path="/consultor/compliance-calendar"
                 element={
                   <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                    <ComplianceCalendar />
+                    <ErrorBoundary><ComplianceCalendar /></ErrorBoundary>
                   </ProtectedRoute>
                 }
               />
@@ -233,7 +234,7 @@ const App = () => (
                 path="/consultor/esg"
                 element={
                   <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                    <ESGDashboard />
+                    <ErrorBoundary><ESGDashboard /></ErrorBoundary>
                   </ProtectedRoute>
                 }
               />
@@ -241,7 +242,7 @@ const App = () => (
                 path="/consultor/board"
                 element={
                   <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                    <BoardDashboard />
+                    <ErrorBoundary><BoardDashboard /></ErrorBoundary>
                   </ProtectedRoute>
                 }
               />
@@ -336,7 +337,7 @@ const App = () => (
                 path="/admin/audit-trail"
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
-                    <AdminAuditTrail />
+                    <ErrorBoundary><AdminAuditTrail /></ErrorBoundary>
                   </ProtectedRoute>
                 }
               />

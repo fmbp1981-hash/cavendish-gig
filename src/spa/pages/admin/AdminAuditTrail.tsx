@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,33 +17,49 @@ import {
 import { Loader2, Download, Search, ShieldCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
+// ── Tipos alinhados com o schema real de audit_logs ────────────────────────
 interface AuditLog {
   id: string;
   table_name: string;
-  operation: string;
+  action: string;           // campo real: "action" (INSERT|UPDATE|DELETE|etc.)
   old_data: Record<string, unknown> | null;
   new_data: Record<string, unknown> | null;
   user_id: string | null;
-  created_at: string;
+  user_email: string | null;
+  timestamp: string;        // campo real: "timestamp" (não created_at)
+  organizacao_id: string | null;
+  record_id: string | null;
+  metadata: Record<string, unknown> | null;
 }
 
 const OP_COR: Record<string, string> = {
   INSERT: "bg-green-100 text-green-800",
   UPDATE: "bg-blue-100 text-blue-800",
   DELETE: "bg-red-100 text-red-800",
+  LOGIN:  "bg-purple-100 text-purple-800",
 };
 
+function safeFormatDate(ts: string | undefined | null): string {
+  if (!ts) return "—";
+  try {
+    const d = parseISO(ts);
+    return isValid(d) ? format(d, "dd/MM/yy HH:mm:ss", { locale: ptBR }) : "—";
+  } catch {
+    return "—";
+  }
+}
+
 function exportCSV(logs: AuditLog[]) {
-  const headers = ["Data/Hora", "Tabela", "Operação", "Usuário", "Dados Anteriores", "Dados Novos"];
+  const headers = ["Data/Hora", "Tabela", "Ação", "Usuário", "Dados Anteriores", "Dados Novos"];
   const rows = logs.map(l => [
-    format(parseISO(l.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR }),
+    safeFormatDate(l.timestamp),
     l.table_name,
-    l.operation,
-    l.user_id ?? "Sistema",
+    l.action,
+    l.user_email ?? l.user_id ?? "Sistema",
     l.old_data ? JSON.stringify(l.old_data) : "",
     l.new_data ? JSON.stringify(l.new_data) : "",
   ]);
@@ -70,19 +86,20 @@ export default function AdminAuditTrail() {
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 50;
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["audit-logs", searchTable, searchOp, dateFrom, dateTo, page],
     queryFn: async () => {
-      let q = (supabase as any)
+      // Usa "timestamp" e "action" — nomes reais das colunas em audit_logs
+      let q = supabase
         .from("audit_logs")
         .select("*", { count: "exact" })
-        .order("created_at", { ascending: false })
+        .order("timestamp", { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
       if (searchTable) q = q.ilike("table_name", `%${searchTable}%`);
-      if (searchOp) q = q.eq("operation", searchOp);
-      if (dateFrom) q = q.gte("created_at", `${dateFrom}T00:00:00`);
-      if (dateTo) q = q.lte("created_at", `${dateTo}T23:59:59`);
+      if (searchOp)    q = q.eq("action", searchOp);
+      if (dateFrom)    q = q.gte("timestamp", `${dateFrom}T00:00:00`);
+      if (dateTo)      q = q.lte("timestamp", `${dateTo}T23:59:59`);
 
       const { data, error, count } = await q;
       if (error) throw error;
@@ -94,10 +111,7 @@ export default function AdminAuditTrail() {
   const total = data?.total ?? 0;
 
   const handleExportar = () => {
-    if (logs.length === 0) {
-      toast.error("Nenhum dado para exportar.");
-      return;
-    }
+    if (logs.length === 0) { toast.error("Nenhum dado para exportar."); return; }
     exportCSV(logs);
   };
 
@@ -131,7 +145,7 @@ export default function AdminAuditTrail() {
                 </div>
               </div>
               <div className="space-y-1.5 w-36">
-                <Label className="text-xs">Operação</Label>
+                <Label className="text-xs">Ação</Label>
                 <Select value={searchOp} onValueChange={v => { setSearchOp(v); setPage(0); }}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Todas" /></SelectTrigger>
                   <SelectContent>
@@ -139,16 +153,19 @@ export default function AdminAuditTrail() {
                     <SelectItem value="INSERT">INSERT</SelectItem>
                     <SelectItem value="UPDATE">UPDATE</SelectItem>
                     <SelectItem value="DELETE">DELETE</SelectItem>
+                    <SelectItem value="LOGIN">LOGIN</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">De</Label>
-                <Input type="date" className="h-8 text-sm w-36" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} />
+                <Input type="date" className="h-8 text-sm w-36" value={dateFrom}
+                  onChange={e => { setDateFrom(e.target.value); setPage(0); }} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Até</Label>
-                <Input type="date" className="h-8 text-sm w-36" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }} />
+                <Input type="date" className="h-8 text-sm w-36" value={dateTo}
+                  onChange={e => { setDateTo(e.target.value); setPage(0); }} />
               </div>
               <Button size="sm" variant="outline" onClick={handleExportar}>
                 <Download className="h-3.5 w-3.5 mr-1.5" />Exportar CSV
@@ -164,6 +181,10 @@ export default function AdminAuditTrail() {
               <div className="flex justify-center py-10">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
+            ) : error ? (
+              <div className="text-center py-10 text-sm text-destructive">
+                Erro ao carregar logs. Verifique as permissões de acesso.
+              </div>
             ) : logs.length === 0 ? (
               <div className="text-center py-10 text-sm text-muted-foreground">
                 Nenhum registro encontrado com os filtros aplicados.
@@ -173,46 +194,51 @@ export default function AdminAuditTrail() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-44">Data/Hora</TableHead>
+                      <TableHead className="w-40">Data/Hora</TableHead>
                       <TableHead>Tabela</TableHead>
-                      <TableHead className="w-24">Operação</TableHead>
+                      <TableHead className="w-24">Ação</TableHead>
                       <TableHead>Usuário</TableHead>
                       <TableHead>Resumo da alteração</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {logs.map(log => {
-                      // Monta resumo das colunas alteradas
                       let resumo = "";
-                      if (log.operation === "UPDATE" && log.old_data && log.new_data) {
+                      if (log.action === "UPDATE" && log.old_data && log.new_data) {
                         const changed = Object.keys(log.new_data).filter(
                           k => JSON.stringify(log.new_data![k]) !== JSON.stringify(log.old_data![k]) &&
                                k !== "updated_at"
                         );
-                        resumo = changed.slice(0, 3).join(", ") + (changed.length > 3 ? `... +${changed.length - 3}` : "");
-                      } else if (log.operation === "INSERT" && log.new_data) {
+                        resumo = changed.slice(0, 3).join(", ") + (changed.length > 3 ? ` +${changed.length - 3}` : "");
+                      } else if (log.action === "INSERT" && log.new_data) {
                         const keys = Object.keys(log.new_data).filter(k => log.new_data![k] != null);
                         resumo = keys.slice(0, 4).join(", ");
-                      } else if (log.operation === "DELETE" && log.old_data) {
+                      } else if (log.action === "DELETE" && log.old_data) {
                         const id = log.old_data.id ?? log.old_data.ticket_id ?? "";
-                        resumo = id ? `id: ${String(id).slice(0, 8)}...` : "—";
+                        resumo = id ? `id: ${String(id).slice(0, 8)}…` : "—";
+                      } else if (log.metadata) {
+                        resumo = JSON.stringify(log.metadata).slice(0, 60);
                       }
 
                       return (
                         <TableRow key={log.id}>
                           <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                            {format(parseISO(log.created_at), "dd/MM/yy HH:mm:ss", { locale: ptBR })}
+                            {safeFormatDate(log.timestamp)}
                           </TableCell>
                           <TableCell>
                             <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{log.table_name}</code>
                           </TableCell>
                           <TableCell>
-                            <Badge className={`text-[10px] ${OP_COR[log.operation] ?? ""}`}>
-                              {log.operation}
+                            <Badge className={`text-[10px] ${OP_COR[log.action] ?? "bg-slate-100 text-slate-700"}`}>
+                              {log.action}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
-                            {log.user_id ? log.user_id.slice(0, 8) + "..." : "Sistema"}
+                            {log.user_email
+                              ? log.user_email.split("@")[0]
+                              : log.user_id
+                                ? log.user_id.slice(0, 8) + "…"
+                                : "Sistema"}
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground max-w-[250px] truncate">
                             {resumo || "—"}

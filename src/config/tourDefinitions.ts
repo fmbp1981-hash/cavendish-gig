@@ -208,6 +208,23 @@ const adminTour: TourDefinition = {
       ),
     },
     {
+      page: "/admin/audit-trail",
+      element: '[data-tour="admin-nav-audit"]',
+      title: "🔍 Audit Trail — Trilha de Auditoria",
+      description: step(
+        "Log imutável de todas as ações realizadas no sistema — INSERT, UPDATE, DELETE e LOGIN. Essencial para conformidade, investigações internas e rastreabilidade de alterações.",
+        [
+          "Acesse <strong>Audit Trail</strong> no menu lateral do Painel Admin.",
+          "Use o filtro <strong>\"Tabela\"</strong> para buscar ações em uma tabela específica (ex: <em>documentos</em>, <em>projetos</em>).",
+          "Filtre por <strong>\"Ação\"</strong> (INSERT, UPDATE, DELETE) para focar em um tipo de operação.",
+          "Use os filtros de <strong>data</strong> para investigar um período específico — ex: quem alterou um documento num determinado dia.",
+          "Clique em <strong>\"Exportar CSV\"</strong> para gerar um relatório de auditoria para compliance ou investigação.",
+          "A coluna <strong>\"Resumo\"</strong> mostra quais campos foram alterados num UPDATE — sem precisar abrir os dados completos."
+        ]
+      ),
+      side: "right",
+    },
+    {
       page: "/admin/logs",
       element: '[data-tour="admin-nav-logs"]',
       title: "🐛 Logs do Sistema",
@@ -340,15 +357,67 @@ const consultorTour: TourDefinition = {
     {
       page: "/consultor/compliance",
       element: '[data-tour="menu-compliance"]',
-      title: "🛡️ Compliance — Módulo Unificado",
+      title: "🛡️ Compliance — Módulo GRC Completo",
       description: step(
-        "Todos os módulos de compliance da organização em um único lugar, organizados em abas. Substitui os 10 menus individuais por uma navegação mais limpa e eficiente.",
+        "Central de Governança, Risco e Compliance com 9 abas integradas. Todos os módulos de conformidade da organização em um único lugar.",
         [
-          "Clique em <strong>\"Compliance\"</strong> no menu lateral para abrir o módulo.",
-          "A aba <strong>KPIs</strong> (aberta por padrão) mostra o painel de indicadores com dados reais: índice de conformidade, documentos por status, projetos por fase, tarefas e treinamentos.",
-          "Use a aba <strong>Consulta CEIS</strong> para verificar fornecedores ou parceiros no Cadastro de Empresas Inidôneas antes de assinar contratos.",
-          "As demais abas (Políticas, LGPD, Riscos, Due Diligence, Incidentes, Auditoria…) serão liberadas progressivamente nas próximas versões.",
-          "Monitore os <strong>alertas de conformidade</strong> no KPI: documentos pendentes e em análise aparecem em destaque."
+          "Aba <strong>Políticas</strong>: gerencie políticas corporativas (anticorrupção, LGPD, trabalhista…) com fluxo de aprovação rascunho → publicado. Acompanhe o percentual de adesão dos colaboradores.",
+          "Aba <strong>Conflito de Interesses</strong>: colete declarações anuais de todos os colaboradores. Veja quem ainda não declarou e analise as declarações recebidas.",
+          "Aba <strong>LGPD</strong>: inventarie os dados pessoais tratados (bases legais, titular, finalidade) e gerencie solicitações de titulares (DSR) com prazo de 15 dias.",
+          "Aba <strong>Riscos</strong>: registre e priorize riscos com matriz de probabilidade × impacto. Adicione ações de mitigação e acompanhe cada uma.",
+          "Aba <strong>Due Diligence</strong>: avalie fornecedores e parceiros com questionários estruturados de due diligence. Score de risco calculado automaticamente.",
+          "Aba <strong>KPIs</strong>: painel unificado com índice de conformidade, documentos por status, projetos por fase e progresso de treinamentos.",
+          "Use a aba <strong>Consulta CEIS</strong> para verificar empresas antes de assinar contratos."
+        ]
+      ),
+      side: "right",
+    },
+    {
+      page: "/consultor/compliance-calendar",
+      element: '[data-tour="menu-calendar"]',
+      title: "📅 Calendário Regulatório",
+      description: step(
+        "Agenda centralizada de todas as obrigações regulatórias e prazos de compliance das organizações. Nunca mais perca um prazo legal.",
+        [
+          "Clique em <strong>\"Nova Obrigação\"</strong> para cadastrar um compromisso regulatório (ex: Relatório Anual ANPD, Reunião de Governança Trimestral).",
+          "Defina a <strong>periodicidade</strong>: única, mensal, trimestral, semestral ou anual. O sistema recalcula automaticamente a próxima data.",
+          "Preencha <strong>Lei de Referência</strong> e <strong>Órgão Regulador</strong> para rastreabilidade (ex: Lei 13.709/2018 — ANPD).",
+          "Obrigações vencidas ficam marcadas em <strong>vermelho</strong> automaticamente — priorize-as imediatamente.",
+          "Ao cumprir uma obrigação, clique em <strong>\"Concluir\"</strong> — o sistema registra a data de conclusão e cria a próxima ocorrência automaticamente."
+        ]
+      ),
+      side: "right",
+    },
+    {
+      page: "/consultor/esg",
+      element: '[data-tour="menu-esg"]',
+      title: "🌿 Dashboard ESG",
+      description: step(
+        "Acompanhe e gerencie os indicadores ESG (Ambiental, Social e Governança) das organizações. Ferramenta essencial para relatórios de sustentabilidade e exigências de grandes clientes.",
+        [
+          "Selecione a <strong>organização</strong> e clique em <strong>\"+ Indicador\"</strong> para cadastrar métricas ESG.",
+          "Organize por <strong>pilar</strong>: Ambiental 🌿 (ex: consumo de energia, emissões CO₂), Social 🤝 (ex: diversidade, treinamentos) ou Governança ⚖️ (ex: políticas implementadas).",
+          "Defina <strong>meta</strong> e <strong>valor atual</strong> — o sistema calcula o score de atingimento automaticamente.",
+          "O <strong>Radar ESG</strong> visualiza o desempenho nos 3 pilares de forma gráfica — ideal para apresentações à diretoria.",
+          "O <strong>Score ESG Geral</strong> (0–100) é calculado automaticamente com base na média dos indicadores com meta definida.",
+          "Use esta ferramenta para gerar dados concretos para relatórios de sustentabilidade e responder exigências de fornecedores ou investidores."
+        ]
+      ),
+      side: "right",
+    },
+    {
+      page: "/consultor/board",
+      element: '[data-tour="menu-board"]',
+      title: "📊 Board Reporting",
+      description: step(
+        "Gera relatórios executivos consolidados para apresentar ao conselho ou à diretoria — sem necessidade de login. Compartilhe um link seguro com validade de 30 dias.",
+        [
+          "Selecione a <strong>organização</strong> e clique em <strong>\"Gerar Relatório Executivo\"</strong>.",
+          "O sistema cria automaticamente um <strong>snapshot</strong> com os dados atuais: riscos críticos, denúncias em aberto, score ESG e KPIs de compliance.",
+          "Um <strong>link público</strong> é gerado — válido por 30 dias, sem necessidade de login para visualizar.",
+          "Compartilhe o link com diretores ou conselheiros diretamente do botão <strong>\"Copiar Link\"</strong>.",
+          "Cada snapshot fica salvo no histórico para comparação entre períodos.",
+          "Ideal para <strong>reuniões de conselho</strong>, <strong>apresentações a investidores</strong> ou <strong>auditorias externas</strong>."
         ]
       ),
       side: "right",
@@ -449,7 +518,7 @@ const consultorTour: TourDefinition = {
     },
     {
       title: "🎉 Tour do Consultor Concluído!",
-      description: `<p>Agora você sabe exatamente o que fazer em cada ferramenta!</p><br/><p style="font-weight:600;color:hsl(161 55% 23%);margin-bottom:6px">🚀 Fluxo de trabalho recomendado:</p><ol style="margin:0;padding-left:20px;list-style:decimal"><li style="margin-bottom:5px">Acesse <em>Meus Clientes</em> e verifique a carteira</li><li style="margin-bottom:5px">Garanta que o diagnóstico do cliente foi respondido</li><li style="margin-bottom:5px">Gere o <strong>Código de Ética</strong> usando o módulo de IA</li><li style="margin-bottom:5px">Envie o código para <strong>adesão</strong> dos colaboradores</li><li style="margin-bottom:5px">Agende a próxima reunião e crie as <strong>tarefas</strong> do mês</li><li style="margin-bottom:5px">Acompanhe os <strong>KPIs de Compliance</strong> para monitorar a saúde dos programas</li><li style="margin-bottom:5px">Ao final do mês, gere o <strong>Relatório de Progresso</strong></li></ol><br/><p>💡 Lembre: o assistente <strong>✨ IntelliX AI</strong> está sempre disponível no cabeçalho. E este tour pode ser acessado novamente pelo botão <strong>(?)</strong>.</p>`,
+      description: `<p>Agora você sabe exatamente o que fazer em cada ferramenta!</p><br/><p style="font-weight:600;color:hsl(161 55% 23%);margin-bottom:6px">🚀 Fluxo de trabalho recomendado:</p><ol style="margin:0;padding-left:20px;list-style:decimal"><li style="margin-bottom:5px">Acesse <em>Meus Clientes</em> e verifique a carteira</li><li style="margin-bottom:5px">Garanta que o diagnóstico do cliente foi respondido</li><li style="margin-bottom:5px">Gere o <strong>Código de Ética</strong> usando o módulo de IA</li><li style="margin-bottom:5px">Envie o código para <strong>adesão</strong> dos colaboradores</li><li style="margin-bottom:5px">Configure as <strong>Políticas Corporativas</strong> em Compliance</li><li style="margin-bottom:5px">Colete as <strong>Declarações de Conflito de Interesses</strong> anuais</li><li style="margin-bottom:5px">Registre e priorize os <strong>Riscos</strong> da organização</li><li style="margin-bottom:5px">Acompanhe as obrigações no <strong>Calendário Regulatório</strong></li><li style="margin-bottom:5px">Atualize os <strong>Indicadores ESG</strong> periodicamente</li><li style="margin-bottom:5px">Ao final do mês, gere o <strong>Relatório de Progresso</strong> e o <strong>Board Report</strong></li></ol><br/><p>💡 Lembre: o assistente <strong>✨ IntelliX AI</strong> está sempre disponível no cabeçalho. Este tour pode ser acessado novamente pelo botão <strong>(?)</strong>.</p>`,
     },
   ],
 };
