@@ -17,6 +17,8 @@ import {
   ShieldCheck,
   AlertTriangle,
   Building2,
+  Leaf,
+  PresentationIcon,
 } from "lucide-react";
 import {
   DropdownMenuItem,
@@ -30,8 +32,10 @@ const navItems: NavItem[] = [
   { icon: CheckSquare,     label: "Tarefas",              href: "/consultor/tarefas",            dataTour: "menu-tarefas" },
   { icon: FileCheck,       label: "Adesão Ética",         href: "/consultor/adesao-etica",       dataTour: "menu-adesao-etica" },
   { icon: ShieldCheck,     label: "Compliance",           href: "/consultor/compliance",         dataTour: "menu-compliance" },
-  { icon: CalendarCheck,   label: "Calendário Regulatório", href: "/consultor/compliance-calendar", dataTour: "menu-calendar" },
-  { icon: BarChart3,       label: "Relatórios",           href: "/consultor/relatorios",         dataTour: "menu-relatorios" },
+  { icon: CalendarCheck,      label: "Calendário Regulatório", href: "/consultor/compliance-calendar", dataTour: "menu-calendar" },
+  { icon: Leaf,               label: "ESG",                   href: "/consultor/esg",                dataTour: "menu-esg" },
+  { icon: PresentationIcon,   label: "Board Reporting",        href: "/consultor/board",              dataTour: "menu-board" },
+  { icon: BarChart3,          label: "Relatórios",             href: "/consultor/relatorios",         dataTour: "menu-relatorios" },
   { icon: CalendarDays,    label: "Agenda",               href: "/consultor/agenda",             dataTour: "menu-agenda" },
   { icon: CalendarPlus,    label: "Agendar Reunião",      href: "/consultor/agendamento",        dataTour: "menu-reunioes" },
   { icon: AlertTriangle,   label: "Denúncias",            href: "/consultor/denuncias",          dataTour: "menu-denuncias" },
