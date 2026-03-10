@@ -56,6 +56,7 @@ export function AgenteChat({ mode = "floating" }: AgenteChatProps) {
           tipo: "chat",
           input_data: {
             messages: newMessages,
+            mensagem: text,
             userName: profile?.nome || "Consultor",
           },
         },
@@ -63,8 +64,17 @@ export function AgenteChat({ mode = "floating" }: AgenteChatProps) {
 
       if (error) throw error;
 
+      // edge function retorna { output } — error amigável quando sem provedor
+      if (data?.error) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: `⚠️ ${data.error}` },
+        ]);
+        return;
+      }
+
       const assistantContent =
-        data?.result || data?.output || "Desculpe, não consegui processar sua mensagem.";
+        data?.output || data?.result || "Desculpe, não consegui processar sua mensagem.";
 
       setMessages((prev) => [
         ...prev,

@@ -98,19 +98,38 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
   }
 }
 
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 // Call AI based on provider
-async function callAI(config: AIProviderConfig, systemPrompt: string, userPrompt: string): Promise<{ text: string; tokens: number }> {
+async function callAI(
+  config: AIProviderConfig,
+  systemPrompt: string,
+  userPrompt: string,
+  conversationMessages?: ChatMessage[]
+): Promise<{ text: string; tokens: number }> {
   let response: Response;
 
   if (config.provider === "gemini") {
-    // Google Gemini API
+    // Google Gemini API — converte histórico para o formato contents[]
+    let contents: { role: string; parts: { text: string }[] }[];
+    if (conversationMessages && conversationMessages.length > 0) {
+      contents = conversationMessages.map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      }));
+    } else {
+      contents = [{ role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }];
+    }
+
     response = await fetchWithTimeout(`${config.baseUrl}/models/${config.model}:generateContent?key=${config.apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [
-          { role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
-        ],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents,
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 8192
@@ -131,19 +150,23 @@ async function callAI(config: AIProviderConfig, systemPrompt: string, userPrompt
 
   } else if (config.provider === "openai" || config.provider === "lovable") {
     // OpenAI-compatible API (includes Lovable Gateway)
+    const messages = conversationMessages && conversationMessages.length > 0
+      ? [
+          { role: "system", content: systemPrompt },
+          ...conversationMessages.map((m) => ({ role: m.role, content: m.content })),
+        ]
+      : [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ];
+
     response = await fetchWithTimeout(`${config.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${config.apiKey}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        model: config.model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ]
-      })
+      body: JSON.stringify({ model: config.model, messages })
     });
 
     if (!response.ok) {
@@ -166,6 +189,10 @@ async function callAI(config: AIProviderConfig, systemPrompt: string, userPrompt
 
   } else if (config.provider === "claude") {
     // Anthropic Claude API
+    const claudeMessages = conversationMessages && conversationMessages.length > 0
+      ? conversationMessages.map((m) => ({ role: m.role, content: m.content }))
+      : [{ role: "user", content: userPrompt }];
+
     response = await fetchWithTimeout(`${config.baseUrl}/messages`, {
       method: "POST",
       headers: {
@@ -177,9 +204,7 @@ async function callAI(config: AIProviderConfig, systemPrompt: string, userPrompt
         model: config.model,
         max_tokens: 8192,
         system: systemPrompt,
-        messages: [
-          { role: "user", content: userPrompt }
-        ]
+        messages: claudeMessages
       })
     });
 
@@ -227,7 +252,16 @@ serve(async (req) => {
     }
 
     // Get AI configuration
-    const aiConfig = await getAIConfig(supabaseService);
+    let aiConfig: AIProviderConfig;
+    try {
+      aiConfig = await getAIConfig(supabaseService);
+    } catch (configErr) {
+      const msg = configErr instanceof Error ? configErr.message : "Provedor de IA não configurado.";
+      return new Response(
+        JSON.stringify({ error: msg }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     console.log(`Using AI provider: ${aiConfig.provider} (${aiConfig.model})`);
 
     const body = await req.json() as AIRequest;
@@ -398,12 +432,24 @@ Inclua TODAS as 11 cláusulas do modelo oficial CCE.`;
         break;
 
       case "chat":
-      default:
+      default: {
         systemPrompt = `Você é um assistente especializado em governança corporativa, compliance e gestão empresarial.
 Responda de forma clara, profissional e objetiva.`;
-        userPrompt = String(input_data.mensagem || input_data.prompt || "");
+        const chatMsgs = input_data.messages as ChatMessage[] | undefined;
+        if (Array.isArray(chatMsgs) && chatMsgs.length > 0) {
+          // Usa o histórico completo — passado adiante para callAI
+          userPrompt = chatMsgs[chatMsgs.length - 1]?.content ?? "";
+        } else {
+          userPrompt = String(input_data.mensagem || input_data.prompt || "");
+        }
         break;
+      }
     }
+
+    // Extrai messages para chat com histórico
+    const chatHistory = (tipo === "chat" && Array.isArray(input_data.messages) && (input_data.messages as ChatMessage[]).length > 0)
+      ? (input_data.messages as ChatMessage[])
+      : undefined;
 
     const startTime = Date.now();
 
@@ -450,7 +496,7 @@ Responda de forma clara, profissional e objetiva.`;
       });
     } else {
       // Non-streaming response using multi-provider callAI
-      const result = await callAI(aiConfig, systemPrompt, userPrompt);
+      const result = await callAI(aiConfig, systemPrompt, userPrompt, chatHistory);
       const durationMs = Date.now() - startTime;
 
       // Save to history

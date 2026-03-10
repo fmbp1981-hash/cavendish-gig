@@ -1,7 +1,7 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-09 (rolesReady no AuthContext · FireFlies→documentos · AgenteChat · ConsultorAgenda · ConsultorClienteDetalhe · BaseLayout · 9 migrations compliance · fixes UI)
+**Última atualização:** 2026-03-09 (rolesReady no AuthContext · FireFlies→documentos · AgenteChat · ConsultorAgenda · ConsultorClienteDetalhe · BaseLayout · 9 migrations compliance · fixes UI · AgenteChat messages array · Tour X button · cross-page tour session)
 **Versão do sistema:** 0.0.0 (pre-release)
 **Desenvolvido por:** IntelliX.AI
 
@@ -842,6 +842,24 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 #### BUG 6 — CRÍTICO: Admin via `/` era enviado para `/dashboard` (ConsultorDashboard) em vez de `/admin`
 - **Causa:** `Index.tsx` tinha `if (isAdmin || isConsultor) → /dashboard`. Como `isConsultor = hasRole('consultor') || hasRole('admin')`, admins também eram incluídos e iam para `/dashboard` (que mapeia para `ConsultorDashboard`)
 - **Fix:** Separado em dois `if` independentes: `isAdmin → /admin`, `isConsultor → /consultor`, default → `/meu-projeto`
+
+### 2026-03-09 — AgenteChat + Tour (3 bugs)
+
+#### BUG 8 — ALTA: AgenteChat enviava messages array mas edge function lia campo inexistente
+- **Causa:** `AgenteChat.tsx` enviava `input_data: { messages: newMessages }`, mas edge function `ai-generate` no `chat` case lia `input_data.mensagem || input_data.prompt` (sempre `undefined`) → `userPrompt = ""` → AI retornava resposta vazia/erro
+- **Fix (edge function):** Adicionado suporte a `input_data.messages` (array) no `chat` case com passagem do histórico completo para `callAI` (novo parâmetro opcional `conversationMessages`). OpenAI/Lovable/Claude recebem messages array nativo; Gemini usa `contents[]` + `systemInstruction`. Fix: `AgenteChat.tsx` também agora envia `mensagem: text` como fallback.
+- **Arquivos:** `supabase/functions/ai-generate/index.ts`, `src/components/agente/AgenteChat.tsx`
+
+#### BUG 9 — ALTA: Edge function retornava 500 quando nenhum provedor de IA configurado
+- **Causa:** `getAIConfig()` lançava `Error("Nenhum provedor...")` e o catch global retornava 500, sem mensagem útil para o usuário
+- **Fix:** Bloco `try/catch` em torno de `getAIConfig()` retorna 503 com a mensagem amigável em vez de 500. `AgenteChat.tsx` agora exibe `data.error` como mensagem `⚠️` no chat.
+- **Arquivo:** `supabase/functions/ai-generate/index.ts`
+
+#### BUG 10 — ALTA: Tour X button não limpava sessão / cross-page nav sessão zerada imediatamente
+- **Causa 1:** `onDestroyStarted` (chamado por `d.destroy()`) limpava `sessionStorage` mesmo durante navegação cross-page, zerando a sessão que `onNextClick`/`onPrevClick` acabara de salvar → tour nunca retomava na próxima página
+- **Causa 2:** driver.js v1.4 não chama `onDestroyStarted` quando o usuário clica no X do popover → sessão ficava presa no storage e o tour reiniciava na próxima navegação
+- **Fix:** Adicionado `isNavigatingRef` (flag boolean) que é `true` durante `saveTourSession → d.destroy() → navigate()`; `onDestroyStarted` só limpa sessão quando `!isNavigatingRef.current`. Adicionado `onCloseClick` explícito que chama `clearTourSession()` + `d.destroy()` (necessário em driver.js v1.x onde o botão X não destrói automaticamente).
+- **Arquivo:** `src/contexts/TourContext.tsx`
 
 ### 2026-03-02 — Bug: `.eq()` com array em vez de `.in()`
 **Arquivo:** `src/hooks/useClienteProjeto.ts`

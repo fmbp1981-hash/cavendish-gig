@@ -59,6 +59,8 @@ export function TourProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const driverRef = useRef<any>(null);
   const activeTourRef = useRef<TourDefinition | null>(null);
+  // Flag para evitar que onDestroyStarted limpe sessão de navegação cross-page
+  const isNavigatingRef = useRef(false);
 
   /** Constrói os DriveSteps para driver.js a partir da TourDefinition */
   const buildDriverSteps = (tour: TourDefinition): DriveStep[] =>
@@ -95,19 +97,22 @@ export function TourProvider({ children }: { children: ReactNode }) {
           const nextIndex = currentIndex + 1;
 
           if (nextIndex >= tour.steps.length) {
-            d.destroy();
             clearTourSession();
+            d.destroy();
             return;
           }
 
           const nextStep = tour.steps[nextIndex];
           if (nextStep.page && nextStep.page !== window.location.pathname) {
+            // Salva sessão ANTES de destruir; isNavigatingRef protege onDestroyStarted
+            isNavigatingRef.current = true;
             saveTourSession({
               tourKey: tour.key,
               stepIndex: nextIndex,
               expectedPage: nextStep.page,
             });
             d.destroy();
+            isNavigatingRef.current = false;
             navigate(nextStep.page);
           } else {
             d.moveNext();
@@ -119,27 +124,39 @@ export function TourProvider({ children }: { children: ReactNode }) {
           const prevIndex = currentIndex - 1;
 
           if (prevIndex < 0) {
-            d.destroy();
             clearTourSession();
+            d.destroy();
             return;
           }
 
           const prevStep = tour.steps[prevIndex];
           if (prevStep.page && prevStep.page !== window.location.pathname) {
+            isNavigatingRef.current = true;
             saveTourSession({
               tourKey: tour.key,
               stepIndex: prevIndex,
               expectedPage: prevStep.page,
             });
             d.destroy();
+            isNavigatingRef.current = false;
             navigate(prevStep.page);
           } else {
             d.movePrevious();
           }
         },
 
-        onDestroyStarted: () => {
+        // Chamado pelo botão X do popover (driver.js v1.x não destrói automaticamente)
+        onCloseClick: () => {
           clearTourSession();
+          activeTourRef.current = null;
+          d.destroy();
+        },
+
+        onDestroyStarted: () => {
+          // Não limpa sessão durante navegação cross-page (sessão acabou de ser salva)
+          if (!isNavigatingRef.current) {
+            clearTourSession();
+          }
           activeTourRef.current = null;
         },
       });
