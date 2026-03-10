@@ -1,7 +1,7 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-09 (rolesReady no AuthContext · FireFlies→documentos · AgenteChat · ConsultorAgenda · ConsultorClienteDetalhe · BaseLayout · 9 migrations compliance · fixes UI · AgenteChat messages array · Tour X button · cross-page tour session)
+**Última atualização:** 2026-03-09 (AgenteChat messages array · Tour X button · cross-page tour session · AIProviderSelector UX fix · Seção 16 Análise Competitiva GRC adicionada · Pendências atualizadas com gaps de mercado)
 **Versão do sistema:** 0.0.0 (pre-release)
 **Desenvolvido por:** IntelliX.AI
 
@@ -24,7 +24,8 @@
 13. [Histórico de Implementações](#13-histórico-de-implementações)
 14. [Bugs Corrigidos](#14-bugs-corrigidos)
 15. [Pendências e Roadmap](#15-pendências-e-roadmap)
-16. [Decisões de Arquitetura](#16-decisões-de-arquitetura)
+16. [Análise Competitiva — Mercado GRC](#16-análise-competitiva--mercado-grc-atualizado-2026-03-09)
+17. [Decisões de Arquitetura](#17-decisões-de-arquitetura)
 
 ---
 
@@ -925,23 +926,211 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
   - Migrations: `20260304000001_pg_cron_monthly_reports.sql`, `20260304000002_cron_wrapper_function.sql`
 - [x] **Notificações Realtime** — JÁ ESTAVA IMPLEMENTADO em `useNotificacoes.ts` (subscriptions INSERT + UPDATE + refetchInterval 30s)
 
+### 🔴 CRÍTICO — Gaps identificados vs. mercado GRC (ver Seção 16)
+- [ ] **Módulo de Gestão de Riscos** — Risk Register + Heatmap 5×5 + Planos de mitigação (tabelas: `riscos`, `riscos_mitigacao`, `riscos_avaliacoes`)
+- [ ] **Compliance Calendar** — Agenda regulatória com obrigações LGPD/Lei 12.846/CVM + alertas de vencimento
+- [ ] **LGPD Compliance Module** — Inventário de dados (ROPA), consentimentos, DSR workflow, DPIA
+- [ ] **Gestão de Investigações** — Fluxo formal atrelado ao canal de denúncias (Recebida→Concluída) com SLA e evidências sigilosas
+
+### 🔴 ALTA — Gaps competitivos importantes
+- [ ] **Conflitos de Interesse** — Formulário de disclosure periódico + workflow aprovação gestor
+- [ ] **Gestão de Políticas Corporativas** — Biblioteca de políticas + workflow criação→aprovação→publicação + aceite digital
+- [ ] **Third-Party Risk** — Cadastro de fornecedores críticos + due diligence automatizada + score de risco
+- [ ] **Canal de denúncias melhorado** — Triagem por IA, dashboard KPIs, link/QR público para denúncias externas sem login
+
 ### Média prioridade
 - [ ] **White-label completo com subdomínio** por organização
-- [ ] **Envio automático de relatórios mensais** (cron no Supabase pg_cron)
-- [ ] **Notificações push / Realtime** no frontend (Supabase Realtime subscriptions)
-- [ ] **Rota `/parceiro`** dedicada para usuários com role `parceiro`
-- [ ] **Externalizar emails `from` hardcoded** nas Edge Functions `send-email` e `send-monthly-reports` para o secret `RESEND_FROM_EMAIL`
+- [ ] **ESG Dashboard** — indicadores ambientais, sociais e de governança para diretoria
+- [ ] **Board Reporting** — dashboard executivo read-only para membros do conselho
+- [ ] **Benchmark setorial no diagnóstico** — comparar score GIG com média do setor
+- [ ] **SSO / SAML** — para tenants enterprise (Azure AD, Google Workspace)
+- [ ] **SCORM player** — importar cursos externos de e-learning
 
 ### Baixa prioridade / Future
-- [ ] SSO corporativo (SAML/OAuth2 enterprise)
+- [ ] API pública REST para integrações customizadas
+- [ ] Integração ERP (TOTVS Protheus)
+- [ ] Mobile app nativo (PWA suficiente por ora)
+- [ ] i18n multi-idioma (inglês + espanhol)
 - [ ] Analytics avançado (cohort, funil)
-- [ ] i18n multi-idioma
-- [ ] Templates com editor drag-and-drop
-- [ ] Chatbot interno
+
+### Simplificar / Remover
+- [ ] **Desativar edge functions ClickUp/Trello sync** — deployadas mas sem uso real (reduz custo compute)
+- [ ] **Remover Kanban visual complexo** — simplificar para lista de tarefas com status
+- [ ] **Limpar referências Lovable AI** — variáveis e comentários residuais no código
 
 ---
 
-## 16. Decisões de Arquitetura
+## 16. Análise Competitiva — Mercado GRC (atualizado 2026-03-09)
+
+> Pesquisa realizada com base em fontes públicas (Pathlock, VComply, Gartner, G2, CompliancePME.br, GoPliance, NAVEX, Diligent, clickCompliance) e inteligência de mercado.
+
+### Principais Sistemas GRC do Mercado
+
+| Sistema | Foco | Público | Presença no BR | Destaques |
+|---|---|---|---|---|
+| **NAVEX One** (EthicsPoint) | GRC completo | Enterprise+ | Parcial | Líder em canal de denúncias; 13.000 org.; IA em triagem de reports; training insights |
+| **Diligent One** | Board + GRC | Enterprise | Não | Único a unir board management + GRC + ESG + audit; heatmap de riscos; board reporting |
+| **MetricStream** | GRC / CyberGRC / ESGRC | Enterprise | Não | Líder Gartner/Forrester; 3 linhas de produto; risk quantification |
+| **OneTrust** | Privacy + GRC | Enterprise/PME | Sim | Líder em LGPD/GDPR; risk assessment automatizado; policy management |
+| **LogicGate** | Risk / GRC workflows | Mid-Market | Não | Drag-and-drop workflows; risk register; monitoramento contínuo |
+| **VComply** | Compliance ops | PME–Mid | Não | Interface intuitiva; compliance tracking; policy management; audit |
+| **AuditBoard** | Audit + Risk | Mid-Enterprise | Não | Líder em audit management; SOXHUB; risk heatmap |
+| **IBM OpenPages** | GRC Enterprise | Enterprise | Sim (IBM BR) | Máxima integração com ERP; AI Watson; altíssimo custo |
+| **clickCompliance** | Compliance PME | PME | **Sim (BR)** | 7 módulos; canal de denúncias com IA + WhatsApp + voz; chatbot; conflitos de interesse |
+| **Contato Seguro** | Canal de denúncias | PME | **Sim (BR)** | Especialista em whistleblowing; integração com Pró-Ética |
+| **GoPliance** | Compliance PME | PME | **Sim (BR)** | Solução brasileira; diagnóstico, código de ética, treinamentos, canal de denúncias |
+
+### O que Todo Sistema GRC Sério Oferece (Top 12 funcionalidades padrão)
+
+1. **Canal de denúncias anônimo** — web + telefone + WhatsApp; triagem por IA; gestão de investigações formais; dashboard de KPIs de denúncias; anti-represália
+2. **Gestão de riscos (Risk Register + Matriz)** — cadastro de riscos, probabilidade × impacto, heatmap visual, planos de mitigação, monitoramento contínuo
+3. **Política e código de ética** — criação, versionamento, workflow de aprovação, aceite digital rastreável por colaborador, renovação periódica
+4. **Treinamentos e-learning** — biblioteca de cursos, quiz, certificado, rastreamento de conclusão, relatório de adesão por departamento
+5. **Gestão de documentos** — upload, workflow aprovação/rejeição, controle de versões, expiração automática, classificação por categoria
+6. **Compliance calendar** — calendário de obrigações regulatórias, prazos legais, alertas de vencimento (LGPD, Lei Anticorrupção, BACEN, CVM)
+7. **Third-party risk** — cadastro de fornecedores, due diligence automatizada, score de risco de terceiros
+8. **Audit trail completo** — log imutável de todas as ações; exportação para auditores; rastreabilidade por usuário/data/ação
+9. **Conflitos de interesse** — formulários de disclosure, workflow de aprovação, registro histórico
+10. **Diagnóstico de maturidade** — questionários por pilares (OCDE, ISO 37001, CGU), scoring, benchmark setorial, plano de ação gerado automaticamente
+11. **Board/ESG reporting** — dashboards executivos para diretoria; indicadores ESG; relatório para conselho
+12. **Integrações** — SSO/SAML; ERP (SAP, TOTVS, TOTVS Protheus); Active Directory; API pública
+
+### Comparativo: Sistema GIG vs. Mercado
+
+| Funcionalidade | Mercado | Sistema GIG | Gap |
+|---|---|---|---|
+| Canal de denúncias anônimo | ✅ Padrão | ✅ Implementado | — |
+| Denúncias: IA triagem + WhatsApp | ✅ Top players | ❌ Não tem | 🔴 ALTA |
+| Denúncias: gestão de investigação formal | ✅ Padrão | ❌ Não tem | 🔴 ALTA |
+| Diagnóstico de maturidade | ✅ Padrão | ✅ Implementado | — |
+| Diagnóstico: benchmark setorial | ✅ Top players | ❌ Não tem | 🟡 MÉDIA |
+| Código de ética (geração IA) | ✅ Padrão | ✅ Implementado | — |
+| Código de ética: aceite digital por colaborador | ✅ Padrão | ✅ `codigo_etica_adesoes` | — |
+| Treinamentos e-learning + quiz + certificado | ✅ Padrão | ✅ Implementado | — |
+| Treinamentos: SCORM / vídeo externo | ✅ Top players | ❌ Não tem | 🟡 MÉDIA |
+| Gestão de documentos com aprovação | ✅ Padrão | ✅ Implementado | — |
+| **Gestão de riscos (Risk Register + Heatmap)** | ✅ Padrão | ❌ Não tem | 🔴 **CRÍTICO** |
+| Planos de mitigação de riscos | ✅ Padrão | ❌ Não tem | 🔴 **CRÍTICO** |
+| **Compliance calendar / Agenda regulatória** | ✅ Padrão | ❌ Não tem | 🔴 **CRÍTICO** |
+| Conflitos de interesse (disclosure) | ✅ Padrão | ❌ Não tem | 🔴 ALTA |
+| **Third-party risk (fornecedores)** | ✅ Padrão | ❌ Não tem | 🔴 ALTA |
+| Políticas corporativas (workflow revisão) | ✅ Padrão | ❌ Não tem | 🔴 ALTA |
+| Audit trail completo | ✅ Padrão | ✅ `audit_logs` em 40 tabelas | — |
+| ESG reporting | ✅ Top players | ❌ Não tem | 🟡 MÉDIA |
+| Board reporting dashboard | ✅ Top players | ❌ Não tem | 🟡 MÉDIA |
+| Relatórios mensais automáticos | ✅ Padrão | ✅ Implementado (pg_cron) | — |
+| Agente de IA (chat) | ✅ Emergente | ✅ Implementado | — |
+| IA para geração de documentos | ✅ Emergente | ✅ Implementado (5 tipos) | — |
+| **LGPD compliance module** | ✅ Padrão BR | ❌ Não tem | 🔴 **CRÍTICO** |
+| Multi-tenant (organização + consultores) | ✅ Padrão SaaS | ✅ Implementado | — |
+| Portal do cliente | ✅ Padrão | ✅ Implementado | — |
+| Gestão de projetos/tarefas | ✅ Padrão | ✅ Implementado | — |
+| Google Calendar (reuniões) | Diferencial | ✅ Implementado | — |
+| Transcrição de reuniões (Fireflies) | Diferencial | ✅ Implementado | — |
+| SSO / SAML enterprise | ✅ Padrão enterprise | ❌ Não tem | 🟡 MÉDIA |
+| API pública para integrações | ✅ Padrão | ❌ Não tem | 🟡 MÉDIA |
+| Integração ERP (SAP/TOTVS) | ✅ Enterprise | ❌ Não tem | 🔵 BAIXA |
+| Mobile app nativo | ✅ Top players | ❌ Não tem | 🔵 BAIXA |
+
+### O que Implementar (por prioridade)
+
+#### 🔴 CRÍTICO — Sem isso o GIG não compete no core do mercado
+
+1. **Módulo de Gestão de Riscos**
+   - Risk Register: cadastro de riscos com categoria, responsável, probabilidade, impacto
+   - Matriz de riscos visual (heatmap 5×5)
+   - Planos de mitigação com tarefas e prazos
+   - Monitoramento e reavaliação periódica
+   - Tabelas: `riscos`, `riscos_mitigacao`, `riscos_avaliacoes`
+
+2. **Compliance Calendar (Agenda Regulatória)**
+   - Calendário de obrigações por lei (Lei 12.846, LGPD, BACEN, CVM, Simples Nacional)
+   - Alertas de vencimento de prazo
+   - Integração com Google Calendar existente
+   - Tabelas: `compliance_obrigacoes`, `compliance_alertas`
+
+3. **LGPD Compliance Module**
+   - Inventário de dados pessoais (ROPA — Record of Processing Activities)
+   - Gestão de consentimentos
+   - Workflow de Data Subject Requests (DSR)
+   - Relatório de impacto (DPIA)
+   - Tabelas: `lgpd_ativos_dados`, `lgpd_consentimentos`, `lgpd_solicitacoes`
+
+4. **Gestão de Investigações (vinculado ao canal de denúncias)**
+   - Fluxo formal: Recebida → Em análise → Investigando → Concluída → Arquivada
+   - Assignee (responsável pela investigação)
+   - Registro de evidências e notas internas sigilosas
+   - Prazo de resposta com SLA
+
+#### 🔴 ALTA — Diferencial competitivo importante
+
+5. **Conflitos de Interesse (Disclosure)**
+   - Formulário de declaração periódica por colaborador/consultor
+   - Workflow de aprovação pelo gestor
+   - Histórico de declarações por pessoa
+   - Tabelas: `conflitos_interesse`, `conflitos_historico`
+
+6. **Gestão de Políticas Corporativas**
+   - Biblioteca de políticas (Política de Privacidade, Código de Conduta, Política Anticorrupção, etc.)
+   - Workflow de criação → revisão → aprovação → publicação
+   - Aceite digital rastreável (complementa o código de ética)
+   - Diferente de "documentos" — é uma categoria própria com workflow rígido
+
+7. **Third-Party Risk (Fornecedores)**
+   - Cadastro de fornecedores críticos
+   - Questionário de due diligence automatizado
+   - Score de risco calculado
+   - Alertas de renovação de avaliação
+   - Tabelas: `fornecedores`, `fornecedores_avaliacoes`
+
+8. **Canal de Denúncias: Melhorias**
+   - Triagem/categorização automática por IA (ex: assédio, fraude, corrupção, LGPD)
+   - Dashboard de KPIs: volume por categoria, tempo médio de resposta, taxa de anonimato
+   - Link/QR code público para denúncias externas (sem login)
+
+#### 🟡 MÉDIA — Agrega valor mas não é blocker
+
+9. **ESG Dashboard** — indicadores ambientais, sociais e de governança para diretoria
+10. **Board Reporting** — dashboard executivo read-only para membros do conselho
+11. **Benchmark setorial** no diagnóstico de maturidade (comparar score com média do setor)
+12. **SCORM player** para importar cursos externos de e-learning
+13. **SSO / SAML** para tenants enterprise (SAML2, Azure AD, Google Workspace)
+
+#### 🔵 BAIXA — Futuro ou raramente usado por PMEs
+
+14. API pública REST para integrações customizadas
+15. Integração ERP (TOTVS Protheus) — apenas para PMEs médias/grandes
+16. Mobile app nativo (PWA é suficiente no curto prazo)
+17. i18n multi-idioma (inglês + espanhol para expansão regional)
+
+### O que Simplificar ou Remover
+
+| Item | Situação | Recomendação |
+|---|---|---|
+| **Integração Trello** | Implementada mas nunca usada | Remover ou manter apenas como "Em breve" sem edge function ativa |
+| **Kanban complexo** | PMEs preferem lista simples | Simplificar para lista de tarefas com status; remover board visual |
+| **Geração de contrato via IA** | Diferencial, mas periférico | Manter como template editável, não como geração IA autônoma (risco jurídico) |
+| **`plano_config` table** | Existe mas sem UI | Definir planos reais ou remover |
+| **Lovable AI Gateway** | Removido do código | Limpar referências residuais em comentários e variáveis |
+| **`integration_sync` table** | Sync de dados externos sem uso real | Manter schema, mas não implementar UI ainda |
+| **ClickUp/Trello sync edge functions** | Deployadas mas sem cliente usando | Desativar para reduzir custos de compute; reativar sob demanda |
+
+### Diferenciais Competitivos do GIG vs. Mercado
+
+O GIG já possui funcionalidades que muitos concorrentes de mesmo porte **não têm**:
+
+| Diferencial | Por que é relevante |
+|---|---|
+| **Agente de IA conversacional** integrado | Apenas top players (NAVEX, Diligent) têm; nenhum nacional tem |
+| **Transcrição automática de reuniões** (Fireflies) → geração de atas via IA | Único no segmento PME BR |
+| **Geração de documentos via IA** (código de ética, análise, ata, contrato) | Diferencial tecnológico forte |
+| **Multi-tenant white-label** com roles granulares | Permite revenda/consultoria (modelo Cavendish) |
+| **Consultores como intermediários** (modelo único) | GoPliance, clickCompliance são direto ao cliente; GIG tem camada de consultoria |
+| **Google Calendar nativo** para agendamento de reuniões de compliance | Nenhum concorrente BR tem isso nativo |
+
+---
+
+## 17. Decisões de Arquitetura
 
 ### Por que Next.js + React Router (híbrido)?
 O projeto foi inicialmente desenvolvido com Vite + React (SPA pura) e depois migrado para Next.js. Para preservar toda a lógica de roteamento existente sem reescrita, optou-se pela abordagem de catch-all: o Next.js gerencia páginas públicas com SSR/build estático, enquanto a SPA autenticada roda inteiramente no cliente via React Router.
