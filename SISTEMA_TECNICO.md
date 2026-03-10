@@ -1,8 +1,8 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-10 (GIG Premium: Fases 1–4 implementadas na branch feature/gig-premium-phase1 — 10 módulos, 7 migrations, 3 edge function melhorias, Audit Trail, ESG, Board Reporting, Compliance Calendar, Third-Party Risk, Risk Register, Políticas, Conflitos, Investigações, LGPD)
-**Versão do sistema:** 0.0.0 (pre-release)
+**Última atualização:** 2026-03-10 — Sessão completa: bugs E2E corrigidos (BUGs 11–16), Security Headers (CSP + poweredByHeader), crash dos novos menus corrigido (AdminAuditTrail colunas erradas, ErrorBoundary, Select value="" → "__all__"), Tour atualizado (46 passos, 4 novos), documento de apresentação PDF gerado.
+**Versão do sistema:** 0.0.0 (pre-release) — branch `feature/gig-premium-phase1`, 9 commits à frente do main
 **Desenvolvido por:** IntelliX.AI
 
 ---

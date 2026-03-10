@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sistema GIG — Apresentação Completa</title>
+<style>
+  /* ── Reset e tipografia ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --green:   #1A5B44;
+    --green-l: #2a7a5c;
+    --gold:    #B8970D;
+    --gold-l:  #d4af10;
+    --navy:    #0C2B3C;
+    --navy-l:  #1a4460;
+    --cream:   #F4F1EB;
+    --white:   #ffffff;
+    --gray1:   #f8f8f6;
+    --gray2:   #e8e5dd;
+    --gray3:   #9c9880;
+    --text:    #1a1a1a;
+    --slide-w: 297mm;
+    --slide-h: 210mm;
+  }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: #2a2a2a;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── Slide base ── */
+  .slide {
+    width: var(--slide-w);
+    min-height: var(--slide-h);
+    background: var(--white);
+    margin: 24px auto;
+    padding: 0;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── Print ── */
+  @media print {
+    body { background: white; }
+    .slide {
+      margin: 0; box-shadow: none;
+      page-break-after: always;
+      width: 100%; min-height: 100vh;
+    }
+    .no-print { display: none !important; }
+  }
+
+  /* ─────────────────────────────────────────────
+     SLIDE TYPES
+  ───────────────────────────────────────────── */
+
+  /* ── CAPA ── */
+  .slide-cover {
+    background: linear-gradient(140deg, var(--navy) 0%, var(--navy-l) 50%, var(--green) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 48px;
+  }
+  .slide-cover .logo-badge {
+    background: rgba(255,255,255,.12);
+    border: 1.5px solid rgba(255,255,255,.25);
+    border-radius: 50px;
+    padding: 6px 20px;
+    color: var(--gold-l);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .slide-cover h1 {
+    font-size: 52px;
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .slide-cover .subtitle {
+    font-size: 20px;
+    color: rgba(255,255,255,.75);
+    font-weight: 300;
+    margin-bottom: 36px;
+  }
+  .slide-cover .tagline {
+    background: var(--gold);
+    color: var(--navy);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 28px;
+    border-radius: 50px;
+    letter-spacing: .5px;
+    display: inline-block;
+    margin-bottom: 48px;
+  }
+  .slide-cover .meta {
+    display: flex; gap: 48px; color: rgba(255,255,255,.5); font-size: 11px;
+  }
+  .slide-cover .meta span { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .slide-cover .meta strong { color: rgba(255,255,255,.85); font-size: 18px; font-weight: 700; }
+
+  /* ── SECTION ── */
+  .slide-section {
+    background: linear-gradient(135deg, var(--green) 0%, var(--navy) 100%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 48px;
+  }
+  .slide-section .section-num {
+    font-size: 72px; font-weight: 800;
+    color: rgba(255,255,255,.1); line-height: 1;
+    margin-bottom: -8px;
+  }
+  .slide-section h2 {
+    font-size: 38px; font-weight: 700;
+    color: var(--white); margin-bottom: 12px;
+  }
+  .slide-section .desc {
+    font-size: 16px; color: rgba(255,255,255,.7);
+    max-width: 560px; font-weight: 300;
+  }
+  .slide-section .accent-bar {
+    width: 64px; height: 4px;
+    background: var(--gold); border-radius: 2px;
+    margin: 20px auto;
+  }
+
+  /* ── CONTENT BASE ── */
+  .slide-content {
+    display: flex; flex-direction: column;
+    padding: 0;
+  }
+  .slide-header {
+    background: var(--navy);
+    padding: 22px 40px 18px;
+    border-bottom: 3px solid var(--gold);
+  }
+  .slide-header h2 {
+    font-size: 22px; font-weight: 700;
+    color: var(--white); margin: 0;
+  }
+  .slide-header .slide-sub {
+    font-size: 12px; color: rgba(255,255,255,.55);
+    margin-top: 2px; font-weight: 400;
+  }
+  .slide-body { padding: 28px 40px; flex: 1; }
+
+  /* ── Decoração lateral ── */
+  .slide-content::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 5px;
+    background: linear-gradient(to bottom, var(--gold), var(--green));
+  }
+
+  /* ── Helpers de layout ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--gray1);
+    border: 1px solid var(--gray2);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .card.green { background: #eaf5f0; border-color: #b8dece; }
+  .card.gold  { background: #fdf8e1; border-color: #e8d56a; }
+  .card.navy  { background: #e8eef3; border-color: #b0c4d4; }
+  .card.dark  { background: var(--navy); color: var(--white); border-color: var(--navy-l); }
+  .card h4 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .card.dark h4 { color: var(--gold-l); }
+  .card p, .card ul { font-size: 12px; }
+  .card ul { padding-left: 16px; }
+  .card ul li { margin-bottom: 4px; }
+
+  /* ── Feature items ── */
+  .feature {
+    display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px;
+  }
+  .feature .icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--green); color: var(--white);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .feature .icon.gold { background: var(--gold); color: var(--navy); }
+  .feature .icon.navy { background: var(--navy); }
+  .feature-text h4 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .feature-text p  { font-size: 11.5px; color: #555; }
+
+  /* ── Steps ── */
+  .steps { counter-reset: step; }
+  .step {
+    display: flex; gap: 14px; margin-bottom: 16px; align-items: flex-start;
+    counter-increment: step;
+  }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--green); color: var(--white);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+  }
+  .step-body h4 { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .step-body p  { font-size: 12px; color: #555; }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; gap: 4px;
+  }
+  .badge.green { background: #d4edda; color: #145a32; }
+  .badge.gold  { background: #fef3c7; color: #92400e; }
+  .badge.navy  { background: #dbeafe; color: #1e3a5f; }
+  .badge.red   { background: #fee2e2; color: #7f1d1d; }
+
+  /* ── Tabelas ── */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    background: var(--navy); color: var(--white);
+    padding: 8px 12px; text-align: left; font-weight: 600; font-size: 11px;
+  }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--gray2); }
+  tr:nth-child(even) td { background: var(--gray1); }
+  tr:last-child td { border-bottom: none; }
+  td.check { color: #1a5b44; font-weight: 700; text-align: center; }
+  td.dash  { color: #ccc; text-align: center; }
+
+  /* ── Quote / Highlight ── */
+  .highlight {
+    background: linear-gradient(135deg, var(--green), var(--navy));
+    color: var(--white); border-radius: 12px;
+    padding: 20px 24px; margin: 16px 0;
+  }
+  .highlight p { font-size: 15px; font-weight: 300; line-height: 1.6; }
+  .highlight strong { color: var(--gold-l); font-weight: 600; }
+
+  /* ── Stat cards ── */
+  .stat { text-align: center; padding: 16px; }
+  .stat .num {
+    font-size: 36px; font-weight: 800;
+    color: var(--green); line-height: 1;
+  }
+  .stat .label { font-size: 11px; color: #666; margin-top: 4px; }
+
+  /* ── Slide number ── */
+  .slide-num {
+    position: absolute; bottom: 14px; right: 20px;
+    font-size: 10px; color: rgba(0,0,0,.25); font-weight: 500;
+  }
+  .slide-cover .slide-num, .slide-section .slide-num { color: rgba(255,255,255,.2); }
+
+  /* ── Flow arrow ── */
+  .flow {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap; margin: 12px 0;
+  }
+  .flow-item {
+    background: var(--green); color: var(--white);
+    padding: 6px 14px; border-radius: 6px;
+    font-size: 11.5px; font-weight: 600;
+  }
+  .flow-item.gold { background: var(--gold); color: var(--navy); }
+  .flow-arrow { color: var(--gray3); font-size: 18px; font-weight: 300; }
+
+  /* ── Big icon slide ── */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .module-card {
+    border: 1.5px solid var(--gray2);
+    border-radius: 10px; padding: 14px;
+    background: var(--white);
+  }
+  .module-card .module-icon {
+    font-size: 22px; margin-bottom: 8px; display: block;
+  }
+  .module-card h4 { font-size: 12.5px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+  .module-card p  { font-size: 11px; color: #666; }
+  .module-card .tag {
+    display: inline-block; margin-top: 6px;
+    font-size: 10px; font-weight: 600; padding: 2px 8px;
+    border-radius: 10px; background: #e9f5ee; color: var(--green);
+  }
+  .module-card .tag.premium { background: #fef3c7; color: #92400e; }
+
+  /* ── Rodapé de slide ── */
+  .slide-footer {
+    background: var(--navy);
+    padding: 10px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: auto;
+  }
+  .slide-footer span { font-size: 10px; color: rgba(255,255,255,.4); }
+  .slide-footer .brand { color: var(--gold-l); font-weight: 600; font-size: 11px; }
+
+  /* ── Print button ── */
+  .print-btn {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--green); color: white;
+    padding: 12px 24px; border-radius: 8px;
+    border: none; cursor: pointer; font-size: 14px; font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0,0,0,.3);
+    z-index: 999;
+  }
+  .print-btn:hover { background: var(--green-l); }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">🖨️ Exportar PDF</button>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 1 — CAPA
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-cover">
+  <div class="logo-badge">✦ IntelliX.AI &nbsp;×&nbsp; Cavendish Consultoria</div>
+  <h1>Sistema GIG</h1>
+  <p class="subtitle">Gestão Integrada de Governança</p>
+  <span class="tagline">Plataforma SaaS de Compliance e Integridade para PMEs</span>
+  <div class="meta">
+    <span><strong>10+</strong> módulos de compliance</span>
+    <span><strong>40+</strong> tabelas de dados</span>
+    <span><strong>3</strong> planos disponíveis</span>
+    <span><strong>100%</strong> IA integrada</span>
+  </div>
+  <div class="slide-num">01 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 2 — O PROBLEMA
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <h2>O Desafio: Compliance nas PMEs</h2>
+    <p class="slide-sub">Por que governança corporativa é urgente e inacessível para empresas de médio porte</p>
+  </div>
+  <div class="slide-body">
+    <div class="highlight">
+      <p>No Brasil, <strong>mais de 80% das PMEs</strong> não possuem um programa estruturado de compliance — ficando expostas a multas milionárias, sanções regulatórias e riscos reputacionais evitáveis.</p>
+    </div>
+
+    <div class="grid-3" style="margin-top:20px">
+      <div class="card">
+        <h4>⚖️ Risco Regulatório</h4>
+        <ul>
+          <li>Lei Anticorrupção (12.846/13) — multas de 0,1% a 20% do faturamento</li>
+          <li>LGPD — multas de até R$ 50 milhões por infração</li>
+          <li>Lei de Lavagem de Dinheiro — responsabilidade penal</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>🔍 Falta de Estrutura</h4>
+        <ul>
+          <li>Processos manuais e descentralizados</li>
+          <li>Documentos em planilhas sem rastreabilidade</li>
+          <li>Sem canal de denúncias confiável</li>
+          <li>Diagnóstico de maturidade inexistente</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>💸 Custo da Inação</h4>
+        <ul>
+          <li>Perda de contratos com grandes empresas</li>
+          <li>Impossibilidade de certificações</li>
+          <li>Clima organizacional deteriorado</li>
+          <li>Danos reputacionais irreversíveis</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:18px; display:flex; gap:12px; align-items:center;">
+      <div class="card navy" style="flex:1; padding:14px">
+        <h4>❌ Sem o GIG</h4>
+        <p>Consultores da Cavendish trabalham com planilhas, e-mails e documentos Word — ineficiente, sem rastreabilidade e impossível de escalar.</p>
+      </div>
+      <div style="font-size:24px">→</div>
+      <div class="card green" style="flex:1; padding:14px">
+        <h4>✅ Com o GIG</h4>
+        <p>Plataforma centralizada com IA, auditoria automática, documentos gerados em segundos e acompanhamento em tempo real de cada cliente.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">02 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 3 — A SOLUÇÃO
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <h2>O Sistema GIG — A Solução</h2>
+    <p class="slide-sub">Uma plataforma completa que operacionaliza programas de compliance do zero</p>
+  </div>
+  <div class="slide-body">
+    <div class="grid-2" style="gap:24px">
+      <div>
+        <h3 style="font-size:15px; color:var(--navy); margin-bottom:14px">🎯 O que é o Sistema GIG?</h3>
+        <p style="font-size:13px; margin-bottom:12px">O <strong>GIG</strong> (Gestão Integrada de Governança) é uma plataforma SaaS white-label desenvolvida pela <strong>IntelliX.AI</strong> para a <strong>Cavendish Consultoria Empresarial</strong>.</p>
+        <p style="font-size:13px; margin-bottom:12px">Permite que consultores gerenciem múltiplas organizações clientes com isolamento total de dados, gerando documentos com IA e acompanhando o progresso de cada programa de compliance.</p>
+
+        <div class="card green" style="margin-top:16px">
+          <h4>🏆 Proposta de Valor Única</h4>
+          <ul style="font-size:12px">
+            <li>Diagnóstico de maturidade em minutos</li>
+            <li>Documentos gerados por IA em segundos</li>
+            <li>Canal de denúncias anônimo e rastreável</li>
+            <li>Relatórios executivos automáticos</li>
+            <li>Multi-tenant isolado por RLS (PostgreSQL)</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <h3 style="font-size:15px; color:var(--navy); margin-bottom:14px">👥 Para quem é?</h3>
+        <div class="feature">
+          <div class="icon">🏢</div>
+          <div class="feature-text">
+            <h4>Cavendish (Administrador)</h4>
+            <p>Gerencia toda a plataforma: cadastra consultores, configura clientes, acessa o Audit Trail e os Logs do Sistema.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon">👨‍💼</div>
+          <div class="feature-text">
+            <h4>Consultores da Cavendish</h4>
+            <p>Gerenciam carteira de clientes, geram documentos com IA, conduzem diagnósticos, criam políticas e monitoram compliance.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon gold">🏭</div>
+          <div class="feature-text">
+            <h4>PMEs Clientes (Tenant)</h4>
+            <p>Respondem ao diagnóstico, enviam documentos, realizam treinamentos e assinam o Código de Ética — tudo no portal próprio.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon navy">🤝</div>
+          <div class="feature-text">
+            <h4>Parceiros</h4>
+            <p>Empresas associadas com acesso limitado e controlado às informações relevantes para seu papel.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">03 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 4 — SEÇÃO: FUNCIONALIDADES CORE
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-section">
+  <div class="section-num">01</div>
+  <h2>Funcionalidades Core</h2>
+  <div class="accent-bar"></div>
+  <p class="desc">As ferramentas essenciais que compõem o coração do programa de compliance — disponíveis em todos os planos.</p>
+  <div class="slide-num">04 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 5 — MÓDULOS CORE (PARTE 1)
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <h2>Módulos Core — Fundação do Programa</h2>
+    <p class="slide-sub">Planos Essencial, Executivo e Premium</p>
+  </div>
+  <div class="slide-body">
+    <div class="module-grid">
+      <div class="module-card">
+        <span class="module-icon">📋</span>
+        <h4>Diagnóstico de Maturidade</h4>
+        <p>Questionário inteligente que avalia o nível de maturidade em compliance. Gera score por área e identifica lacunas prioritárias para o programa.</p>
+        <span class="tag">Essencial</span>
+      </div>
+      <div class="module-card">
+        <span class="module-icon">📜</span>
+        <h4>Código de Ética com IA</h4>
+        <p>Geração automática de Código de Ética personalizado com GPT-4 baseado nas respostas do diagnóstico. Revisão e publicação com um clique.</p>
+        <span class="tag">Essencial</span>
+      </div>
+      <div class="module-card">
+        <span class="module-icon">✍️</span>
+        <h4>Adesão Digital ao Código</h4>
+        <p>Coleta assinaturas digitais dos colaboradores via e-mail. Painel de acompanhamento com % de adesão e envio de lembretes automáticos.</p>
+        <span class="tag">Essencial</span>
+      </div>
+      <div class="module-card">
+        <span class="module-icon">🔔</span>
+        <h4>Canal de Denúncias</h4>
+        <p>Canal anônimo público para relato de irregularidades. Protocolo único por denúncia. Fluxo completo de triagem, investigação e resolução.</p>
+        <span class="tag">Essencial</span>
+      </div>
+      <div class="module-card">
+        <span class="module-icon">📁</span>
+        <h4>Gestão de Documentos</h4>
+        <p>Upload, revisão e aprovação de documentos obrigatórios. Catálogo configurável por tipo de projeto. Versionamento automático com histórico.</p>
+        <span class="tag">Essencial</span>
+      </div>
+      <div class="module-card">
+        <span class="module-icon">🎓</span>
+        <h4>Treinamentos com Quiz</h4>
+        <p>Módulos de treinamento com conteúdo, vídeos e quiz de avaliação. Emissão automática de certificados. Controle de progresso por colaborador.</p>
+        <span class="tag">Essencial</span>
+      </div>
+    </div>
+
+    <div style="margin-top:16px; display:flex; gap:12px">
+      <div class="card" style="flex:1">
+        <h4>📊 KPIs de Compliance em Tempo Real</h4>
+        <p>Índice de conformidade, documentos por status, projetos por fase, tarefas concluídas e progresso de treinamentos — tudo em um único painel visual com gráficos interativos.</p>
+      </div>
+      <div class="card" style="flex:1">
+        <h4>✅ Gestão de Tarefas (Kanban)</h4>
+        <p>Tarefas com responsável, prazo e prioridade. Drag-and-drop para reorganizar. Atribuição para consultores ou clientes. Alertas de vencimento automáticos.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">05 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 6 — SEÇÃO: MÓDULOS GRC PREMIUM
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-section">
+  <div class="section-num">02</div>
+  <h2>Módulos GRC Premium</h2>
+  <div class="accent-bar"></div>
+  <p class="desc">Governança, Risco e Compliance avançado — a diferenciação que coloca o GIG no nível das plataformas enterprise.</p>
+  <div class="slide-num">06 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 7 — MÓDULO GRC: COMPLIANCE
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <h2>Módulo de Compliance — 7 Abas Integradas</h2>
+    <p class="slide-sub">Central de Governança, Risco e Compliance disponível em /consultor/compliance</p>
+  </div>
+  <div class="slide-body">
+    <div class="grid-2" style="gap:16px">
+      <div>
+        <div class="feature">
+          <div class="icon">📖</div>
+          <div class="feature-text">
+            <h4>Políticas Corporativas</h4>
+            <p>Criação e publicação de políticas (anticorrupção, LGPD, trabalhista…) com fluxo: rascunho → revisão → aprovado → publicado. Rastreia % de adesão de cada colaborador.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon">⚖️</div>
+          <div class="feature-text">
+            <h4>Conflito de Interesses</h4>
+            <p>Coleta declarações anuais dos colaboradores. Identifica quem ainda não declarou. Análise e aprovação pelo consultor com registro de observações.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon gold">🔒</div>
+          <div class="feature-text">
+            <h4>LGPD — Lei de Proteção de Dados</h4>
+            <p>Inventário de dados pessoais (base legal, finalidade, titular). Gestão de solicitações de titulares (DSR) com prazo automático de 15 dias conforme LGPD.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="feature">
+          <div class="icon">⚠️</div>
+          <div class="feature-text">
+            <h4>Gestão de Riscos</h4>
+            <p>Registro de riscos com matriz probabilidade × impacto (score 0–25). Mapa de calor visual. Ações de mitigação com responsável, prazo e status de andamento.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon navy">🤝</div>
+          <div class="feature-text">
+            <h4>Due Diligence de Fornecedores</h4>
+            <p>Avaliação de fornecedores e parceiros com questionários estruturados. Score de risco calculado automaticamente. Integração com CEIS para verificação de inidoneidade.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon">📈</div>
+          <div class="feature-text">
+            <h4>KPIs + Consulta CEIS</h4>
+            <p>Painel consolidado de indicadores de conformidade. Consulta em tempo real ao Cadastro de Empresas Inidôneas e Suspensas (CEIS/CGU) antes de assinar contratos.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">07 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 8 — MÓDULOS EXECUTIVOS
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <h2>Módulos Executivos — Visão Estratégica</h2>
+    <p class="slide-sub">Ferramentas para reportar à diretoria e ao conselho de forma profissional e automatizada</p>
+  </div>
+  <div class="slide-body">
+    <div class="grid-2" style="gap:20px">
+      <div class="card green">
+        <h4 style="font-size:15px; display:flex; align-items:center; gap:8px">📅 Calendário Regulatório</h4>
+        <p style="margin:8px 0">Agenda inteligente de todas as obrigações regulatórias com periodicidade automática (única, mensal, trimestral, semestral, anual).</p>
+        <ul style="font-size:12px; padding-left:16px; margin-top:8px">
+          <li>Alertas visuais para obrigações vencidas (vermelho)</li>
+          <li>Registro da lei de referência e órgão regulador</li>
+          <li>Ao concluir, recalcula a próxima ocorrência automaticamente</li>
+          <li>Cobre: CGU, CVM, BACEN, ANPD, TCU, CADE e outros</li>
+        </ul>
+      </div>
+      <div class="card navy" style="color:var(--text)">
+        <h4 style="font-size:15px; display:flex; align-items:center; gap:8px">🌿 Dashboard ESG</h4>
+        <p style="margin:8px 0">Gestão dos indicadores Ambientais, Sociais e de Governança (ESG) por pilar.</p>
+        <ul style="font-size:12px; padding-left:16px; margin-top:8px">
+          <li><strong>🌿 Ambiental:</strong> consumo de energia, emissões, resíduos</li>
+          <li><strong>🤝 Social:</strong> diversidade, treinamentos, acidentes</li>
+          <li><strong>⚖️ Governança:</strong> políticas, conflitos, auditorias</li>
+          <li>Score ESG 0–100 calculado automaticamente</li>
+          <li>Radar gráfico por pilar — ideal para apresentações</li>
+        </ul>
+      </div>
+      <div class="card gold">
+        <h4 style="font-size:15px; display:flex; align-items:center; gap:8px">📊 Board Reporting</h4>
+        <p style="margin:8px 0">Relatórios executivos para o conselho com link público de 30 dias — sem necessidade de login.</p>
+        <ul style="font-size:12px; padding-left:16px; margin-top:8px">
+          <li>Snapshot consolidado: riscos, denúncias, ESG e KPIs</li>
+          <li>Link seguro válido por 30 dias — compartilhe com diretores</li>
+          <li>Histórico de snapshots para comparação entre períodos</li>
+          <li>Ideal para reuniões de conselho e auditorias externas</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4 style="font-size:15px; display:flex; align-items:center; gap:8px">🔍 Audit Trail (Admin)</h4>
+        <p style="margin:8px 0">Log imutável de todas as ações no sistema para rastreabilidade total.</p>
+        <ul style="font-size:12px; padding-left:16px; margin-top:8px">
+          <li>Registra: INSERT, UPDATE, DELETE e LOGIN</li>
+          <li>Filtros por tabela, ação e período</li>
+          <li>Exportação CSV para auditorias externas</li>
+          <li>Dados armazenados com checksum anti-adulteração</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">08 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 9 — IA E AUTOMAÇÕES
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <h2>Inteligência Artificial Integrada</h2>
+    <p class="slide-sub">GPT-4 no coração do sistema — transformando horas de trabalho em segundos</p>
+  </div>
+  <div class="slide-body">
+    <div class="highlight" style="margin-bottom:20px">
+      <p>O GIG não é apenas um sistema de gestão — é um <strong>co-piloto de compliance com IA</strong>. Todas as gerações são auditadas, versionadas e reversíveis.</p>
+    </div>
+
+    <div class="grid-2" style="gap:16px">
+      <div>
+        <div class="feature">
+          <div class="icon">✨</div>
+          <div class="feature-text">
+            <h4>Geração de Código de Ética</h4>
+            <p>GPT-4 analisa as respostas do diagnóstico e gera um Código de Ética completo, personalizado para o segmento e porte da empresa — em &lt; 30 segundos.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon">📝</div>
+          <div class="feature-text">
+            <h4>Gerador de Atas de Reunião</h4>
+            <p>Cole a transcrição da reunião (Fireflies, Teams, Meet) e a IA extrai automaticamente decisões, responsáveis e prazos — gerando ata profissional estruturada.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon">📈</div>
+          <div class="feature-text">
+            <h4>Relatórios Mensais Automáticos</h4>
+            <p>Geração automática do Relatório de Progresso com índice de conformidade calculado, gráficos de evolução e recomendações — exportável em PDF.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="feature">
+          <div class="icon gold">🤖</div>
+          <div class="feature-text">
+            <h4>IntelliX AI — Chat Integrado</h4>
+            <p>Assistente conversacional disponível no cabeçalho de todas as páginas. Responde perguntas sobre clientes, documentos, riscos e compliance em linguagem natural.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon">🔄</div>
+          <div class="feature-text">
+            <h4>Fireflies.ai — Transcrição Automática</h4>
+            <p>Integração com Fireflies para transcrição automática das reuniões de compliance. A ata é gerada e salva no repositório de documentos sem intervenção humana.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon navy">📄</div>
+          <div class="feature-text">
+            <h4>Templates de Documentos com IA</h4>
+            <p>Biblioteca de templates com variáveis dinâmicas. A IA preenche automaticamente com os dados da organização e do diagnóstico. Histórico de versões preservado.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">09 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 10 — INTEGRAÇÕES
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <h2>Ecossistema de Integrações</h2>
+    <p class="slide-sub">O GIG conecta-se às ferramentas que sua equipe já usa</p>
+  </div>
+  <div class="slide-body">
+    <div class="grid-4" style="margin-bottom:20px">
+      <div class="card green" style="text-align:center">
+        <div style="font-size:28px; margin-bottom:8px">🤖</div>
+        <h4>OpenAI GPT-4</h4>
+        <p>Geração de documentos, atas, relatórios e chat</p>
+      </div>
+      <div class="card navy" style="text-align:center">
+        <div style="font-size:28px; margin-bottom:8px">📁</div>
+        <h4>Google Drive</h4>
+        <p>Armazenamento automático de documentos em pasta por cliente</p>
+      </div>
+      <div class="card gold" style="text-align:center">
+        <div style="font-size:28px; margin-bottom:8px">📅</div>
+        <h4>Google Calendar</h4>
+        <p>Agendamento de reuniões + criação automática de Google Meet</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <div style="font-size:28px; margin-bottom:8px">🎙️</div>
+        <h4>Fireflies.ai</h4>
+        <p>Transcrição automática + geração de ata por IA após reunião</p>
+      </div>
+    </div>
+
+    <div class="grid-4">
+      <div class="card" style="text-align:center">
+        <div style="font-size:24px; margin-bottom:6px">📱</div>
+        <h4>WhatsApp (Twilio)</h4>
+        <p>Notificações e alertas de compliance via WhatsApp Business</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <div style="font-size:24px; margin-bottom:6px">📧</div>
+        <h4>Resend (E-mail)</h4>
+        <p>E-mails transacionais: convites, relatórios, alertas de prazo</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <div style="font-size:24px; margin-bottom:6px">📋</div>
+        <h4>Trello / ClickUp</h4>
+        <p>Sincronização bidirecional de tarefas com ferramentas de gestão</p>
+      </div>
+      <div class="card" style="text-align:center">
+        <div style="font-size:24px; margin-bottom:6px">🔒</div>
+        <h4>Supabase Auth</h4>
+        <p>Autenticação segura com MFA e isolamento multi-tenant por RLS</p>
+      </div>
+    </div>
+
+    <div class="card dark" style="margin-top:16px; padding:14px 18px">
+      <p style="font-size:12px; color:rgba(255,255,255,.8)">
+        🔐 <strong style="color:var(--gold-l)">Segurança enterprise:</strong> Todas as credenciais de integração são armazenadas criptografadas (AES-256-GCM) na tabela <code>integrations_vault</code> — isoladas por organização. Nenhuma chave de API fica exposta no frontend.
+      </p>
+    </div>
+  </div>
+  <div class="slide-num">10 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 11 — SEÇÃO: COMO USAR
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-section">
+  <div class="section-num">03</div>
+  <h2>Como Usar o Sistema</h2>
+  <div class="accent-bar"></div>
+  <p class="desc">Guia passo a passo para cada perfil de usuário — do onboarding ao resultado concreto.</p>
+  <div class="slide-num">11 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 12 — FLUXO DO ADMINISTRADOR
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <h2>Como Usar — Painel do Administrador (Cavendish)</h2>
+    <p class="slide-sub">Configuração e gestão de toda a plataforma</p>
+  </div>
+  <div class="slide-body">
+    <div class="flow" style="margin-bottom:20px">
+      <div class="flow-item">1. Config</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item">2. Org</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item">3. Consultores</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item">4. Catálogo</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item">5. Monitorar</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item gold">6. Auditar</div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Configurar Integrações</h4>
+          <p>Acessar <em>Integrações</em> e configurar: OpenAI API Key, Resend API Key, Google Service Account, Fireflies API Key, Twilio. Todas as chaves ficam criptografadas.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Cadastrar Organizações Clientes</h4>
+          <p>Em <em>Organizações</em>, criar cada PME cliente com CNPJ, razão social, segmento, plano contratado e pasta no Google Drive. O sistema cria o projeto automaticamente.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Pré-cadastrar Consultores</h4>
+          <p>Em <em>Consultores</em>, registrar o e-mail dos consultores. Ao fazer o cadastro, recebem automaticamente a role de consultor e acesso às organizações vinculadas.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>Configurar Catálogo de Documentos</h4>
+          <p>Em <em>Catálogo</em>, definir quais documentos são obrigatórios para cada tipo de projeto (GIG Completo, GIG Modular, Consultoria Pontual) e seus prazos.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h4>Configurar Branding por Organização</h4>
+          <p>Em <em>Branding</em>, personalizar cores, logo e identidade visual para cada cliente (white-label). Cada PME vê o sistema com a identidade da Cavendish ou própria.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <h4>Monitorar via Audit Trail e Logs</h4>
+          <p><em>Audit Trail</em>: rastrear qualquer alteração no sistema. <em>Logs do Sistema</em>: diagnosticar erros de IA, e-mail ou integrações com sugestão automática de correção.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">12 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 13 — FLUXO DO CONSULTOR
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <h2>Como Usar — Portal do Consultor</h2>
+    <p class="slide-sub">Da integração do cliente ao relatório executivo — fluxo completo</p>
+  </div>
+  <div class="slide-body">
+    <div class="grid-2" style="gap:20px">
+      <div>
+        <h3 style="font-size:13px; color:var(--navy); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px">Onboarding do Cliente</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <h4>Abrir o Projeto do Cliente</h4>
+              <p>Em <em>Clientes</em>, clicar na organização e verificar o diagnóstico respondido. Se não respondido, solicitar ao cliente para preencher.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <h4>Gerar Código de Ética com IA</h4>
+              <p>Em <em>IA: Código de Ética</em>, selecionar a organização e clicar em "Gerar". A IA cria o documento personalizado em &lt; 30s baseado no diagnóstico.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <h4>Publicar e Enviar para Adesão</h4>
+              <p>Revisar, aprovar o código e enviá-lo para assinatura digital de todos os colaboradores da PME via <em>Adesão Ética</em>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3 style="font-size:13px; color:var(--navy); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px">Gestão Contínua</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <h4>Configurar Compliance</h4>
+              <p>Criar Políticas corporativas, registrar Riscos, cadastrar Fornecedores para Due Diligence, iniciar Inventário LGPD e coletar Declarações de Conflito de Interesses.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <h4>Calendário Regulatório + ESG</h4>
+              <p>Cadastrar obrigações legais da empresa com periodicidade. Registrar indicadores ESG dos 3 pilares mensalmente para acompanhar a evolução.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-body">
+              <h4>Relatório Mensal + Board Report</h4>
+              <p>Ao final do mês, gerar o Relatório de Progresso (PDF) e o Board Report com link público para a diretoria — tudo automatizado pelo sistema.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">13 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 14 — PLANOS E BENEFÍCIOS
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <h2>Planos Disponíveis</h2>
+    <p class="slide-sub">Escalabilidade para cada estágio do programa de compliance</p>
+  </div>
+  <div class="slide-body">
+    <table style="margin-bottom:20px">
+      <thead>
+        <tr>
+          <th>Funcionalidade</th>
+          <th style="text-align:center">Essencial</th>
+          <th style="text-align:center">Executivo</th>
+          <th style="text-align:center; background:var(--gold); color:var(--navy)">Premium</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Diagnóstico de Maturidade</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Canal de Denúncias Anônimo</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Gestão de Documentos + Treinamentos</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Código de Ética com IA</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Relatórios Mensais + Atas com IA</td><td class="dash">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Agendamento de Reuniões (Google Meet)</td><td class="dash">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Módulos GRC (Políticas, LGPD, Riscos, Due Diligence)</td><td class="dash">—</td><td class="dash">—</td><td class="check">✓</td></tr>
+        <tr><td>ESG Dashboard + Calendário Regulatório</td><td class="dash">—</td><td class="dash">—</td><td class="check">✓</td></tr>
+        <tr><td>Board Reporting com link público</td><td class="dash">—</td><td class="dash">—</td><td class="check">✓</td></tr>
+        <tr><td>Google Drive + White-label + Fireflies</td><td class="dash">—</td><td class="dash">—</td><td class="check">✓</td></tr>
+        <tr><td>WhatsApp Business (Twilio)</td><td class="dash">—</td><td class="dash">—</td><td class="check">✓</td></tr>
+      </tbody>
+    </table>
+
+    <div class="grid-3" style="gap:12px">
+      <div class="stat card">
+        <div class="num">40+</div>
+        <div class="label">Tabelas de dados com RLS multi-tenant</div>
+      </div>
+      <div class="stat card">
+        <div class="num">13</div>
+        <div class="label">Edge Functions serverless (backend)</div>
+      </div>
+      <div class="stat card">
+        <div class="num">46</div>
+        <div class="label">Passos no tour interativo guiado</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">14 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 15 — BENEFÍCIOS E SEGURANÇA
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <h2>Benefícios e Segurança</h2>
+    <p class="slide-sub">Valor entregue para cada parte interessada — e uma base técnica sólida</p>
+  </div>
+  <div class="slide-body">
+    <div class="grid-2" style="gap:16px; margin-bottom:16px">
+      <div class="card green">
+        <h4>🏆 Para a Cavendish (Operador)</h4>
+        <ul>
+          <li>Escalar de 5 para 50 clientes sem contratar mais consultores</li>
+          <li>Eliminar horas de trabalho manual com planilhas e Word</li>
+          <li>Diferencial competitivo frente a consultorias tradicionais</li>
+          <li>Relatórios de progresso gerados em 1 clique</li>
+          <li>Visibilidade total sobre todos os projetos em tempo real</li>
+        </ul>
+      </div>
+      <div class="card navy">
+        <h4>🏭 Para os Clientes PME</h4>
+        <ul>
+          <li>Programa de compliance estruturado e documentado</li>
+          <li>Redução de riscos regulatórios (LGPD, Lei Anticorrupção)</li>
+          <li>Canal de denúncias confiável — melhora clima organizacional</li>
+          <li>Documentação para auditorias e certificações</li>
+          <li>Acesso simplificado com portal próprio e tour guiado</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="font-size:13px; color:var(--navy); margin-bottom:12px">🔐 Arquitetura de Segurança</h3>
+    <div class="grid-4" style="gap:10px">
+      <div class="card" style="padding:12px; text-align:center">
+        <div style="font-size:20px; margin-bottom:6px">🏰</div>
+        <h4 style="font-size:11px">Row Level Security</h4>
+        <p style="font-size:10.5px">Isolamento total entre tenants no PostgreSQL — um cliente jamais vê dados de outro</p>
+      </div>
+      <div class="card" style="padding:12px; text-align:center">
+        <div style="font-size:20px; margin-bottom:6px">🔑</div>
+        <h4 style="font-size:11px">Credenciais Criptografadas</h4>
+        <p style="font-size:10.5px">AES-256-GCM para todas as chaves de API no integrations_vault</p>
+      </div>
+      <div class="card" style="padding:12px; text-align:center">
+        <div style="font-size:20px; margin-bottom:6px">🛡️</div>
+        <h4 style="font-size:11px">Headers de Segurança</h4>
+        <p style="font-size:10.5px">CSP completo, HSTS, X-Frame-Options, Permissions-Policy em produção</p>
+      </div>
+      <div class="card" style="padding:12px; text-align:center">
+        <div style="font-size:20px; margin-bottom:6px">📋</div>
+        <h4 style="font-size:11px">Audit Trail Imutável</h4>
+        <p style="font-size:10.5px">Log append-only com checksum anti-adulteração para cada ação no sistema</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">15 / 16</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 16 — FECHAMENTO / CTA
+════════════════════════════════════════════════════════ -->
+<div class="slide slide-cover" style="background: linear-gradient(140deg, var(--navy) 0%, var(--green) 100%)">
+  <div style="margin-bottom:20px">
+    <h2 style="color:var(--gold-l); font-size:14px; letter-spacing:2px; text-transform:uppercase; font-weight:600; margin-bottom:8px">
+      Próximos Passos
+    </h2>
+    <h1 style="font-size:40px; color:var(--white); margin-bottom:16px">
+      Pronto para transformar<br/>seu programa de compliance?
+    </h1>
+    <p style="color:rgba(255,255,255,.7); font-size:16px; max-width:540px; margin: 0 auto 32px; font-weight:300">
+      O Sistema GIG está em produção e disponível para onboarding. Configure as integrações, cadastre os primeiros clientes e comece a gerar valor imediatamente.
+    </p>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; max-width:640px; margin:0 auto 36px">
+    <div style="background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:10px; padding:20px; text-align:center">
+      <div style="font-size:28px; margin-bottom:8px">🚀</div>
+      <p style="color:var(--white); font-size:13px; font-weight:600">1. Deploy</p>
+      <p style="color:rgba(255,255,255,.6); font-size:11px">Vercel + Supabase já configurados e prontos</p>
+    </div>
+    <div style="background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:10px; padding:20px; text-align:center">
+      <div style="font-size:28px; margin-bottom:8px">⚙️</div>
+      <p style="color:var(--white); font-size:13px; font-weight:600">2. Configurar</p>
+      <p style="color:rgba(255,255,255,.6); font-size:11px">OpenAI, Google, Resend e branding</p>
+    </div>
+    <div style="background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:10px; padding:20px; text-align:center">
+      <div style="font-size:28px; margin-bottom:8px">📈</div>
+      <p style="color:var(--white); font-size:13px; font-weight:600">3. Crescer</p>
+      <p style="color:rgba(255,255,255,.6); font-size:11px">Escalar carteira de clientes sem limites</p>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:32px; color:rgba(255,255,255,.45); font-size:11px; text-align:center">
+    <span>
+      <div style="color:rgba(255,255,255,.8); font-weight:600; font-size:13px; margin-bottom:2px">IntelliX.AI</div>
+      Desenvolvedor da plataforma
+    </span>
+    <span>
+      <div style="color:rgba(255,255,255,.8); font-weight:600; font-size:13px; margin-bottom:2px">Cavendish Consultoria</div>
+      Operador e cliente master
+    </span>
+    <span>
+      <div style="color:rgba(255,255,255,.8); font-weight:600; font-size:13px; margin-bottom:2px">Next.js 15 + Supabase</div>
+      Stack tecnológico
+    </span>
+    <span>
+      <div style="color:rgba(255,255,255,.8); font-weight:600; font-size:13px; margin-bottom:2px">2026</div>
+      Versão Premium lançada
+    </span>
+  </div>
+
+  <div class="slide-num">16 / 16</div>
+</div>
+
+</body>
+</html>
