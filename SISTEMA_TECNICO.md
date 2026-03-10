@@ -797,6 +797,25 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - `20260304000018_relatorios_regulatorios.sql` — tipos: CGU, CVM, BACEN, ANPD, TCU, CADE
 - **Pendente:** aplicar no Supabase via `supabase db push`
 
+### 2026-03-10 — Bateria E2E completa + 6 bugs TypeScript corrigidos + Security Headers
+
+**Bateria E2E executada** (`tests/e2e_gig_completo.py` — 8 fases):
+- Fase 1 Smoke: 12/12 ✅ | Fase 2 Playwright: 13/13 ✅ | Fase 3 Negativos: 14/14 ✅
+- Fase 4 Segurança: 10/12 (2 avisos) | Fase 5 Edge Cases: 6/6 ✅ | Fase 6 DB: OK | Fase 7 Estática: 0 issues
+- Build TypeScript: **56 erros → 0** após correções
+
+**6 Bugs TypeScript corrigidos** (ver seção 14 — BUGs 11–16):
+- types.ts regenerado com tabelas das Fases Premium 1–4
+- `usePoliticas.ts` implementado do zero
+- `organization_id` → `organizacao_id` corrigido em DueDiligenceTab + ESGDashboard
+- Join inválido `organization_members → profiles` reescrito como query separada
+- Casts `as unknown as Type[]` nos hooks com joins sem FK declarada
+- Insert em `riscos` corrigido para passar os dois campos de org
+
+**Security Headers adicionados ao `next.config.mjs`:**
+- `poweredByHeader: false` — remove `X-Powered-By: Next.js`
+- `Content-Security-Policy` completo via `headers()` — protege contra XSS, clickjacking e data injection
+
 ### 2026-03-09 — Fixes de UI
 - **Fix dupla numeração Google Drive** (`src/spa/pages/admin/AdminIntegracoes.tsx`): strings de instrução tinham prefixo manual `"1. texto"` dentro de `<ol list-decimal>`, gerando `1. 1. texto`. Prefixos removidos com `sed`.
 - **Fix botão X do Tour** (`src/app/globals.css`): `.driver-popover-close-btn` recebia `position: relative; z-index: 9999; pointer-events: auto !important` — botão agora recebe cliques corretamente.
@@ -814,6 +833,24 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 ---
 
 ## 14. Bugs Corrigidos
+
+### 2026-03-10 — Security headers + CSP adicionados ao next.config.mjs
+**Arquivo:** `next.config.mjs`
+
+#### Pendências de segurança resolvidas (identificadas na bateria E2E 2026-03-10):
+
+**FIX-A — `X-Powered-By: Next.js` removido**
+- `poweredByHeader: false` adicionado ao `nextConfig`
+- Evita revelar stack tecnológica em respostas HTTP
+
+**FIX-B — `Content-Security-Policy` implementado**
+- Header CSP completo via `headers()` em `next.config.mjs` aplicado a todas as rotas (`/(.*)`):
+  - `script-src 'self' 'unsafe-eval' 'unsafe-inline'` — necessário para Next.js + React
+  - `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com` — necessário para Tailwind
+  - `connect-src` inclui `fenfgjqlsqzvxloeavdc.supabase.co` (REST + WSS Realtime) e `api.openai.com`
+  - `frame-src 'none'` + `frame-ancestors 'none'` — bloqueia iframe embedding
+  - `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`
+- Também consolidados os demais headers já presentes (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) em um único `headers()` — fonte única de verdade
 
 ### 2026-03-02 — Correções no sistema de autenticação
 **Arquivo:** `src/contexts/AuthContext.tsx`, `src/spa/pages/Auth.tsx`, `src/components/auth/ProtectedRoute.tsx`
