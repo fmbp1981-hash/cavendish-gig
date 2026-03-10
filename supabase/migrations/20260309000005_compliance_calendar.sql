@@ -27,24 +27,24 @@ ALTER TABLE public.compliance_obrigacoes ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "compliance_obrig_select" ON public.compliance_obrigacoes FOR SELECT USING (
   organizacao_id IS NULL   -- obrigações globais visíveis para todos autenticados
-  OR EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  OR (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "compliance_obrig_write" ON public.compliance_obrigacoes
   FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+    (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
   );
 CREATE POLICY "compliance_obrig_update" ON public.compliance_obrigacoes
   FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+    (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
   );
 CREATE POLICY "compliance_obrig_delete" ON public.compliance_obrigacoes
   FOR DELETE USING (
-    EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+    (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
   );
 
 CREATE TRIGGER set_compliance_obrig_updated_at
   BEFORE UPDATE ON public.compliance_obrigacoes
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Seed: ~30 obrigações regulatórias padrão para PMEs brasileiras
 -- (organizacao_id = NULL = visíveis para todos)

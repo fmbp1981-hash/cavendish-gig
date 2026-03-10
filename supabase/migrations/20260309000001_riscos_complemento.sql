@@ -31,10 +31,10 @@ CREATE INDEX IF NOT EXISTS idx_riscos_avaliacoes_risco ON public.riscos_avaliaco
 ALTER TABLE public.riscos_avaliacoes ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "riscos_avaliacoes_select" ON public.riscos_avaliacoes FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "riscos_avaliacoes_insert" ON public.riscos_avaliacoes FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 -- Ações de mitigação vinculadas a riscos
@@ -55,18 +55,18 @@ CREATE INDEX IF NOT EXISTS idx_riscos_mitigacao_status ON public.riscos_mitigaca
 ALTER TABLE public.riscos_mitigacao ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "riscos_mitigacao_select" ON public.riscos_mitigacao FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "riscos_mitigacao_insert" ON public.riscos_mitigacao FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "riscos_mitigacao_update" ON public.riscos_mitigacao FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "riscos_mitigacao_delete" ON public.riscos_mitigacao FOR DELETE USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 CREATE TRIGGER set_riscos_mitigacao_updated_at
   BEFORE UPDATE ON public.riscos_mitigacao
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();

@@ -16,12 +16,12 @@ ALTER TABLE public.politicas_aceites ENABLE ROW LEVEL SECURITY;
 -- Qualquer usuário autenticado pode criar seu próprio aceite e ver os seus
 CREATE POLICY "politicas_aceites_select" ON public.politicas_aceites FOR SELECT USING (
   user_id = auth.uid()
-  OR EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  OR (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "politicas_aceites_insert" ON public.politicas_aceites FOR INSERT WITH CHECK (
   user_id = auth.uid()
 );
 -- Admin/consultor podem ver todos para monitorar adesão
 CREATE POLICY "politicas_aceites_all" ON public.politicas_aceites FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );

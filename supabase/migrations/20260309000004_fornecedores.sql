@@ -25,12 +25,12 @@ CREATE INDEX IF NOT EXISTS idx_fornecedores_criticidade ON public.fornecedores(n
 ALTER TABLE public.fornecedores ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "fornecedores_rw" ON public.fornecedores FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 CREATE TRIGGER set_fornecedores_updated_at
   BEFORE UPDATE ON public.fornecedores
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Perguntas padrão de due diligence
 CREATE TABLE IF NOT EXISTS public.due_diligence_perguntas (
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS public.due_diligence_perguntas (
 ALTER TABLE public.due_diligence_perguntas ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "dd_perguntas_select" ON public.due_diligence_perguntas FOR SELECT USING (true);
 CREATE POLICY "dd_perguntas_admin" ON public.due_diligence_perguntas FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  (public.has_role(auth.uid(), 'admin'::public.app_role))
 );
 
 -- Adicionar FK de fornecedor à due_diligence existente

@@ -1,7 +1,7 @@
 -- Auditoria Interna + Não Conformidades
 CREATE TABLE public.auditorias_internas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES public.organizacoes(id) ON DELETE CASCADE,
   titulo TEXT NOT NULL,
   escopo TEXT,
   auditor TEXT NOT NULL,
@@ -32,39 +32,35 @@ ALTER TABLE public.auditorias_internas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.nao_conformidades ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "auditorias_select" ON public.auditorias_internas FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "auditorias_insert" ON public.auditorias_internas FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "auditorias_update" ON public.auditorias_internas FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "auditorias_delete" ON public.auditorias_internas FOR DELETE USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 CREATE POLICY "nao_conformidades_select" ON public.nao_conformidades FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM auditorias_internas a
-    JOIN profiles p ON p.id = auth.uid() AND p.role IN ('admin','consultor')
-    WHERE a.id = nao_conformidades.auditoria_id
-  )
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "nao_conformidades_insert" ON public.nao_conformidades FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "nao_conformidades_update" ON public.nao_conformidades FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "nao_conformidades_delete" ON public.nao_conformidades FOR DELETE USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 CREATE TRIGGER set_auditorias_updated_at
   BEFORE UPDATE ON public.auditorias_internas
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 CREATE TRIGGER set_nao_conformidades_updated_at
   BEFORE UPDATE ON public.nao_conformidades
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();

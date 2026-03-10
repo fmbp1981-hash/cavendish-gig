@@ -22,12 +22,12 @@ CREATE INDEX IF NOT EXISTS idx_esg_ind_pilar ON public.esg_indicadores(pilar);
 ALTER TABLE public.esg_indicadores ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "esg_indicadores_rw" ON public.esg_indicadores FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 CREATE TRIGGER set_esg_ind_updated_at
   BEFORE UPDATE ON public.esg_indicadores
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ─── Board Snapshots ──────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.board_snapshots (
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS public.board_snapshots (
   periodo_referencia TEXT NOT NULL,
   conteudo JSONB NOT NULL DEFAULT '{}',
   gerado_por UUID REFERENCES auth.users(id),
-  link_publico_token TEXT UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+  link_publico_token TEXT UNIQUE DEFAULT replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''),
   expira_em TIMESTAMPTZ DEFAULT (now() + INTERVAL '30 days'),
   created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -48,7 +48,7 @@ CREATE INDEX IF NOT EXISTS idx_board_snap_token ON public.board_snapshots(link_p
 ALTER TABLE public.board_snapshots ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "board_snap_rw" ON public.board_snapshots FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 -- Leitura pública por token (para link compartilhado sem auth)

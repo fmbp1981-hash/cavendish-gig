@@ -1,7 +1,7 @@
 -- Declaração de Conflito de Interesses
 CREATE TABLE public.conflito_interesses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES public.organizacoes(id) ON DELETE CASCADE,
   declarante_id UUID NOT NULL REFERENCES auth.users(id),
   ano_referencia INT NOT NULL,
   tem_conflito BOOLEAN NOT NULL DEFAULT false,
@@ -23,16 +23,16 @@ ALTER TABLE public.conflito_interesses ENABLE ROW LEVEL SECURITY;
 -- Cliente pode ver e criar suas próprias declarações
 CREATE POLICY "conflito_select" ON public.conflito_interesses FOR SELECT USING (
   declarante_id = auth.uid()
-  OR EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  OR (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "conflito_insert" ON public.conflito_interesses FOR INSERT WITH CHECK (
   declarante_id = auth.uid()
 );
 CREATE POLICY "conflito_update" ON public.conflito_interesses FOR UPDATE USING (
   declarante_id = auth.uid()
-  OR EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  OR (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 CREATE TRIGGER set_conflito_updated_at
   BEFORE UPDATE ON public.conflito_interesses
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();

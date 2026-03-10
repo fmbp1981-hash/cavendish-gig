@@ -23,12 +23,12 @@ CREATE INDEX IF NOT EXISTS idx_investigacoes_org ON public.investigacoes(organiz
 ALTER TABLE public.investigacoes ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "investigacoes_rw" ON public.investigacoes FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 CREATE TRIGGER set_investigacoes_updated_at
   BEFORE UPDATE ON public.investigacoes
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Notas internas sigilosas
 CREATE TABLE IF NOT EXISTS public.investigacoes_notas (
@@ -44,7 +44,7 @@ CREATE INDEX IF NOT EXISTS idx_inv_notas_inv ON public.investigacoes_notas(inves
 ALTER TABLE public.investigacoes_notas ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "inv_notas_rw" ON public.investigacoes_notas FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 -- Evidências
@@ -62,7 +62,7 @@ CREATE INDEX IF NOT EXISTS idx_inv_evidencias_inv ON public.investigacoes_eviden
 ALTER TABLE public.investigacoes_evidencias ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "inv_evidencias_rw" ON public.investigacoes_evidencias FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 -- Adiciona campo de triagem e nível de risco à tabela denuncias (se não existir)

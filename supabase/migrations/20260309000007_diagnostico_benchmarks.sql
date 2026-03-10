@@ -16,7 +16,7 @@ CREATE INDEX IF NOT EXISTS idx_diag_bench_setor ON public.diagnostico_benchmarks
 ALTER TABLE public.diagnostico_benchmarks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "bench_select" ON public.diagnostico_benchmarks FOR SELECT USING (true);
 CREATE POLICY "bench_admin" ON public.diagnostico_benchmarks FOR ALL USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+  (public.has_role(auth.uid(), 'admin'::public.app_role))
 );
 
 -- Seed: 6 setores × 6 pilares = 36 linhas com dados realistas para PMEs brasileiras
