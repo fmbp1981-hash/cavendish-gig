@@ -1,7 +1,7 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-09 (AgenteChat messages array · Tour X button · cross-page tour session · AIProviderSelector UX fix · Seção 16 Análise Competitiva GRC adicionada · Pendências atualizadas com gaps de mercado)
+**Última atualização:** 2026-03-09 (AgenteChat messages array · Tour X button · cross-page tour session · AIProviderSelector UX fix · Seção 16 Análise Competitiva GRC · Seção 18 Plano de Implementação GIG Premium 4 fases ~18-23 semanas)
 **Versão do sistema:** 0.0.0 (pre-release)
 **Desenvolvido por:** IntelliX.AI
 
@@ -26,6 +26,7 @@
 15. [Pendências e Roadmap](#15-pendências-e-roadmap)
 16. [Análise Competitiva — Mercado GRC](#16-análise-competitiva--mercado-grc-atualizado-2026-03-09)
 17. [Decisões de Arquitetura](#17-decisões-de-arquitetura)
+18. [Plano de Implementação GIG Premium](#18-plano-de-implementação-gig-premium)
 
 ---
 
@@ -1127,6 +1128,611 @@ O GIG já possui funcionalidades que muitos concorrentes de mesmo porte **não t
 | **Multi-tenant white-label** com roles granulares | Permite revenda/consultoria (modelo Cavendish) |
 | **Consultores como intermediários** (modelo único) | GoPliance, clickCompliance são direto ao cliente; GIG tem camada de consultoria |
 | **Google Calendar nativo** para agendamento de reuniões de compliance | Nenhum concorrente BR tem isso nativo |
+
+---
+
+## 18. Plano de Implementação GIG Premium
+
+> **Objetivo estratégico:** Evoluir o Sistema GIG de plataforma de compliance básico para produto GRC competitivo com NAVEX One, Diligent, clickCompliance e GoPliance no segmento PME brasileiro.
+>
+> **Data de criação do plano:** 2026-03-09
+> **Versão alvo ao final:** 1.0.0 (release comercial)
+> **Premissa principal:** Não recriar o que existe. Cada fase parte do código e schema já presentes.
+
+---
+
+### Estado de Partida (pré-implementação)
+
+**Schema DB:** 9 tabelas de compliance avançado já criadas via migration mas sem UI real:
+`politicas`, `conflito_interesses`, `lgpd_inventario`, `lgpd_solicitacoes`, `riscos`,
+`due_diligence`, `kpis_compliance`, `incidentes`, `auditorias_internas`, `nao_conformidades`,
+`relatorios_regulatorios`
+
+**UI existente:** `ConsultorCompliance.tsx` com 9 abas exibindo `PlaceholderTab` ("Em desenvolvimento")
+— apenas as abas KPIs e Consulta CEIS têm conteúdo real.
+
+---
+
+### Fase 1 — Completar o Core GRC (Fundação Premium)
+
+**Objetivo de negócio:** Eliminar os gaps críticos que impedem a venda do GIG como produto GRC sério. Ao final desta fase, o sistema alcança paridade de features com GoPliance e clickCompliance.
+
+**Prazo estimado:** 6–8 semanas
+
+---
+
+#### 1.1 Gestão de Riscos — Risk Register + Heatmap
+
+**Schema existente:** `riscos` (migration `20260304000013_riscos.sql`) — campos `probabilidade`, `impacto`, `nivel_risco` (coluna gerada), `status`, `responsavel_id`. Aba "Riscos" com `PlaceholderTab`.
+
+**Tabelas DB a criar (migration nova):**
+```sql
+-- Histórico de reavaliações periódicas
+CREATE TABLE riscos_avaliacoes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  risco_id UUID NOT NULL REFERENCES riscos(id) ON DELETE CASCADE,
+  avaliado_por UUID REFERENCES auth.users(id),
+  probabilidade_anterior INT,
+  impacto_anterior INT,
+  probabilidade_nova INT NOT NULL,
+  impacto_nova INT NOT NULL,
+  justificativa TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Ações de mitigação vinculadas a riscos
+CREATE TABLE riscos_mitigacao (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  risco_id UUID NOT NULL REFERENCES riscos(id) ON DELETE CASCADE,
+  descricao TEXT NOT NULL,
+  responsavel_id UUID REFERENCES auth.users(id),
+  prazo DATE,
+  status TEXT DEFAULT 'pendente' CHECK (status IN ('pendente','em_andamento','concluida')),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+**Componentes React a criar:**
+
+| Componente | Localização | Descrição | Complexidade |
+|---|---|---|---|
+| `RiscosTab` | dentro de `ConsultorCompliance.tsx` | Substitui PlaceholderTab; lista de riscos com filtros | M |
+| `RiscoHeatmap` | `src/components/riscos/RiscoHeatmap.tsx` | Grade 5×5 interativa com cores por zona de risco | M |
+| `RiscoFormDialog` | `src/components/riscos/RiscoFormDialog.tsx` | Dialog criar/editar risco (categoria, probabilidade, impacto, responsável) | P |
+| `RiscoMitigacaoList` | `src/components/riscos/RiscoMitigacaoList.tsx` | Accordion com ações de mitigação de cada risco | P |
+| `RiscoAvaliacaoDialog` | `src/components/riscos/RiscoAvaliacaoDialog.tsx` | Dialog para reavaliação periódica com histórico | P |
+
+**Hook:** `src/hooks/useRiscos.ts` — CRUD `riscos`, `riscos_mitigacao`, `riscos_avaliacoes`.
+
+**Edge Function:** Não necessária — CRUD direto via Supabase com RLS.
+
+**DoD:**
+- Heatmap 5×5 renderiza todos os riscos da org agrupados por quadrante
+- Criar, editar, arquivar risco funciona sem reload
+- Cada risco tem lista de ações de mitigação com status próprio
+- Reavaliação registra histórico (probabilidade/impacto anteriores vs. novos)
+- Aba "Riscos" substituiu o placeholder em `ConsultorCompliance.tsx`
+
+---
+
+#### 1.2 Gestão de Políticas Corporativas — Workflow completo
+
+**Schema existente:** `politicas` (migration `20260304000010_politicas.sql`). Aba "Políticas" com `PlaceholderTab`.
+
+**Tabelas DB a criar:**
+```sql
+-- Aceites digitais de políticas por colaborador
+CREATE TABLE politicas_aceites (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  politica_id UUID NOT NULL REFERENCES politicas(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  aceito_em TIMESTAMPTZ DEFAULT now(),
+  ip_address TEXT,
+  UNIQUE(politica_id, user_id)
+);
+
+-- Histórico de versões de conteúdo
+CREATE TABLE politicas_versoes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  politica_id UUID NOT NULL REFERENCES politicas(id) ON DELETE CASCADE,
+  versao TEXT NOT NULL,
+  conteudo TEXT,
+  criado_por UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+**Componentes React a criar:**
+
+| Componente | Localização | Descrição | Complexidade |
+|---|---|---|---|
+| `PoliticasTab` | dentro de `ConsultorCompliance.tsx` | Lista de políticas com status badge e filtros | M |
+| `PoliticaFormDialog` | `src/components/politicas/PoliticaFormDialog.tsx` | Criar/editar política com editor de texto | M |
+| `PoliticaWorkflowBadge` | `src/components/politicas/` | Badge visual do status no workflow | P |
+| `PoliticaAceiteCard` | área cliente (`/meu-projeto/politicas`) | Card para colaborador ler e aceitar | M |
+| `PoliticaAceitesMonitor` | dentro de `ConsultorCompliance.tsx` | % de adesão por política por org | M |
+
+**Rota nova (cliente):** `/meu-projeto/politicas` → `ClientePoliticas.tsx`
+
+**Hook:** `src/hooks/usePoliticas.ts` — CRUD `politicas`, `politicas_aceites`, `politicas_versoes`; mutation `aceitarPolitica(politica_id)`.
+
+**DoD:**
+- Workflow linear: rascunho → revisão → aprovado → publicado
+- Cliente vê políticas publicadas e assina digitalmente
+- Monitor de adesão mostra % de aceites por política
+
+---
+
+#### 1.3 Conflitos de Interesse — Disclosure periódico
+
+**Schema existente:** `conflito_interesses` (migration `20260304000011_conflito_interesses.sql`). Aba com `PlaceholderTab`.
+
+**Tabelas DB:** Schema existente atende. Sem novas tabelas.
+
+**Componentes React a criar:**
+
+| Componente | Localização | Descrição | Complexidade |
+|---|---|---|---|
+| `ConflitosTab` | dentro de `ConsultorCompliance.tsx` | Lista de declarações com status e filtros por ano | M |
+| `ConflitosAnaliseDialog` | `src/components/conflitos/` | Dialog para consultor analisar e registrar observação | P |
+| `ConflitosDeclaracaoForm` | área cliente | Formulário de declaração anual do colaborador | M |
+
+**Rota nova (cliente):** `/meu-projeto/declaracao-conflito` → `ClienteDeclaracaoConflito.tsx`
+
+**Hook:** `src/hooks/useConflitosInteresse.ts` — query por org (consultor) e por user (cliente); mutations de declaração e análise.
+
+**DoD:**
+- Consultor vê todas as declarações da org com status e pode analisar/registrar observação
+- Cliente envia declaração anual (bloqueio de duplicata por ano via UNIQUE constraint)
+- Dashboard de pendências: usuários que ainda não declararam no ano atual
+
+---
+
+#### 1.4 Canal de Denúncias — Investigações formais + melhorias
+
+**Schema existente:** `denuncias` com status básico. `ConsultorDenuncias.tsx` com UI de listagem simples.
+
+**Tabelas DB a criar:**
+```sql
+CREATE TABLE investigacoes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  denuncia_id UUID NOT NULL REFERENCES denuncias(id) ON DELETE CASCADE,
+  organizacao_id UUID NOT NULL REFERENCES organizacoes(id),
+  status TEXT NOT NULL DEFAULT 'aberta'
+    CHECK (status IN ('aberta','em_analise','investigando','concluida','arquivada')),
+  responsavel_id UUID REFERENCES auth.users(id),
+  prazo_resposta DATE,
+  categoria_triagem TEXT,      -- resultado da triagem por IA
+  nivel_risco TEXT CHECK (nivel_risco IN ('baixo','medio','alto','critico')),
+  conclusao TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE investigacoes_evidencias (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  investigacao_id UUID NOT NULL REFERENCES investigacoes(id) ON DELETE CASCADE,
+  descricao TEXT NOT NULL,
+  arquivo_url TEXT,
+  adicionado_por UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE investigacoes_notas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  investigacao_id UUID NOT NULL REFERENCES investigacoes(id) ON DELETE CASCADE,
+  nota TEXT NOT NULL,
+  criado_por UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+-- RLS: apenas admin/consultor da org acessa investigações (sigiloso)
+```
+
+**Componentes React a criar:**
+
+| Componente | Localização | Descrição | Complexidade |
+|---|---|---|---|
+| `DenunciaKPIsDashboard` | em `ConsultorDenuncias.tsx` | 4 cards: volume, tempo médio, % por categoria, % anônimas | M |
+| `InvestigacaoDrawer` | `src/components/denuncias/InvestigacaoDrawer.tsx` | Painel lateral: timeline, notas internas sigilosas, evidências | G |
+| `TriagemIABadge` | lista de denúncias | Badge de categoria detectada por IA | P |
+| `DenunciaLinkPublico` | `src/app/denuncia/[org]/page.tsx` | Página pública Next.js para denúncias externas sem login | M |
+
+**Edge Function a criar:** `supabase/functions/triar-denuncia/index.ts` — invocada via Database Webhook on INSERT em `denuncias`; chama `ai-generate` com `tipo: "detectar_riscos"` para categorizar; atualiza `categoria_triagem` e `nivel_risco`.
+
+**DoD:**
+- Cada denúncia pode ter investigação formal aberta com timeline de status
+- Consultor adiciona notas sigilosas e evidências
+- Dashboard KPIs com gráfico de distribuição por categoria (Recharts)
+- Triagem IA categoriza automaticamente ao criar denúncia
+- Link público `/denuncia/[org-slug]` funciona sem login
+
+---
+
+#### 1.5 LGPD Compliance Module — ROPA + DSR
+
+**Schema existente:** `lgpd_inventario` e `lgpd_solicitacoes` (migration `20260304000012_lgpd.sql`). Aba "LGPD" com `PlaceholderTab`.
+
+**Tabelas DB:** Audit trail já cobre histórico via `audit_logs`. Adicionar campos DPO à org:
+```sql
+ALTER TABLE organizacoes ADD COLUMN IF NOT EXISTS dpo_nome TEXT;
+ALTER TABLE organizacoes ADD COLUMN IF NOT EXISTS dpo_email TEXT;
+```
+
+**Componentes React a criar:**
+
+| Componente | Localização | Descrição | Complexidade |
+|---|---|---|---|
+| `LGPDTab` | dentro de `ConsultorCompliance.tsx` | Sub-abas: ROPA (inventário) e DSR (solicitações) | M |
+| `ROPATable` | `src/components/lgpd/ROPATable.tsx` | Tabela editável de processos de tratamento de dados | M |
+| `DSRWorkflowList` | `src/components/lgpd/DSRWorkflowList.tsx` | Lista de solicitações com countdown ANPD (15 dias úteis) | M |
+| `DSRFormDialog` | `src/components/lgpd/DSRFormDialog.tsx` | Dialog para responder DSR com prazo e texto | P |
+| `LGPDPublicForm` | `src/app/privacidade/[org]/page.tsx` | Página pública para titulares enviarem DSR sem login | M |
+
+**Hook:** `src/hooks/useLGPD.ts` — CRUD `lgpd_inventario`, CRUD `lgpd_solicitacoes`; mutation `responderDSR(id, resposta, status)`.
+
+**DoD:**
+- Consultor cadastra inventário ROPA com base legal, retenção e medidas de segurança
+- Solicitações chegam via formulário público ou cadastro manual
+- Sistema exibe countdown de 15 dias úteis para cada DSR aberta (prazo ANPD)
+- DPO configurável por organização
+
+---
+
+#### Remoções na Fase 1
+
+| Item | Ação | Justificativa |
+|---|---|---|
+| Edge functions `trello-sync` e `clickup-sync` | `supabase functions pause` (não deletar) | Deployadas sem uso; reduz custo compute |
+| Referências `LOVABLE_API_KEY` no código | Remover comentários e fallbacks residuais | Migração concluída; OpenAI é provider padrão |
+| `PlaceholderTab` nas abas de Riscos, Políticas, Conflitos, LGPD | Substituir por UI real | Pré-condição para lançamento comercial |
+
+**Definition of Done da Fase 1:**
+- [ ] Risk Register funcional com heatmap 5×5 interativo
+- [ ] Políticas corporativas com workflow de status e aceite digital
+- [ ] Conflitos de interesse: declaração pelo cliente + análise pelo consultor
+- [ ] Canal de denúncias com investigações formais, triagem IA e KPIs dashboard
+- [ ] LGPD: ROPA completo + DSR workflow com countdown de prazo
+- [ ] 0 abas com `PlaceholderTab` em `ConsultorCompliance.tsx`
+- [ ] Build sem erros TypeScript após regeneração de tipos
+- [ ] Migrations aplicadas em `fenfgjqlsqzvxloeavdc` via `supabase db push`
+
+---
+
+### Fase 2 — Third-Party Risk + Compliance Calendar
+
+**Objetivo de negócio:** Adicionar módulos que diferenciam o GIG de soluções básicas e abrem mercado para setores regulados. Ao final, o GIG supera GoPliance e atinge paridade com clickCompliance.
+
+**Prazo estimado:** 4–5 semanas
+
+---
+
+#### 2.1 Third-Party Risk — Gestão de Fornecedores
+
+**Schema existente:** `due_diligence` (migration `20260304000014_due_diligence.sql`). Aba com `PlaceholderTab`.
+
+**Tabelas DB a criar:**
+```sql
+CREATE TABLE fornecedores (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organizacao_id UUID NOT NULL REFERENCES organizacoes(id) ON DELETE CASCADE,
+  nome TEXT NOT NULL,
+  cnpj TEXT,
+  categoria TEXT CHECK (categoria IN ('ti','servicos','logistica','financeiro','saude','outro')),
+  nivel_criticidade TEXT DEFAULT 'medio' CHECK (nivel_criticidade IN ('baixo','medio','alto','critico')),
+  website TEXT,
+  contato_nome TEXT,
+  contato_email TEXT,
+  status TEXT DEFAULT 'ativo' CHECK (status IN ('ativo','inativo','bloqueado')),
+  score_risco_atual INT CHECK (score_risco_atual BETWEEN 0 AND 100),
+  proxima_avaliacao DATE,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE due_diligence ADD COLUMN IF NOT EXISTS fornecedor_id UUID REFERENCES fornecedores(id);
+
+CREATE TABLE due_diligence_perguntas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  categoria TEXT NOT NULL,
+  pergunta TEXT NOT NULL,
+  peso INT DEFAULT 1,
+  ativo BOOLEAN DEFAULT true
+);
+-- Seed: ~20 perguntas padrão (LGPD, anticorrupção, financeiro, ambiental)
+```
+
+**Componentes React a criar:**
+
+| Componente | Localização | Descrição | Complexidade |
+|---|---|---|---|
+| `DueDiligenceTab` | dentro de `ConsultorCompliance.tsx` | Lista de fornecedores com score e status | M |
+| `FornecedoresTable` | `src/components/fornecedores/` | Tabela com filtros por criticidade e score | M |
+| `FornecedorFormDialog` | `src/components/fornecedores/` | Cadastro de fornecedor | P |
+| `DueDiligenceWizard` | `src/components/fornecedores/` | Wizard multi-step: dados → questionário → score → resultado | G |
+| `ScoreRiscoGauge` | `src/components/fornecedores/` | Medidor visual 0–100 (Recharts RadialBar) | P |
+
+**Edge Function a criar:** `supabase/functions/calcular-score-fornecedor/index.ts` — recebe respostas do checklist, aplica pesos de `due_diligence_perguntas`, calcula score 0–100 determinístico, atualiza `fornecedores.score_risco_atual`.
+
+**Hook:** `src/hooks/useFornecedores.ts` — CRUD `fornecedores`; `useDueDiligence(fornecedor_id)`; mutation `finalizarAvaliacao(id, respostas)`.
+
+**DoD:**
+- Cadastro de fornecedor com nível de criticidade
+- Wizard guia o analista pelas perguntas com peso configurável
+- Score 0–100 calculado automaticamente com classificação visual
+- Alerta quando `proxima_avaliacao` < 30 dias
+
+---
+
+#### 2.2 Compliance Calendar — Agenda Regulatória
+
+**Schema existente:** Não existe. Módulo novo.
+
+**Tabelas DB a criar:**
+```sql
+CREATE TABLE compliance_obrigacoes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organizacao_id UUID REFERENCES organizacoes(id),  -- NULL = global/seed
+  titulo TEXT NOT NULL,
+  descricao TEXT,
+  lei_referencia TEXT,  -- "Lei 13.709/2018 (LGPD)", "Lei 12.846/2013"
+  orgao_regulador TEXT, -- "ANPD", "CVM", "BACEN", "CGU"
+  periodicidade TEXT NOT NULL CHECK (periodicidade IN ('unica','mensal','trimestral','semestral','anual')),
+  mes_vencimento INT,
+  dia_vencimento INT,
+  proxima_data DATE NOT NULL,
+  status TEXT DEFAULT 'pendente' CHECK (status IN ('pendente','em_andamento','concluida','atrasada')),
+  responsavel_id UUID REFERENCES auth.users(id),
+  google_event_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+-- Seed: ~30 obrigações padrão BR (LGPD anual, Lei 12.846 anual, SPED, DIRF, RAIS, eSocial)
+```
+
+**Componentes React a criar:**
+
+| Componente | Localização | Descrição | Complexidade |
+|---|---|---|---|
+| `ComplianceCalendarPage` | `src/spa/pages/consultor/ComplianceCalendar.tsx` | Visão mensal com obrigações coloridas por status | G |
+| `ObrigacaoCard` | `src/components/calendar/ObrigacaoCard.tsx` | Card com lei, órgão, prazo, status e ação "Concluir" | P |
+| `ObrigacaoFormDialog` | `src/components/calendar/ObrigacaoFormDialog.tsx` | Adicionar obrigação customizada por org | P |
+| `AlertasVencimento` | widget no `ConsultorDashboard.tsx` | Próximos 5 vencimentos de todas as orgs gerenciadas | P |
+
+**Rota nova:** `/consultor/compliance-calendar` — item de menu adicionado ao `ConsultorLayout.tsx`.
+
+**Integração:** Reutilizar edge function `google-calendar` existente ao criar/atualizar obrigação; gravar `google_event_id` para evitar duplicatas.
+
+**Hook:** `src/hooks/useComplianceCalendar.ts` — queries por org e por intervalo; mutation `concluirObrigacao(id)` e `sincronizarCalendar(ids)`.
+
+**DoD:**
+- Calendário visual com obrigações por mês (código de cores por status)
+- Seed de 30 obrigações BR carregado automaticamente para novas orgs
+- Integração opcional com Google Calendar (cria evento ao ativar)
+- Widget "Próximos vencimentos" no dashboard (próximos 30 dias)
+
+---
+
+#### Remoções na Fase 2
+
+| Item | Ação |
+|---|---|
+| Kanban visual `@dnd-kit` em `ConsultorTarefas.tsx` | Simplificar: manter reordenação mas remover board multi-coluna → lista agrupada por status |
+| `integration_sync` na UI Admin | Esconder seção (não deletar tabela) até ter cliente usando |
+
+**Definition of Done da Fase 2:**
+- [ ] Cadastro de fornecedores + due diligence wizard funcional
+- [ ] Score de risco calculado e exibido visualmente
+- [ ] Compliance Calendar com seed de 30 obrigações BR
+- [ ] Widget "Próximos vencimentos" no ConsultorDashboard
+- [ ] Kanban simplificado sem regressão de dados
+- [ ] Build sem erros TypeScript
+
+---
+
+### Fase 3 — Inteligência e Diferenciação Premium
+
+**Objetivo de negócio:** Tornar o GIG único no mercado PME BR com features que os concorrentes nacionais não têm. Habilitar o tier Premium e justificar seu pricing.
+
+**Prazo estimado:** 5–6 semanas
+
+---
+
+#### 3.1 ESG Dashboard — Indicadores para Diretoria
+
+**Tabelas DB a criar:**
+```sql
+CREATE TABLE esg_indicadores (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organizacao_id UUID NOT NULL REFERENCES organizacoes(id),
+  pilar TEXT NOT NULL CHECK (pilar IN ('ambiental','social','governanca')),
+  nome TEXT NOT NULL,
+  descricao TEXT,
+  unidade TEXT NOT NULL,  -- "tCO2", "%", "R$", "horas", "número"
+  meta NUMERIC,
+  valor_atual NUMERIC,
+  periodo_referencia TEXT, -- "2025", "Q1 2026"
+  fonte TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+-- Seed de 12 indicadores comuns para PMEs (4 por pilar)
+-- E: energia (kWh), CO2 (tCO2), resíduos (kg), água (m³)
+-- S: horas treinamento per capita, % mulheres liderança, rotatividade (%)
+-- G: % cobertura treinamento ética, denúncias/trimestre, score compliance geral
+```
+
+**Componentes React a criar:**
+
+| Componente | Localização | Descrição | Complexidade |
+|---|---|---|---|
+| `ESGDashboardPage` | `src/spa/pages/consultor/ESGDashboard.tsx` | Três painéis: Ambiental, Social, Governança | G |
+| `ESGPillarCard` | `src/components/esg/ESGPillarCard.tsx` | Card por pilar com score e indicadores | M |
+| `ESGIndicadorForm` | `src/components/esg/ESGIndicadorForm.tsx` | Dialog para lançar valor de indicador no período | P |
+| `ESGRadarChart` | `src/components/esg/ESGRadarChart.tsx` | Recharts RadarChart dos 3 pilares | P |
+| `ESGReportButton` | `src/components/esg/ESGReportButton.tsx` | Gera relatório PDF via `ai-generate` + exportação | M |
+
+**Rota nova:** `/consultor/esg` e `/admin/esg`
+
+**Hook:** `src/hooks/useESGIndicadores.ts` — CRUD `esg_indicadores`; `useESGScoreAgregado(organizacao_id)`; `useESGRelatorio(organizacao_id, periodo)` via `ai-generate`.
+
+---
+
+#### 3.2 Board Reporting — Dashboard Executivo Read-Only
+
+**Tabelas DB a criar:**
+```sql
+-- Nova role para conselheiros (read-only)
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'conselheiro';
+
+CREATE TABLE board_snapshots (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organizacao_id UUID NOT NULL REFERENCES organizacoes(id),
+  titulo TEXT NOT NULL,
+  periodo_referencia TEXT NOT NULL,
+  conteudo JSONB NOT NULL,  -- snapshot dos KPIs, riscos, ESG no momento
+  gerado_por UUID REFERENCES auth.users(id),
+  link_publico_token TEXT UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+  expira_em TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+**Componentes React a criar:**
+
+| Componente | Localização | Descrição | Complexidade |
+|---|---|---|---|
+| `BoardDashboardPage` | `src/spa/pages/consultor/BoardDashboard.tsx` | Dashboard executivo com summary cards e gráficos de tendência | G |
+| `BoardSnapshotGenerator` | `src/components/board/` | Gera snapshot JSONB e cria link de compartilhamento (30 dias) | M |
+| `BoardPublicView` | `src/app/board/[token]/page.tsx` | Página pública Next.js — renderiza snapshot pelo token sem auth | M |
+| `BoardRiskSummary` | `src/components/board/` | Resumo de riscos críticos e médios para o conselho | P |
+| `BoardComplianceScore` | `src/components/board/` | Score geral do programa com tendência | P |
+
+**Fluxo:** Consultor gera snapshot → link público expira em 30 dias → compartilha com diretores por email via `send-email`.
+
+---
+
+#### 3.3 Agente de IA — Evolução para Compliance Intelligence
+
+**Sem novas tabelas.** Evolução no contexto injetado e no prompt de sistema.
+
+**Mudanças:**
+- Agente recebe contexto dos novos módulos: riscos críticos, próximos vencimentos do Calendar, denúncias abertas, score ESG
+- Novo `tipo: "compliance_analysis"` na edge function `ai-generate` — analisa org e retorna diagnóstico narrativo com sugestões
+- Sugestões de perguntas no `AgenteChat` atualizadas para os novos módulos
+
+**Definition of Done da Fase 3:**
+- [ ] ESG Dashboard com 3 pilares, RadarChart e exportação PDF
+- [ ] Board Reporting com link público expirado em 30 dias
+- [ ] Role `conselheiro` criada e funcional no fluxo de auth
+- [ ] Agente de IA ciente de riscos, calendar e LGPD
+- [ ] Seed de 12 indicadores ESG aplicado
+
+---
+
+### Fase 4 — Polimento, Automações e Go-to-Market (v1.0.0)
+
+**Objetivo de negócio:** Preparar para lançamento comercial com qualidade enterprise. Remover débito técnico. Implementar automações que reduzem trabalho manual dos consultores.
+
+**Prazo estimado:** 3–4 semanas
+
+---
+
+#### 4.1 Automações por pg_cron e Database Webhooks
+
+| Automação | Mecanismo | Descrição | Complexidade |
+|---|---|---|---|
+| Alerta de vencimento de obrigações | `pg_cron` semanal | Email para responsável quando `proxima_data` < 7 dias | P |
+| Alerta de renovação de due diligence | `pg_cron` mensal | Email quando `proxima_avaliacao` < 30 dias | P |
+| Triagem automática de denúncias | Database Webhook → `triar-denuncia` | Trigger on INSERT em `denuncias` | M |
+| Snapshot ESG automático | `pg_cron` mensal (dia 5) | Gera `board_snapshots` automaticamente | P |
+| Notificação de declaração de conflito | `pg_cron` anual (outubro) | Lembra colaboradores que não declararam no ano | M |
+
+**Edge Function a criar:** `supabase/functions/compliance-alerts/index.ts` — centraliza envio de alertas de vencimento; reutiliza `_shared/email.ts` existente.
+
+---
+
+#### 4.2 Audit Trail — Exportação para Auditores
+
+**Componentes a criar:**
+
+| Componente | Localização | Descrição | Complexidade |
+|---|---|---|---|
+| `AuditTrailPage` | `src/spa/pages/admin/AdminAuditTrail.tsx` | Visualização filtrada de `audit_logs` com export CSV | M |
+| `AuditExportButton` | dentro da página | Exporta filtro atual como CSV | P |
+
+**Rota nova:** `/admin/audit-trail`
+
+---
+
+#### 4.3 Diagnóstico de Maturidade — Benchmark Setorial
+
+**Tabelas DB a criar:**
+```sql
+CREATE TABLE diagnostico_benchmarks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  setor TEXT NOT NULL,
+  pilar TEXT NOT NULL,
+  score_medio NUMERIC NOT NULL,
+  percentil_75 NUMERIC,
+  percentil_25 NUMERIC,
+  n_empresas INT,
+  atualizado_em DATE DEFAULT CURRENT_DATE
+);
+-- Seed: 36 linhas (6 setores × 6 pilares) com dados realistas
+```
+
+**Componente a criar:** `BenchmarkRadarChart` em `Diagnostico.tsx` — RadarChart comparando score do cliente vs. média do setor.
+
+---
+
+#### 4.4 Hardening Final (pré-release v1.0.0)
+
+| Item | Ação | Arquivo(s) |
+|---|---|---|
+| Regenerar `types.ts` | Após todas as migrations das fases 1–3 | `GET /v1/projects/fenfgjqlsqzvxloeavdc/types/typescript` |
+| Remover `as any` nos novos módulos | Revisar todos os `use*.ts` criados | Fases 1–3 |
+| Configurar `RESEND_FROM_EMAIL` | Setar domínio verificado Cavendish | `supabase secrets set` |
+| Remover `integration_sync` da UI | Esconder seção Admin → Integrações | `AdminIntegracoes.tsx` |
+| Testes E2E dos novos módulos | Expandir suite `tests/` para 5 módulos da Fase 1 | `tests/` |
+| CSP Header | Adicionar `Content-Security-Policy` | `vercel.json` |
+| `robots.txt` | Bloquear `/admin/*`, `/consultor/*`, `/meu-projeto/*` | `public/robots.txt` |
+| Seeds de dados | Due diligence (20 perguntas), compliance BR (30 obrigações), benchmarks (36 linhas) | Migrations novas |
+
+**Definition of Done da Fase 4 (e do v1.0.0):**
+- [ ] Todas as automações por cron ativas e testadas
+- [ ] Audit trail exportável em CSV
+- [ ] Benchmark setorial no diagnóstico
+- [ ] 0 `as any` nos novos módulos
+- [ ] E2E cobrindo todos os módulos das fases 1–3
+- [ ] `SISTEMA_TECNICO.md` atualizado com todas as novas rotas, migrations e componentes
+- [ ] Deploy em produção com secrets configurados
+- [ ] `version: "1.0.0"` no `package.json`
+
+---
+
+### Resumo das Fases
+
+| Fase | Duração | Módulos | Tabelas novas | Edge Functions novas | Marco |
+|---|---|---|---|---|---|
+| **Fase 1** | 6–8 sem | Riscos, Políticas, Conflitos, Investigações, LGPD | 7 | `triar-denuncia` | Paridade GoPliance/clickCompliance |
+| **Fase 2** | 4–5 sem | Third-Party Risk, Compliance Calendar | 3 | `calcular-score-fornecedor` | Supera concorrentes nacionais |
+| **Fase 3** | 5–6 sem | ESG Dashboard, Board Reporting, Agente evoluído | 2 + ENUM | — | Paridade Diligent (PME) |
+| **Fase 4** | 3–4 sem | Automações, Audit UI, Benchmark, Hardening | 1 | `compliance-alerts` | **Release v1.0.0 comercial** |
+| **TOTAL** | ~18–23 sem | 10 módulos novos | 13 tabelas | 3 edge functions | GRC premium competitivo |
+
+---
+
+### Convenções para Novos Módulos
+
+1. **Hook pattern:** `use[Modulo].ts` em `src/hooks/` com TanStack Query. `queryKey` inclui `organizacao_id` quando relevante.
+2. **Componentes:** Módulos com múltiplos componentes ganham subdiretório `src/components/[modulo]/`.
+3. **Rotas consultor:** Registradas no `App.tsx` com `ProtectedRoute requiredRoles={["admin","consultor"]}`. Item de menu no array `navItems` de `ConsultorLayout.tsx`.
+4. **Rotas públicas:** Implementadas como páginas Next.js App Router em `src/app/` (não React Router).
+5. **RLS:** Todas as tabelas novas com RLS ativo. Padrão: admin/consultor têm CRUD; cliente tem SELECT + INSERT dos próprios dados; `conselheiro` tem SELECT read-only filtrado por org.
+6. **Migrations:** `YYYYMMDD[seq]_[nome].sql`. Aplicar via `supabase db push`. Regenerar tipos após cada migration.
+7. **IA nos novos módulos:** Reutilizar `useAIGenerate` existente. Adicionar `tipo` ao `VALID_TIPOS` na edge function `ai-generate` apenas quando o caso de uso é genuinamente novo.
+8. **Notificações:** Reutilizar tabela `notificacoes` para alertas internos; emails via `_shared/email.ts`.
 
 ---
 
