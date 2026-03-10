@@ -69,7 +69,7 @@ function IndicadorFormDialog({
     if (isEdit && indicador) {
       await atualizar.mutateAsync({ id: indicador.id, ...payload });
     } else {
-      await criar.mutateAsync({ organization_id: organizacaoId, ...payload });
+      await criar.mutateAsync({ organizacao_id: organizacaoId, ...payload });
     }
     onOpenChange(false);
   };

@@ -59,7 +59,7 @@ export function useDeclaracoesPorOrg(organizacaoId?: string, anoRef?: number) {
 
       const { data, error } = await q;
       if (error) throw error;
-      return data as ConflitosInteresse[];
+      return data as unknown as ConflitosInteresse[];
     },
   });
 }
@@ -90,10 +90,10 @@ export function usePendentesDeclaracao(organizacaoId: string, anoRef: number) {
   return useQuery({
     queryKey: ["conflitos-pendentes", organizacaoId, anoRef],
     queryFn: async () => {
-      // Busca membros da org
+      // Busca user_ids dos membros da org
       const { data: membros, error: err1 } = await supabase
         .from("organization_members")
-        .select("user_id, profiles:user_id(nome, email)")
+        .select("user_id")
         .eq("organizacao_id", organizacaoId);
       if (err1) throw err1;
 
@@ -105,8 +105,23 @@ export function usePendentesDeclaracao(organizacaoId: string, anoRef: number) {
         .eq("ano_referencia", anoRef);
       if (err2) throw err2;
 
-      const declaramIds = new Set((declararam ?? []).map((d: any) => d.declarante_id));
-      return (membros ?? []).filter((m: any) => !declaramIds.has(m.user_id)) as Array<{
+      const declaramIds = new Set((declararam ?? []).map((d) => d.declarante_id));
+      const pendenteIds = (membros ?? [])
+        .filter((m) => !declaramIds.has(m.user_id))
+        .map((m) => m.user_id);
+
+      if (pendenteIds.length === 0) return [];
+
+      // Busca perfis separadamente (sem FK direta organization_members → profiles)
+      const { data: perfis } = await supabase
+        .from("profiles")
+        .select("id, nome, email")
+        .in("id", pendenteIds);
+
+      return (perfis ?? []).map((p) => ({
+        user_id: p.id,
+        profiles: { nome: p.nome, email: p.email },
+      })) as Array<{
         user_id: string;
         profiles: { nome: string | null; email: string | null } | null;
       }>;

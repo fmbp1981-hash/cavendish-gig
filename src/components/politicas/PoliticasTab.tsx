@@ -85,7 +85,7 @@ function PoliticaFormDialog({
             <Select value={categoria} onValueChange={v => setCategoria(v as PoliticaCategoria)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {Object.entries(CATEGORIA_LABEL).map(([k, v]) => (
+                {(Object.entries(CATEGORIA_LABEL) as [string, string][]).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v}</SelectItem>
                 ))}
               </SelectContent>

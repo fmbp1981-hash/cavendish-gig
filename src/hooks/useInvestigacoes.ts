@@ -96,7 +96,7 @@ export function useInvestigacoes(organizacaoId?: string) {
 
       const { data, error } = await q;
       if (error) throw error;
-      return data as Investigacao[];
+      return data as unknown as Investigacao[];
     },
   });
 }
@@ -126,7 +126,7 @@ export function useInvestigacaoNotas(investigacaoId: string) {
         .eq("investigacao_id", investigacaoId)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data as InvestigacaoNota[];
+      return data as unknown as InvestigacaoNota[];
     },
     enabled: !!investigacaoId,
   });

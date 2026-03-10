@@ -69,7 +69,7 @@ export function useRiscos(organizacaoId?: string) {
 
       const { data, error } = await q;
       if (error) throw error;
-      return data as Risco[];
+      return data as unknown as Risco[];
     },
   });
 }
@@ -92,7 +92,8 @@ export function useCriarRisco() {
     }) => {
       const { data, error } = await supabase
         .from("riscos")
-        .insert({ ...payload, status: payload.status ?? "identificado" })
+        // riscos has both organizacao_id (nullable FK) and organization_id (required) due to a migration inconsistency
+        .insert({ ...payload, organization_id: payload.organizacao_id, status: payload.status ?? "identificado" })
         .select()
         .single();
       if (error) throw error;
@@ -159,7 +160,7 @@ export function useRiscoMitigacoes(riscoId: string) {
         .eq("risco_id", riscoId)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data as RiscoMitigacao[];
+      return data as unknown as RiscoMitigacao[];
     },
     enabled: !!riscoId,
   });
@@ -241,7 +242,7 @@ export function useRiscoAvaliacoes(riscoId: string) {
         .eq("risco_id", riscoId)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as RiscoAvaliacao[];
+      return data as unknown as RiscoAvaliacao[];
     },
     enabled: !!riscoId,
   });

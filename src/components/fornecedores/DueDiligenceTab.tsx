@@ -73,7 +73,7 @@ function FornecedorFormDialog({
     if (isEdit && fornecedor) {
       await atualizar.mutateAsync({ id: fornecedor.id, ...payload });
     } else {
-      await criar.mutateAsync({ organization_id: organizacaoId, ...payload });
+      await criar.mutateAsync({ organizacao_id: organizacaoId, ...payload });
     }
     onOpenChange(false);
   };
