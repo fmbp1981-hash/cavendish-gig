@@ -70,6 +70,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       userRole="admin"
       settingsHref="/admin/configuracoes"
       extraMenuItems={extraMenuItems}
+      showAgentChat={true}
     >
       {children}
     </BaseLayout>

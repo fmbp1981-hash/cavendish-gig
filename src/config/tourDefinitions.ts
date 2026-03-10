@@ -102,7 +102,7 @@ const adminTour: TourDefinition = {
       side: "right",
     },
     {
-      page: "/consultor/documentos",
+      page: "/admin/documentos",
       element: '[data-tour="admin-nav-documentos"]',
       title: "📄 Documentos",
       description: step(
@@ -194,6 +194,20 @@ const adminTour: TourDefinition = {
       side: "right",
     },
     {
+      page: "/admin",
+      title: "✨ IntelliX AI — Assistente no Header",
+      description: step(
+        "O assistente de IA da IntelliX está disponível diretamente no cabeçalho do sistema — basta clicar no ícone de faísca (✨) ao lado do sino de notificações.",
+        [
+          "Clique no ícone <strong>✨</strong> no cabeçalho (ao lado do sino) para abrir o painel de chat.",
+          "Pergunte sobre o status dos clientes, documentos pendentes, projetos ou tarefas.",
+          "O assistente tem acesso ao contexto do sistema e responde em linguagem natural.",
+          "Use o botão de <strong>minimizar</strong> para deixar o chat aberto sem ocupar espaço.",
+          "Disponível para <em>Admin</em> e <em>Consultor</em> — em qualquer página do sistema."
+        ]
+      ),
+    },
+    {
       page: "/admin/logs",
       element: '[data-tour="admin-nav-logs"]',
       title: "🐛 Logs do Sistema",
@@ -239,7 +253,7 @@ const consultorTour: TourDefinition = {
   description: "Descubra o que fazer em cada ferramenta para gerar resultados reais para seus clientes.",
   roles: ["admin", "consultor"],
   icon: "👨‍💼",
-  estimatedMinutes: 7,
+  estimatedMinutes: 9,
   steps: [
     {
       title: "👋 Bem-vindo ao Portal do Consultor!",
@@ -324,6 +338,36 @@ const consultorTour: TourDefinition = {
       side: "right",
     },
     {
+      page: "/consultor/compliance",
+      element: '[data-tour="menu-compliance"]',
+      title: "🛡️ Compliance — Módulo Unificado",
+      description: step(
+        "Todos os módulos de compliance da organização em um único lugar, organizados em abas. Substitui os 10 menus individuais por uma navegação mais limpa e eficiente.",
+        [
+          "Clique em <strong>\"Compliance\"</strong> no menu lateral para abrir o módulo.",
+          "A aba <strong>KPIs</strong> (aberta por padrão) mostra o painel de indicadores com dados reais: índice de conformidade, documentos por status, projetos por fase, tarefas e treinamentos.",
+          "Use a aba <strong>Consulta CEIS</strong> para verificar fornecedores ou parceiros no Cadastro de Empresas Inidôneas antes de assinar contratos.",
+          "As demais abas (Políticas, LGPD, Riscos, Due Diligence, Incidentes, Auditoria…) serão liberadas progressivamente nas próximas versões.",
+          "Monitore os <strong>alertas de conformidade</strong> no KPI: documentos pendentes e em análise aparecem em destaque."
+        ]
+      ),
+      side: "right",
+    },
+    {
+      page: "/consultor",
+      title: "✨ IntelliX AI — Chat no Header",
+      description: step(
+        "O assistente de IA da IntelliX agora está fixo no cabeçalho do Portal do Consultor — disponível em qualquer página sem precisar procurar um botão flutuante.",
+        [
+          "Clique no ícone <strong>✨</strong> no cabeçalho (entre o sino e o botão ?) para abrir o chat.",
+          "Pergunte: <em>\"Quais clientes têm documentos pendentes?\"</em> ou <em>\"Resuma o status dos projetos\"</em>.",
+          "O assistente acessa os dados do sistema e responde em linguagem natural.",
+          "Clique em <strong>Minimizar (—)</strong> para recolher o painel sem fechar a conversa.",
+          "Clique no ícone novamente para fechar — a conversa é reiniciada a cada sessão."
+        ]
+      ),
+    },
+    {
       page: "/consultor/relatorios",
       element: '[data-tour="menu-relatorios"]',
       title: "📈 Relatórios de Progresso",
@@ -405,7 +449,7 @@ const consultorTour: TourDefinition = {
     },
     {
       title: "🎉 Tour do Consultor Concluído!",
-      description: `<p>Agora você sabe exatamente o que fazer em cada ferramenta!</p><br/><p style="font-weight:600;color:hsl(161 55% 23%);margin-bottom:6px">🚀 Fluxo de trabalho recomendado:</p><ol style="margin:0;padding-left:20px;list-style:decimal"><li style="margin-bottom:5px">Acesse <em>Meus Clientes</em> e verifique a carteira</li><li style="margin-bottom:5px">Garanta que o diagnóstico do cliente foi respondido</li><li style="margin-bottom:5px">Gere o <strong>Código de Ética</strong> usando o módulo de IA</li><li style="margin-bottom:5px">Envie o código para <strong>adesão</strong> dos colaboradores</li><li style="margin-bottom:5px">Agende a próxima reunião e crie as <strong>tarefas</strong> do mês</li><li style="margin-bottom:5px">Ao final do mês, gere o <strong>Relatório de Progresso</strong></li></ol><br/><p>💡 Este tour está disponível no botão <strong>(?)</strong> do cabeçalho.</p>`,
+      description: `<p>Agora você sabe exatamente o que fazer em cada ferramenta!</p><br/><p style="font-weight:600;color:hsl(161 55% 23%);margin-bottom:6px">🚀 Fluxo de trabalho recomendado:</p><ol style="margin:0;padding-left:20px;list-style:decimal"><li style="margin-bottom:5px">Acesse <em>Meus Clientes</em> e verifique a carteira</li><li style="margin-bottom:5px">Garanta que o diagnóstico do cliente foi respondido</li><li style="margin-bottom:5px">Gere o <strong>Código de Ética</strong> usando o módulo de IA</li><li style="margin-bottom:5px">Envie o código para <strong>adesão</strong> dos colaboradores</li><li style="margin-bottom:5px">Agende a próxima reunião e crie as <strong>tarefas</strong> do mês</li><li style="margin-bottom:5px">Acompanhe os <strong>KPIs de Compliance</strong> para monitorar a saúde dos programas</li><li style="margin-bottom:5px">Ao final do mês, gere o <strong>Relatório de Progresso</strong></li></ol><br/><p>💡 Lembre: o assistente <strong>✨ IntelliX AI</strong> está sempre disponível no cabeçalho. E este tour pode ser acessado novamente pelo botão <strong>(?)</strong>.</p>`,
     },
   ],
 };
