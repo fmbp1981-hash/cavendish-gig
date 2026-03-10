@@ -36,6 +36,7 @@ import ConsultorAdesaoEtica from "./spa/pages/consultor/ConsultorAdesaoEtica";
 import ConsultorRelatorios from "./spa/pages/consultor/ConsultorRelatorios";
 import ConsultorConfiguracoes from "./spa/pages/consultor/ConsultorConfiguracoes";
 import ConsultorCompliance from "./spa/pages/consultor/ConsultorCompliance";
+import ComplianceCalendar from "./spa/pages/consultor/ComplianceCalendar";
 
 // Cliente Pages
 import RepositorioDocumentos from "./spa/pages/cliente/RepositorioDocumentos";
@@ -214,6 +215,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["admin", "consultor"]}>
                     <ConsultorCompliance />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/compliance-calendar"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ComplianceCalendar />
                   </ProtectedRoute>
                 }
               />

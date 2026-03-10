@@ -11,10 +11,12 @@ import {
   Sparkles,
   CalendarPlus,
   CalendarDays,
+  CalendarCheck,
   FileCheck,
   BarChart3,
   ShieldCheck,
   AlertTriangle,
+  Building2,
 } from "lucide-react";
 import {
   DropdownMenuItem,
@@ -28,6 +30,7 @@ const navItems: NavItem[] = [
   { icon: CheckSquare,     label: "Tarefas",              href: "/consultor/tarefas",            dataTour: "menu-tarefas" },
   { icon: FileCheck,       label: "Adesão Ética",         href: "/consultor/adesao-etica",       dataTour: "menu-adesao-etica" },
   { icon: ShieldCheck,     label: "Compliance",           href: "/consultor/compliance",         dataTour: "menu-compliance" },
+  { icon: CalendarCheck,   label: "Calendário Regulatório", href: "/consultor/compliance-calendar", dataTour: "menu-calendar" },
   { icon: BarChart3,       label: "Relatórios",           href: "/consultor/relatorios",         dataTour: "menu-relatorios" },
   { icon: CalendarDays,    label: "Agenda",               href: "/consultor/agenda",             dataTour: "menu-agenda" },
   { icon: CalendarPlus,    label: "Agendar Reunião",      href: "/consultor/agendamento",        dataTour: "menu-reunioes" },
