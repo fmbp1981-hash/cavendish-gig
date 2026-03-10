@@ -1,8 +1,15 @@
 User-agent: Googlebot
 Allow: /
+Disallow: /admin/
+Disallow: /consultor/
+Disallow: /meu-projeto/
+Disallow: /parceiro/
 
 User-agent: Bingbot
 Allow: /
+Disallow: /admin/
+Disallow: /consultor/
+Disallow: /meu-projeto/
 
 User-agent: Twitterbot
 Allow: /
@@ -12,3 +19,7 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /consultor/
+Disallow: /meu-projeto/
+Disallow: /parceiro/

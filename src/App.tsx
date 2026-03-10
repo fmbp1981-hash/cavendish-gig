@@ -55,6 +55,7 @@ import AdminOrganizacoes from "./spa/pages/admin/AdminOrganizacoes";
 import AdminCatalogo from "./spa/pages/admin/AdminCatalogo";
 import AdminConfiguracoes from "./spa/pages/admin/AdminConfiguracoes";
 import AdminIntegracoes from "./spa/pages/admin/AdminIntegracoes";
+import AdminAuditTrail from "./spa/pages/admin/AdminAuditTrail";
 import AdminConsultores from "./spa/pages/admin/AdminConsultores";
 import AdminTemplates from "./spa/pages/admin/Templates";
 import AdminHistoricoRelatorios from "./spa/pages/admin/HistoricoRelatorios";
@@ -331,6 +332,14 @@ const App = () => (
                 }
               />
 
+              <Route
+                path="/admin/audit-trail"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminAuditTrail />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/admin/branding"
                 element={

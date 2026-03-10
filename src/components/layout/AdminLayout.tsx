@@ -15,6 +15,7 @@ import {
   TrendingUp,
   Sparkles,
   Bug,
+  ShieldCheck,
 } from "lucide-react";
 import {
   DropdownMenuItem,
@@ -33,6 +34,7 @@ const navItems: NavItem[] = [
   { icon: Plug,            label: "Integrações",      href: "/admin/integracoes",           dataTour: "admin-nav-integracoes" },
   { icon: Sparkles,        label: "Branding",         href: "/admin/branding",              dataTour: "admin-nav-branding" },
   { icon: Bug,             label: "Logs do Sistema",  href: "/admin/logs",                  dataTour: "admin-nav-logs" },
+  { icon: ShieldCheck,     label: "Audit Trail",      href: "/admin/audit-trail",           dataTour: "admin-nav-audit" },
   { icon: Settings,        label: "Configurações",    href: "/admin/configuracoes",         dataTour: "admin-nav-configuracoes" },
 ];
 
