@@ -59,22 +59,6 @@ interface IntegrationConfig {
 
 const integrations: IntegrationConfig[] = [
   {
-    id: "ai-provider",
-    name: "Provedor de IA",
-    description: "Escolha o provedor de IA para geração de conteúdo (Código de Ética, Análise de Documentos, Atas)",
-    secretName: "AI_API_KEY",
-    icon: Sparkles,
-    color: "text-purple-500",
-    status: "available",
-    placeholder: "sua_api_key_aqui",
-    inputType: "password",
-    instructions: [
-      "Escolha seu provedor de IA preferido abaixo",
-      "Cada provedor tem suas próprias vantagens e forma de obter a API Key",
-      "Após configurar, todas as gerações de IA usarão o provedor selecionado"
-    ]
-  },
-  {
     id: "resend",
     name: "Resend (Email)",
     description: "Envio de emails transacionais para notificações de documentos aprovados/rejeitados",
@@ -518,11 +502,20 @@ function AIProviderSelector() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {isConfigured && currentConfig?.ai_provider && (
+        {isLoading ? null : isConfigured && currentConfig?.ai_provider ? (
           <Alert className="border-green-500/30 bg-green-500/10">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
             <AlertDescription className="text-green-700 dark:text-green-300">
-              Provedor configurado: <strong>{aiProviders.find(p => p.id === currentConfig.ai_provider)?.name}</strong>
+              Provedor ativo: <strong>{aiProviders.find(p => p.id === currentConfig.ai_provider)?.name}</strong>.
+              O Agente de IA e todas as gerações usarão este provedor.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert className="border-amber-500/30 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-amber-700 dark:text-amber-300">
+              <strong>Nenhum provedor configurado.</strong> O Agente de IA e as gerações de documentos estão inativas.
+              Selecione um provedor abaixo e insira sua API Key para ativar.
             </AlertDescription>
           </Alert>
         )}
@@ -874,19 +867,19 @@ export default function AdminIntegracoes() {
           </div>
         </div>
 
-        {/* Lovable AI Usage Stats */}
+        {/* AI Usage Stats */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-purple-500" />
-              Estatísticas do Lovable AI
+              Estatísticas de IA
             </CardTitle>
             <CardDescription>
-              Uso da IA integrada neste mês
+              Uso do Agente e gerações de IA neste mês
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-3">
               <div className="p-4 bg-muted rounded-lg">
                 <p className="text-2xl font-bold">
                   {statsLoading ? "..." : formatNumber(aiStats?.totalGenerations || 0)}
@@ -904,10 +897,6 @@ export default function AdminIntegracoes() {
                   {statsLoading ? "..." : `${aiStats?.successRate || 0}%`}
                 </p>
                 <p className="text-sm text-muted-foreground">Taxa de sucesso</p>
-              </div>
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-2xl font-bold text-base">gemini-2.5-flash</p>
-                <p className="text-sm text-muted-foreground">Modelo padrão</p>
               </div>
             </div>
 
