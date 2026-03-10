@@ -26,7 +26,7 @@ const navItems: NavItem[] = [
   { icon: Building2,       label: "Organizações",    href: "/admin/organizacoes",          dataTour: "admin-nav-organizacoes" },
   { icon: Users,           label: "Usuários",         href: "/admin/usuarios",              dataTour: "admin-nav-usuarios" },
   { icon: UserCog,         label: "Consultores",      href: "/admin/consultores",           dataTour: "admin-nav-consultores" },
-  { icon: FileText,        label: "Documentos",       href: "/consultor/documentos",        dataTour: "admin-nav-documentos" },
+  { icon: FileText,        label: "Documentos",       href: "/admin/documentos",            dataTour: "admin-nav-documentos" },
   { icon: Database,        label: "Catálogo",         href: "/admin/catalogo",              dataTour: "admin-nav-catalogo" },
   { icon: FileText,        label: "Templates",        href: "/admin/templates",             dataTour: "admin-nav-templates" },
   { icon: TrendingUp,      label: "Relatórios",       href: "/admin/relatorios/historico",  dataTour: "admin-nav-relatorios" },

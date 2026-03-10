@@ -2,25 +2,19 @@ import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { BaseLayout, NavItem } from "./BaseLayout";
-import { AgenteChat } from "@/components/agente/AgenteChat";
 import {
   LayoutDashboard,
   Users,
   FileText,
   Shield,
-  AlertTriangle,
   CheckSquare,
   Sparkles,
   CalendarPlus,
   CalendarDays,
   FileCheck,
   BarChart3,
-  BookOpen,
-  Scale,
   ShieldCheck,
-  TrendingUp,
-  ClipboardList,
-  Search,
+  AlertTriangle,
 } from "lucide-react";
 import {
   DropdownMenuItem,
@@ -33,16 +27,7 @@ const navItems: NavItem[] = [
   { icon: FileText,        label: "Documentos",           href: "/consultor/documentos",         dataTour: "menu-documentos" },
   { icon: CheckSquare,     label: "Tarefas",              href: "/consultor/tarefas",            dataTour: "menu-tarefas" },
   { icon: FileCheck,       label: "Adesão Ética",         href: "/consultor/adesao-etica",       dataTour: "menu-adesao-etica" },
-  { icon: BookOpen,        label: "Políticas",            href: "/consultor/politicas",          dataTour: "menu-politicas" },
-  { icon: AlertTriangle,   label: "Conflito Interesses",  href: "/consultor/conflitos",          dataTour: "menu-conflitos" },
-  { icon: ShieldCheck,     label: "LGPD",                 href: "/consultor/lgpd",               dataTour: "menu-lgpd" },
-  { icon: Scale,           label: "Riscos",               href: "/consultor/riscos",             dataTour: "menu-riscos" },
-  { icon: ClipboardList,   label: "Due Diligence",        href: "/consultor/due-diligence",      dataTour: "menu-due-diligence" },
-  { icon: TrendingUp,      label: "KPIs",                 href: "/consultor/kpis",               dataTour: "menu-kpis" },
-  { icon: Shield,          label: "Incidentes",           href: "/consultor/incidentes",         dataTour: "menu-incidentes" },
-  { icon: Search,          label: "Auditoria",            href: "/consultor/auditoria",          dataTour: "menu-auditoria" },
-  { icon: FileText,        label: "Rel. Regulatórios",    href: "/consultor/relatorios-reg",     dataTour: "menu-relatorios-reg" },
-  { icon: Search,          label: "Consulta CEIS",        href: "/consultor/ceis",               dataTour: "menu-ceis" },
+  { icon: ShieldCheck,     label: "Compliance",           href: "/consultor/compliance",         dataTour: "menu-compliance" },
   { icon: BarChart3,       label: "Relatórios",           href: "/consultor/relatorios",         dataTour: "menu-relatorios" },
   { icon: CalendarDays,    label: "Agenda",               href: "/consultor/agenda",             dataTour: "menu-agenda" },
   { icon: CalendarPlus,    label: "Agendar Reunião",      href: "/consultor/agendamento",        dataTour: "menu-reunioes" },
@@ -77,9 +62,9 @@ export function ConsultorLayout({ children }: ConsultorLayoutProps) {
       userRole="consultor"
       settingsHref="/consultor/configuracoes"
       extraMenuItems={extraMenuItems}
+      showAgentChat={true}
     >
       {children}
-      <AgenteChat />
     </BaseLayout>
   );
 }

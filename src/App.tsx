@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { TenantBrandingProvider } from "@/components/branding/TenantBrandingProvider";
@@ -35,6 +35,7 @@ import ConsultorAgendamento from "./spa/pages/consultor/ConsultorAgendamento";
 import ConsultorAdesaoEtica from "./spa/pages/consultor/ConsultorAdesaoEtica";
 import ConsultorRelatorios from "./spa/pages/consultor/ConsultorRelatorios";
 import ConsultorConfiguracoes from "./spa/pages/consultor/ConsultorConfiguracoes";
+import ConsultorCompliance from "./spa/pages/consultor/ConsultorCompliance";
 
 // Cliente Pages
 import RepositorioDocumentos from "./spa/pages/cliente/RepositorioDocumentos";
@@ -56,6 +57,7 @@ import AdminTemplates from "./spa/pages/admin/Templates";
 import AdminHistoricoRelatorios from "./spa/pages/admin/HistoricoRelatorios";
 import AdminBranding from "./spa/pages/admin/Branding";
 import AdminLogs from "./spa/pages/admin/AdminLogs";
+import AdminDocumentos from "./spa/pages/admin/AdminDocumentos";
 import Help from "./spa/pages/Help";
 import { installGlobalErrorHandlers } from "./utils/errorLogger";
 
@@ -208,6 +210,14 @@ const App = () => (
               />
 
               <Route
+                path="/consultor/compliance"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ConsultorCompliance />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/consultor/configuracoes"
                 element={
                   <ProtectedRoute requiredRoles={["admin", "consultor"]}>
@@ -316,7 +326,7 @@ const App = () => (
                 path="/admin/documentos"
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
-                    <Navigate to="/consultor/documentos" replace />
+                    <AdminDocumentos />
                   </ProtectedRoute>
                 }
               />

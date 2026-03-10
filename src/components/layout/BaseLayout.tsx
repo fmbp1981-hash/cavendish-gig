@@ -5,6 +5,7 @@ import { useBrandingContext } from "@/components/branding/TenantBrandingProvider
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { TutorialHelpButton } from "@/components/tutorial/TutorialHelpButton";
+import { AgenteChat } from "@/components/agente/AgenteChat";
 import { IntelliXLogo } from "@/components/ui/IntelliXLogo";
 import { cn } from "@/lib/utils";
 import {
@@ -41,6 +42,8 @@ interface BaseLayoutProps {
   settingsHref: string;
   /** Extra DropdownMenuItems rendered before Settings */
   extraMenuItems?: ReactNode;
+  /** Renders AgenteChat trigger in the header (consultor layout) */
+  showAgentChat?: boolean;
 }
 
 export function BaseLayout({
@@ -51,6 +54,7 @@ export function BaseLayout({
   userRole,
   settingsHref,
   extraMenuItems,
+  showAgentChat = false,
 }: BaseLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -222,8 +226,9 @@ export function BaseLayout({
             )}
           </div>
           <div className="flex items-center gap-4">
-            <TutorialHelpButton userRole={userRole} />
+            {showAgentChat && <AgenteChat mode="header" />}
             <NotificationBell />
+            <TutorialHelpButton userRole={userRole} />
           </div>
         </header>
 

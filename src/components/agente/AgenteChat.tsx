@@ -12,7 +12,11 @@ interface Message {
   content: string;
 }
 
-export function AgenteChat() {
+interface AgenteChatProps {
+  mode?: "floating" | "header";
+}
+
+export function AgenteChat({ mode = "floating" }: AgenteChatProps) {
   const { profile } = useAuth();
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
@@ -90,14 +94,30 @@ export function AgenteChat() {
 
   return (
     <>
-      {/* Botão flutuante */}
-      {!open && (
+      {/* Botão flutuante — apenas no modo floating */}
+      {mode === "floating" && !open && (
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-amber-500 hover:bg-amber-600 text-white shadow-lg flex items-center justify-center transition-all hover:scale-105"
           title="IntelliX AI — Assistente"
         >
           <Sparkles className="w-6 h-6" />
+        </button>
+      )}
+
+      {/* Botão inline para o header */}
+      {mode === "header" && (
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className={cn(
+            "h-9 w-9 rounded-lg flex items-center justify-center transition-colors",
+            open
+              ? "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          )}
+          title="IntelliX AI — Assistente"
+        >
+          <Sparkles className="w-4 h-4" />
         </button>
       )}
 
