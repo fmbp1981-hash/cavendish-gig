@@ -1,8 +1,8 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-10 — Verificação de módulos: Gestão de Riscos, Compliance Calendar e LGPD Compliance Module confirmados como 100% implementados (código + DB + frontend) — pendências 3, 4 e 5 marcadas como concluídas. Manual do sistema (docs/MANUAL_SISTEMA_GIG.md) e apresentação Gamma (docs/APRESENTACAO_GAMMA_GIG.md) criados/atualizados.
-**Versão do sistema:** 0.0.0 (pre-release) — branch `feature/gig-premium-phase1`, 9 commits à frente do main
+**Última atualização:** 2026-03-10 — Phase 1 CONCLUÍDA: tabs Incidentes, Auditoria Interna e Relatórios Regulatórios implementadas — 0 PlaceholderTabs em ConsultorCompliance. Phase 2 iniciada: triagem IA em denúncias (useTriagemIA) + página pública `/denuncia/[orgId]` (Next.js SSR, sem auth).
+**Versão do sistema:** 0.0.0 (pre-release) — branch `feature/gig-compliance-phase2`, 10 commits à frente do main
 **Desenvolvido por:** IntelliX.AI
 
 ---
@@ -785,6 +785,27 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - **`src/hooks/emailNotifications.ts`** — hook frontend para disparar emails via `send-email` Edge Function
 - **Removidos:** `src/lib/supabase.ts` (antigo), `src/hooks/useNotificacoesEmail.ts`, `src/spa/pages/Dashboard.tsx` (obsoletos)
 
+### 2026-03-10 — Phase 1 concluída + Phase 2 iniciada (commit a0fd6e2)
+
+**Phase 1 — 3 tabs placeholder substituídas por UI real (0 PlaceholderTabs em ConsultorCompliance):**
+
+- **`src/hooks/useIncidentes.ts`** — CRUD `incidentes` (`useIncidentes`, `useCriarIncidente`, `useAtualizarIncidente`, `useExcluirIncidente`) com helpers `TIPO_LABEL`, `SEVERIDADE_COR`, `STATUS_COR`
+- **`src/components/incidentes/IncidentesTab.tsx`** — 4 stat cards, tabela filtrada, `NovoIncidenteDialog` (todos os campos + switch ANPD condicional), `DetalheSheet` para edição inline
+- **`src/hooks/useAuditorias.ts`** — CRUD `auditorias_internas` + `nao_conformidades` com 6 hooks exports
+- **`src/components/auditoria/AuditoriaTab.tsx`** — tabela com accordion por auditoria exibindo NCs inline; `AddNCDialog`; `NovaAuditoriaDialog`
+- **`src/hooks/useRelatoriosRegulatorios.ts`** — CRUD `relatorios_regulatorios` com helpers de tipo/cor por órgão
+- **`src/components/relatorios-reg/RelatoriosRegTab.tsx`** — badges por órgão (CGU/CVM/BACEN/ANPD/TCU/CADE), alert banner prazo ≤15 dias, progressão inline de status
+- **`ConsultorCompliance.tsx`** — `TABS_WITH_CONTENT` expandido; 3 novos imports; fallback `PlaceholderTab` nunca mais ativado
+
+**Phase 2 — Canal de Denúncias:**
+
+- **`src/hooks/useInvestigacoes.ts`** — `useTriagemIA()` mutation: chama `ai-generate` (tipo `chat`) com prompt de categorização; parseia resposta livre para extrair `categoria_triagem` + `nivel_risco`; atualiza `investigacoes`
+- **`src/spa/pages/consultor/ConsultorDenuncias.tsx`** — botão `⚡ Triagem IA` em cada denúncia sem triagem; exibe categoria como badge azul após análise
+- **`src/app/denuncia/[orgId]/page.tsx`** — página pública Next.js 15 (client, sem auth): busca org pelo ID, exibe formulário anônimo (categoria + descrição + switch anônimo), chama `/functions/v1/denuncias`, exibe tela de sucesso com número de protocolo
+- **`src/app/denuncia/layout.tsx`** — layout público sem sidebar
+
+**Build:** ✓ 0 erros TypeScript
+
 ### 2026-03-10 — Verificação e confirmação dos módulos Premium (Riscos, Calendar, LGPD)
 - Confirmado que **Gestão de Riscos**, **Compliance Calendar** e **LGPD Module** estavam 100% implementados desde 2026-03-09 mas não marcados como concluídos no SISTEMA_TECNICO.md
 - **Gestão de Riscos:** 3 tabelas (riscos, riscos_mitigacao, riscos_avaliacoes) + 5 componentes (heatmap 5×5, detalhes, form, mitigações) + hook completo → tab em `/consultor/compliance`
@@ -1020,18 +1041,42 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
   - Componente: `src/components/lgpd/LGPDTab.tsx` (2 abas: inventário de dados + DSR workflow completo)
   - Hook: `src/hooks/useLGPD.ts` (CRUD inventário, ciclo de vida DSR, prazo 15 dias ANPD com alertas)
   - Acesso: tab "lgpd" em `/consultor/compliance`
-- [ ] **Gestão de Investigações** — Fluxo formal atrelado ao canal de denúncias (Recebida→Concluída) com SLA e evidências sigilosas
+- [x] **Gestão de Investigações** — DB COMPLETO em 2026-03-09 / Frontend PARCIAL
+  - Tabelas: `investigacoes`, `investigacoes_notas`, `investigacoes_evidencias` (migration `20260309000003_investigacoes.sql`)
+  - Componentes existentes: `src/components/denuncias/InvestigacaoDrawer.tsx`, `src/spa/pages/consultor/ConsultorDenuncias.tsx`, `src/hooks/useInvestigacoes.ts`
+  - Status: fluxo básico funcional; **pendente Phase 2**: SLA enforcement, upload de arquivo de evidência, dashboard de KPIs
 
 ### 🔴 ALTA — Gaps competitivos importantes
-- [ ] **Conflitos de Interesse** — Formulário de disclosure periódico + workflow aprovação gestor
-- [ ] **Gestão de Políticas Corporativas** — Biblioteca de políticas + workflow criação→aprovação→publicação + aceite digital
-- [ ] **Third-Party Risk** — Cadastro de fornecedores críticos + due diligence automatizada + score de risco
-- [ ] **Canal de denúncias melhorado** — Triagem por IA, dashboard KPIs, link/QR público para denúncias externas sem login
+- [x] **Conflitos de Interesse** — DB + Frontend COMPLETOS em 2026-03-09
+  - Tabela: `conflito_interesses` (migration `20260304000011_conflito_interesses.sql`)
+  - Componente: `src/components/conflitos/ConflitosTab.tsx` (lista + análise + workflow pendente→enviado→analisado)
+  - Hook: `src/hooks/useConflitosInteresse.ts`
+  - Acesso: tab "conflitos" em `/consultor/compliance`
+  - **Pendente Phase 2**: formulário de auto-declaração pelo lado do cliente, notificações por email
+- [x] **Gestão de Políticas Corporativas** — DB + Frontend COMPLETOS em 2026-03-09
+  - Tabela: `politicas` + `politicas_aceites` (migration `20260304000010_politicas.sql`)
+  - Componente: `src/components/politicas/PoliticasTab.tsx` (workflow 5 estágios + tracking de aceite)
+  - Hook: `src/hooks/usePoliticas.ts`
+  - Acesso: tab "politicas" em `/consultor/compliance`
+  - **Pendente Phase 2**: notificação email quando política publicada, enforcement de aceite com prazo
+- [x] **Third-Party Risk / Due Diligence** — DB COMPLETO + Frontend ~70% em 2026-03-09
+  - Tabelas: `fornecedores` + `due_diligence` + `due_diligence_perguntas` (20 questões pré-seeded por categoria: LGPD/Anticorrupção/Financeiro/Segurança/ESG/Operacional) (migrations `20260304000014_due_diligence.sql` + `20260309000004_fornecedores.sql`)
+  - Componente: `src/components/fornecedores/DueDiligenceTab.tsx` (wizard multi-step + score automático)
+  - Hook: `src/hooks/useDueDiligence.ts`
+  - Acesso: tab "due-diligence" em `/consultor/compliance`
+  - **Pendente Phase 2**: upload de arquivos de evidência, agendamento de reavaliações, integração CEIS automática
+- [x] **Canal de denúncias — Triagem IA** — `useTriagemIA()` em `useInvestigacoes.ts`; botão "⚡ Triagem IA" em `ConsultorDenuncias.tsx`; categoriza via `ai-generate` (chat)
+- [x] **Canal de denúncias — Página pública** — `src/app/denuncia/[orgId]/page.tsx` (Next.js SSR, sem auth); formulário anônimo + protocolo
+
+### ✅ TABS CONCLUÍDAS (Phase 1 finalizada 2026-03-10)
+- [x] **Incidentes** — hook `useIncidentes.ts` + `src/components/incidentes/IncidentesTab.tsx` — CRUD completo, badges severidade, notificação ANPD
+- [x] **Auditoria Interna** — hook `useAuditorias.ts` + `src/components/auditoria/AuditoriaTab.tsx` — auditorias + não conformidades em accordion
+- [x] **Relatórios Regulatórios** — hook `useRelatoriosRegulatorios.ts` + `src/components/relatorios-reg/RelatoriosRegTab.tsx` — 6 órgãos, alertas de prazo
 
 ### Média prioridade
 - [ ] **White-label completo com subdomínio** por organização
-- [ ] **ESG Dashboard** — indicadores ambientais, sociais e de governança para diretoria
-- [ ] **Board Reporting** — dashboard executivo read-only para membros do conselho
+- [x] **ESG Dashboard** — CONCLUÍDO: `src/spa/pages/consultor/ESGDashboard.tsx`, rota `/consultor/esg`
+- [x] **Board Reporting** — CONCLUÍDO: `src/spa/pages/consultor/BoardDashboard.tsx`, rota `/consultor/board`
 - [ ] **Benchmark setorial no diagnóstico** — comparar score GIG com média do setor
 - [ ] **SSO / SAML** — para tenants enterprise (Azure AD, Google Workspace)
 - [ ] **SCORM player** — importar cursos externos de e-learning
