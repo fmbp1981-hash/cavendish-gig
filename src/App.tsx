@@ -49,6 +49,11 @@ import ClienteDeclaracaoConflito from "./spa/pages/cliente/ClienteDeclaracaoConf
 
 // Parceiro Pages
 import ParceiroDashboard from "./spa/pages/parceiro/ParceiroDashboard";
+import ParceiroCompliance from "./spa/pages/parceiro/ParceiroCompliance";
+import ParceiroAdesaoEtica from "./spa/pages/parceiro/ParceiroAdesaoEtica";
+import ParceiroComplianceCalendar from "./spa/pages/parceiro/ParceiroComplianceCalendar";
+import ParceiroESG from "./spa/pages/parceiro/ParceiroESG";
+import ParceiroCodigoEtica from "./spa/pages/parceiro/ParceiroCodigoEtica";
 
 // Admin Pages
 import AdminDashboard from "./spa/pages/admin/AdminDashboard";
@@ -376,6 +381,46 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
                     <ParceiroDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/parceiro/compliance"
+                element={
+                  <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
+                    <ParceiroCompliance />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/parceiro/adesao-etica"
+                element={
+                  <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
+                    <ParceiroAdesaoEtica />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/parceiro/compliance-calendar"
+                element={
+                  <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
+                    <ParceiroComplianceCalendar />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/parceiro/esg"
+                element={
+                  <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
+                    <ParceiroESG />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/parceiro/codigo-etica"
+                element={
+                  <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
+                    <ParceiroCodigoEtica />
                   </ProtectedRoute>
                 }
               />

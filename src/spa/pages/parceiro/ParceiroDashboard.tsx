@@ -1,54 +1,54 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { ClienteLayout } from '@/components/layout/ClienteLayout';
+import { ParceiroLayout } from '@/components/layout/ParceiroLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import {
   Handshake,
-  ClipboardCheck,
-  GraduationCap,
-  ScrollText,
-  FileText,
-  FolderOpen,
+  ShieldCheck,
+  FileCheck,
+  CalendarCheck,
+  Leaf,
+  Sparkles,
   ArrowRight,
 } from 'lucide-react';
 
 const acessos = [
   {
-    title: 'Diagnóstico de Maturidade',
-    description: 'Responda o questionário de governança da organização.',
-    icon: ClipboardCheck,
-    href: '/meu-projeto/diagnostico',
-    color: 'text-blue-600',
+    title: 'Compliance',
+    description: 'Gestão integrada do programa de compliance com KPIs, riscos, políticas e mais.',
+    icon: ShieldCheck,
+    href: '/parceiro/compliance',
+    color: 'text-primary',
   },
   {
-    title: 'Treinamentos',
-    description: 'Acesse os módulos de compliance e integridade.',
-    icon: GraduationCap,
-    href: '/meu-projeto/treinamentos',
+    title: 'Adesão Ética',
+    description: 'Acompanhe as adesões ao Código de Ética por organização e colaborador.',
+    icon: FileCheck,
+    href: '/parceiro/adesao-etica',
     color: 'text-green-600',
   },
   {
+    title: 'Calendário Regulatório',
+    description: 'Agenda de obrigações legais e regulatórias com alertas de vencimento.',
+    icon: CalendarCheck,
+    href: '/parceiro/compliance-calendar',
+    color: 'text-blue-600',
+  },
+  {
+    title: 'ESG',
+    description: 'Indicadores Ambientais, Sociais e de Governança das organizações.',
+    icon: Leaf,
+    href: '/parceiro/esg',
+    color: 'text-emerald-600',
+  },
+  {
     title: 'Código de Ética',
-    description: 'Visualize e assine o Código de Ética da organização.',
-    icon: ScrollText,
-    href: '/meu-projeto/codigo-etica',
+    description: 'Geração de códigos de ética personalizados usando inteligência artificial.',
+    icon: Sparkles,
+    href: '/parceiro/codigo-etica',
     color: 'text-amber-600',
-  },
-  {
-    title: 'Documentos Necessários',
-    description: 'Checklist de documentos requeridos pelo programa.',
-    icon: FileText,
-    href: '/meu-projeto/documentos-necessarios',
-    color: 'text-purple-600',
-  },
-  {
-    title: 'Repositório de Documentos',
-    description: 'Envie e visualize documentos da organização.',
-    icon: FolderOpen,
-    href: '/meu-projeto/documentos',
-    color: 'text-indigo-600',
   },
 ];
 
@@ -56,8 +56,8 @@ export default function ParceiroDashboard() {
   const { profile } = useAuth();
 
   return (
-    <ClienteLayout>
-      <div className="p-6 space-y-6">
+    <ParceiroLayout>
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-start gap-4">
           <div className="p-3 rounded-xl bg-primary/10">
@@ -68,7 +68,7 @@ export default function ParceiroDashboard() {
               <h1 className="text-2xl font-bold text-foreground">
                 Bem-vindo, {profile?.nome || 'Parceiro'}
               </h1>
-              <Badge variant="outline" className="border-primary text-primary">
+              <Badge variant="outline" className="border-emerald-600 text-emerald-700">
                 Parceiro
               </Badge>
             </div>
@@ -111,12 +111,12 @@ export default function ParceiroDashboard() {
         <Card className="bg-primary/5 border-primary/20">
           <CardContent className="pt-5">
             <p className="text-sm text-muted-foreground">
-              Como <strong>parceiro</strong>, você tem acesso às funcionalidades de compliance e governança.
+              Como <strong>parceiro</strong>, você tem acesso às funcionalidades de compliance, ESG e governança.
               Para dúvidas ou solicitações adicionais, entre em contato com o consultor responsável pela sua organização.
             </p>
           </CardContent>
         </Card>
       </div>
-    </ClienteLayout>
+    </ParceiroLayout>
   );
 }
