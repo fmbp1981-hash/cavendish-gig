@@ -5,6 +5,7 @@ import {
   useKPIsDenuncias,
   useInvestigacaoPorDenuncia,
   useAbrirInvestigacao,
+  useTriagemIA,
   Investigacao,
 } from "@/hooks/useInvestigacoes";
 import { InvestigacaoDrawer } from "@/components/denuncias/InvestigacaoDrawer";
@@ -16,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertTriangle, Eye, Clock, CheckCircle2, XCircle,
-  Loader2, Search, FileText, Timer,
+  Loader2, Search, FileText, Timer, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -53,8 +54,16 @@ function DenunciaRow({
   onAbrirInvestigacao: () => void;
 }) {
   const { data: inv } = useInvestigacaoPorDenuncia(denuncia.id);
+  const triagemIA = useTriagemIA();
   const config = statusConfig[denuncia.status] ?? statusConfig.nova;
   const StatusIcon = config.icon;
+
+  const semTriagem = inv && !inv.categoria_triagem;
+
+  const handleTriagemIA = () => {
+    if (!inv) return;
+    triagemIA.mutate({ investigacaoId: inv.id, descricao: denuncia.descricao });
+  };
 
   return (
     <div className="border rounded-lg p-4 hover:bg-muted/40 transition-colors">
@@ -84,13 +93,18 @@ function DenunciaRow({
                 Investigação: {inv.status}
               </Badge>
             )}
+            {inv?.categoria_triagem && (
+              <Badge variant="outline" className="text-xs text-blue-700 border-blue-400">
+                IA: {inv.categoria_triagem}
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-muted-foreground line-clamp-2">{denuncia.descricao}</p>
           <p className="text-xs text-muted-foreground mt-1">
             {format(new Date(denuncia.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
           <Button variant="outline" size="sm" onClick={onVerDetalhes}>
             <Eye className="h-4 w-4 mr-1" />Ver
           </Button>
@@ -101,6 +115,20 @@ function DenunciaRow({
           ) : (
             <Button variant="outline" size="sm" onClick={onAbrirInvestigacao}>
               <FileText className="h-4 w-4 mr-1" />Abrir Inv.
+            </Button>
+          )}
+          {semTriagem && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-amber-700 border-amber-400 hover:bg-amber-50"
+              onClick={handleTriagemIA}
+              disabled={triagemIA.isPending}
+            >
+              {triagemIA.isPending
+                ? <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                : <Zap className="h-3 w-3 mr-1" />}
+              Triagem IA
             </Button>
           )}
         </div>
