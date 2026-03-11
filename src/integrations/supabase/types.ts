@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       ai_generations: {
@@ -171,6 +146,100 @@ export type Database = {
           },
         ]
       }
+      auditorias_internas: {
+        Row: {
+          auditor: string
+          created_at: string | null
+          data_fim: string | null
+          data_inicio: string
+          escopo: string | null
+          id: string
+          organization_id: string
+          resultado: string | null
+          status: string
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          auditor: string
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio: string
+          escopo?: string | null
+          id?: string
+          organization_id: string
+          resultado?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          auditor?: string
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          escopo?: string | null
+          id?: string
+          organization_id?: string
+          resultado?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auditorias_internas_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      board_snapshots: {
+        Row: {
+          conteudo: Json
+          created_at: string | null
+          expira_em: string | null
+          gerado_por: string | null
+          id: string
+          link_publico_token: string | null
+          organizacao_id: string
+          periodo_referencia: string
+          titulo: string
+        }
+        Insert: {
+          conteudo?: Json
+          created_at?: string | null
+          expira_em?: string | null
+          gerado_por?: string | null
+          id?: string
+          link_publico_token?: string | null
+          organizacao_id: string
+          periodo_referencia: string
+          titulo: string
+        }
+        Update: {
+          conteudo?: Json
+          created_at?: string | null
+          expira_em?: string | null
+          gerado_por?: string | null
+          id?: string
+          link_publico_token?: string | null
+          organizacao_id?: string
+          periodo_referencia?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_snapshots_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       codigo_etica_adesoes: {
         Row: {
           aceito_em: string
@@ -264,6 +333,121 @@ export type Database = {
           },
         ]
       }
+      compliance_obrigacoes: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          dia_vencimento: number | null
+          google_event_id: string | null
+          id: string
+          lei_referencia: string | null
+          mes_vencimento: number | null
+          organizacao_id: string | null
+          orgao_regulador: string | null
+          periodicidade: string
+          proxima_data: string
+          responsavel_id: string | null
+          status: string
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          dia_vencimento?: number | null
+          google_event_id?: string | null
+          id?: string
+          lei_referencia?: string | null
+          mes_vencimento?: number | null
+          organizacao_id?: string | null
+          orgao_regulador?: string | null
+          periodicidade: string
+          proxima_data: string
+          responsavel_id?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          dia_vencimento?: number | null
+          google_event_id?: string | null
+          id?: string
+          lei_referencia?: string | null
+          mes_vencimento?: number | null
+          organizacao_id?: string | null
+          orgao_regulador?: string | null
+          periodicidade?: string
+          proxima_data?: string
+          responsavel_id?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_obrigacoes_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conflito_interesses: {
+        Row: {
+          analisado_em: string | null
+          analisado_por: string | null
+          ano_referencia: number
+          created_at: string | null
+          declarante_id: string
+          descricao: string | null
+          id: string
+          observacao_analise: string | null
+          organization_id: string
+          status: string
+          tem_conflito: boolean
+          updated_at: string | null
+        }
+        Insert: {
+          analisado_em?: string | null
+          analisado_por?: string | null
+          ano_referencia: number
+          created_at?: string | null
+          declarante_id: string
+          descricao?: string | null
+          id?: string
+          observacao_analise?: string | null
+          organization_id: string
+          status?: string
+          tem_conflito?: boolean
+          updated_at?: string | null
+        }
+        Update: {
+          analisado_em?: string | null
+          analisado_por?: string | null
+          ano_referencia?: number
+          created_at?: string | null
+          declarante_id?: string
+          descricao?: string | null
+          id?: string
+          observacao_analise?: string | null
+          organization_id?: string
+          status?: string
+          tem_conflito?: boolean
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conflito_interesses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consultant_pre_registrations: {
         Row: {
           created_at: string
@@ -335,11 +519,13 @@ export type Database = {
           analisado_em: string | null
           analisado_por: string | null
           categoria: string
+          categoria_triagem: string | null
           created_at: string
           data_ocorrido: string | null
           descricao: string
           envolvidos: string | null
           id: string
+          nivel_risco: string | null
           observacoes_internas: string | null
           organizacao_id: string | null
           status: string
@@ -350,11 +536,13 @@ export type Database = {
           analisado_em?: string | null
           analisado_por?: string | null
           categoria: string
+          categoria_triagem?: string | null
           created_at?: string
           data_ocorrido?: string | null
           descricao: string
           envolvidos?: string | null
           id?: string
+          nivel_risco?: string | null
           observacoes_internas?: string | null
           organizacao_id?: string | null
           status?: string
@@ -365,11 +553,13 @@ export type Database = {
           analisado_em?: string | null
           analisado_por?: string | null
           categoria?: string
+          categoria_triagem?: string | null
           created_at?: string
           data_ocorrido?: string | null
           descricao?: string
           envolvidos?: string | null
           id?: string
+          nivel_risco?: string | null
           observacoes_internas?: string | null
           organizacao_id?: string | null
           status?: string
@@ -385,6 +575,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      diagnostico_benchmarks: {
+        Row: {
+          atualizado_em: string | null
+          id: string
+          n_empresas: number | null
+          percentil_25: number | null
+          percentil_75: number | null
+          pilar: string
+          score_medio: number
+          setor: string
+        }
+        Insert: {
+          atualizado_em?: string | null
+          id?: string
+          n_empresas?: number | null
+          percentil_25?: number | null
+          percentil_75?: number | null
+          pilar: string
+          score_medio: number
+          setor: string
+        }
+        Update: {
+          atualizado_em?: string | null
+          id?: string
+          n_empresas?: number | null
+          percentil_25?: number | null
+          percentil_75?: number | null
+          pilar?: string
+          score_medio?: number
+          setor?: string
+        }
+        Relationships: []
       }
       diagnostico_perguntas: {
         Row: {
@@ -966,6 +1189,282 @@ export type Database = {
           },
         ]
       }
+      due_diligence: {
+        Row: {
+          analista_id: string | null
+          checklist_items: Json | null
+          created_at: string | null
+          data_analise: string | null
+          documentos_url: string[] | null
+          fornecedor_cnpj: string | null
+          fornecedor_id: string | null
+          fornecedor_nome: string
+          id: string
+          observacoes: string | null
+          organization_id: string
+          respostas: Json | null
+          score_calculado: number | null
+          score_risco: number | null
+          status: string
+          tipo: string
+          updated_at: string | null
+          validade: string | null
+        }
+        Insert: {
+          analista_id?: string | null
+          checklist_items?: Json | null
+          created_at?: string | null
+          data_analise?: string | null
+          documentos_url?: string[] | null
+          fornecedor_cnpj?: string | null
+          fornecedor_id?: string | null
+          fornecedor_nome: string
+          id?: string
+          observacoes?: string | null
+          organization_id: string
+          respostas?: Json | null
+          score_calculado?: number | null
+          score_risco?: number | null
+          status?: string
+          tipo: string
+          updated_at?: string | null
+          validade?: string | null
+        }
+        Update: {
+          analista_id?: string | null
+          checklist_items?: Json | null
+          created_at?: string | null
+          data_analise?: string | null
+          documentos_url?: string[] | null
+          fornecedor_cnpj?: string | null
+          fornecedor_id?: string | null
+          fornecedor_nome?: string
+          id?: string
+          observacoes?: string | null
+          organization_id?: string
+          respostas?: Json | null
+          score_calculado?: number | null
+          score_risco?: number | null
+          status?: string
+          tipo?: string
+          updated_at?: string | null
+          validade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "due_diligence_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "due_diligence_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      due_diligence_perguntas: {
+        Row: {
+          ativo: boolean | null
+          categoria: string
+          created_at: string | null
+          id: string
+          pergunta: string
+          peso: number
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria: string
+          created_at?: string | null
+          id?: string
+          pergunta: string
+          peso?: number
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string
+          created_at?: string | null
+          id?: string
+          pergunta?: string
+          peso?: number
+        }
+        Relationships: []
+      }
+      esg_indicadores: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          fonte: string | null
+          id: string
+          meta: number | null
+          nome: string
+          organizacao_id: string
+          periodo_referencia: string | null
+          pilar: string
+          unidade: string
+          updated_at: string | null
+          valor_atual: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          fonte?: string | null
+          id?: string
+          meta?: number | null
+          nome: string
+          organizacao_id: string
+          periodo_referencia?: string | null
+          pilar: string
+          unidade?: string
+          updated_at?: string | null
+          valor_atual?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          fonte?: string | null
+          id?: string
+          meta?: number | null
+          nome?: string
+          organizacao_id?: string
+          periodo_referencia?: string | null
+          pilar?: string
+          unidade?: string
+          updated_at?: string | null
+          valor_atual?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esg_indicadores_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fornecedores: {
+        Row: {
+          categoria: string | null
+          cnpj: string | null
+          contato_email: string | null
+          contato_nome: string | null
+          created_at: string | null
+          id: string
+          nivel_criticidade: string
+          nome: string
+          organizacao_id: string
+          proxima_avaliacao: string | null
+          score_risco_atual: number | null
+          status: string
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          categoria?: string | null
+          cnpj?: string | null
+          contato_email?: string | null
+          contato_nome?: string | null
+          created_at?: string | null
+          id?: string
+          nivel_criticidade?: string
+          nome: string
+          organizacao_id: string
+          proxima_avaliacao?: string | null
+          score_risco_atual?: number | null
+          status?: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          categoria?: string | null
+          cnpj?: string | null
+          contato_email?: string | null
+          contato_nome?: string | null
+          created_at?: string | null
+          id?: string
+          nivel_criticidade?: string
+          nome?: string
+          organizacao_id?: string
+          proxima_avaliacao?: string | null
+          score_risco_atual?: number | null
+          status?: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fornecedores_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incidentes: {
+        Row: {
+          created_at: string | null
+          data_ocorrencia: string
+          descricao: string
+          id: string
+          licoes_aprendidas: string | null
+          notificacao_anpd: boolean | null
+          organization_id: string
+          plano_corretivo: string | null
+          responsavel_id: string | null
+          severidade: string
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_ocorrencia: string
+          descricao: string
+          id?: string
+          licoes_aprendidas?: string | null
+          notificacao_anpd?: boolean | null
+          organization_id: string
+          plano_corretivo?: string | null
+          responsavel_id?: string | null
+          severidade?: string
+          status?: string
+          tipo: string
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_ocorrencia?: string
+          descricao?: string
+          id?: string
+          licoes_aprendidas?: string | null
+          notificacao_anpd?: boolean | null
+          organization_id?: string
+          plano_corretivo?: string | null
+          responsavel_id?: string | null
+          severidade?: string
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incidentes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_sync: {
         Row: {
           created_at: string
@@ -1066,6 +1565,180 @@ export type Database = {
           },
         ]
       }
+      investigacoes: {
+        Row: {
+          categoria_triagem: string | null
+          conclusao: string | null
+          created_at: string | null
+          denuncia_id: string
+          id: string
+          nivel_risco: string | null
+          organizacao_id: string | null
+          prazo_resposta: string | null
+          responsavel_id: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          categoria_triagem?: string | null
+          conclusao?: string | null
+          created_at?: string | null
+          denuncia_id: string
+          id?: string
+          nivel_risco?: string | null
+          organizacao_id?: string | null
+          prazo_resposta?: string | null
+          responsavel_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          categoria_triagem?: string | null
+          conclusao?: string | null
+          created_at?: string | null
+          denuncia_id?: string
+          id?: string
+          nivel_risco?: string | null
+          organizacao_id?: string | null
+          prazo_resposta?: string | null
+          responsavel_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investigacoes_denuncia_id_fkey"
+            columns: ["denuncia_id"]
+            isOneToOne: true
+            referencedRelation: "denuncias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investigacoes_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      investigacoes_evidencias: {
+        Row: {
+          adicionado_por: string | null
+          arquivo_url: string | null
+          created_at: string | null
+          descricao: string
+          id: string
+          investigacao_id: string
+        }
+        Insert: {
+          adicionado_por?: string | null
+          arquivo_url?: string | null
+          created_at?: string | null
+          descricao: string
+          id?: string
+          investigacao_id: string
+        }
+        Update: {
+          adicionado_por?: string | null
+          arquivo_url?: string | null
+          created_at?: string | null
+          descricao?: string
+          id?: string
+          investigacao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investigacoes_evidencias_investigacao_id_fkey"
+            columns: ["investigacao_id"]
+            isOneToOne: false
+            referencedRelation: "investigacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      investigacoes_notas: {
+        Row: {
+          created_at: string | null
+          criado_por: string | null
+          id: string
+          investigacao_id: string
+          nota: string
+        }
+        Insert: {
+          created_at?: string | null
+          criado_por?: string | null
+          id?: string
+          investigacao_id: string
+          nota: string
+        }
+        Update: {
+          created_at?: string | null
+          criado_por?: string | null
+          id?: string
+          investigacao_id?: string
+          nota?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investigacoes_notas_investigacao_id_fkey"
+            columns: ["investigacao_id"]
+            isOneToOne: false
+            referencedRelation: "investigacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpis_compliance: {
+        Row: {
+          categoria: string
+          created_at: string | null
+          id: string
+          meta: number
+          nome: string
+          organization_id: string
+          periodicidade: string
+          responsavel_id: string | null
+          ultima_atualizacao: string | null
+          unidade: string
+          valor_atual: number | null
+        }
+        Insert: {
+          categoria: string
+          created_at?: string | null
+          id?: string
+          meta: number
+          nome: string
+          organization_id: string
+          periodicidade?: string
+          responsavel_id?: string | null
+          ultima_atualizacao?: string | null
+          unidade?: string
+          valor_atual?: number | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string | null
+          id?: string
+          meta?: number
+          nome?: string
+          organization_id?: string
+          periodicidade?: string
+          responsavel_id?: string | null
+          ultima_atualizacao?: string | null
+          unidade?: string
+          valor_atual?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpis_compliance_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           company: string | null
@@ -1101,6 +1774,156 @@ export type Database = {
           tenant_id?: string | null
         }
         Relationships: []
+      }
+      lgpd_inventario: {
+        Row: {
+          base_legal: string
+          created_at: string | null
+          dados_coletados: string[] | null
+          finalidade: string
+          id: string
+          medidas_seguranca: string | null
+          operador: string | null
+          organization_id: string
+          processo: string
+          retencao_meses: number | null
+          titulares: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_legal: string
+          created_at?: string | null
+          dados_coletados?: string[] | null
+          finalidade: string
+          id?: string
+          medidas_seguranca?: string | null
+          operador?: string | null
+          organization_id: string
+          processo: string
+          retencao_meses?: number | null
+          titulares?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_legal?: string
+          created_at?: string | null
+          dados_coletados?: string[] | null
+          finalidade?: string
+          id?: string
+          medidas_seguranca?: string | null
+          operador?: string | null
+          organization_id?: string
+          processo?: string
+          retencao_meses?: number | null
+          titulares?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lgpd_inventario_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lgpd_solicitacoes: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          id: string
+          organization_id: string
+          prazo_resposta: string | null
+          respondido_em: string | null
+          respondido_por: string | null
+          resposta: string | null
+          solicitante_email: string
+          solicitante_nome: string
+          status: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          organization_id: string
+          prazo_resposta?: string | null
+          respondido_em?: string | null
+          respondido_por?: string | null
+          resposta?: string | null
+          solicitante_email: string
+          solicitante_nome: string
+          status?: string
+          tipo: string
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          organization_id?: string
+          prazo_resposta?: string | null
+          respondido_em?: string | null
+          respondido_por?: string | null
+          resposta?: string | null
+          solicitante_email?: string
+          solicitante_nome?: string
+          status?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lgpd_solicitacoes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nao_conformidades: {
+        Row: {
+          acao_corretiva: string | null
+          auditoria_id: string
+          created_at: string | null
+          descricao: string
+          gravidade: string
+          id: string
+          prazo: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          acao_corretiva?: string | null
+          auditoria_id: string
+          created_at?: string | null
+          descricao: string
+          gravidade?: string
+          id?: string
+          prazo?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          acao_corretiva?: string | null
+          auditoria_id?: string
+          created_at?: string | null
+          descricao?: string
+          gravidade?: string
+          id?: string
+          prazo?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nao_conformidades_auditoria_id_fkey"
+            columns: ["auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "auditorias_internas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notificacoes: {
         Row: {
@@ -1146,6 +1969,7 @@ export type Database = {
           plano: Database["public"]["Enums"]["plano_tipo"]
           plano_fim: string | null
           plano_inicio: string | null
+          setor: string | null
           tenant_id: string
           updated_at: string
         }
@@ -1159,6 +1983,7 @@ export type Database = {
           plano?: Database["public"]["Enums"]["plano_tipo"]
           plano_fim?: string | null
           plano_inicio?: string | null
+          setor?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -1172,6 +1997,7 @@ export type Database = {
           plano?: Database["public"]["Enums"]["plano_tipo"]
           plano_fim?: string | null
           plano_inicio?: string | null
+          setor?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -1298,6 +2124,100 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      politicas: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          categoria: string
+          conteudo: string | null
+          created_at: string | null
+          created_by: string
+          data_vigencia_fim: string | null
+          data_vigencia_inicio: string | null
+          documento_url: string | null
+          id: string
+          organization_id: string
+          status: string
+          titulo: string
+          updated_at: string | null
+          versao: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          categoria: string
+          conteudo?: string | null
+          created_at?: string | null
+          created_by: string
+          data_vigencia_fim?: string | null
+          data_vigencia_inicio?: string | null
+          documento_url?: string | null
+          id?: string
+          organization_id: string
+          status?: string
+          titulo: string
+          updated_at?: string | null
+          versao?: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          categoria?: string
+          conteudo?: string | null
+          created_at?: string | null
+          created_by?: string
+          data_vigencia_fim?: string | null
+          data_vigencia_inicio?: string | null
+          documento_url?: string | null
+          id?: string
+          organization_id?: string
+          status?: string
+          titulo?: string
+          updated_at?: string | null
+          versao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "politicas_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      politicas_aceites: {
+        Row: {
+          aceito_em: string | null
+          id: string
+          ip_address: string | null
+          politica_id: string
+          user_id: string
+        }
+        Insert: {
+          aceito_em?: string | null
+          id?: string
+          ip_address?: string | null
+          politica_id: string
+          user_id: string
+        }
+        Update: {
+          aceito_em?: string | null
+          id?: string
+          ip_address?: string | null
+          politica_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "politicas_aceites_politica_id_fkey"
+            columns: ["politica_id"]
+            isOneToOne: false
+            referencedRelation: "politicas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1478,6 +2398,207 @@ export type Database = {
             columns: ["projeto_id"]
             isOneToOne: false
             referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      relatorios_regulatorios: {
+        Row: {
+          created_at: string | null
+          documento_url: string | null
+          entregue_em: string | null
+          id: string
+          organization_id: string
+          periodo_referencia: string
+          prazo_entrega: string | null
+          protocolo: string | null
+          status: string
+          tipo: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          documento_url?: string | null
+          entregue_em?: string | null
+          id?: string
+          organization_id: string
+          periodo_referencia: string
+          prazo_entrega?: string | null
+          protocolo?: string | null
+          status?: string
+          tipo: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          documento_url?: string | null
+          entregue_em?: string | null
+          id?: string
+          organization_id?: string
+          periodo_referencia?: string
+          prazo_entrega?: string | null
+          protocolo?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relatorios_regulatorios_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      riscos: {
+        Row: {
+          categoria: string
+          created_at: string | null
+          id: string
+          impacto: number | null
+          nivel_risco: number | null
+          organizacao_id: string | null
+          organization_id: string
+          plano_acao: string | null
+          prazo: string | null
+          probabilidade: number | null
+          responsavel_id: string | null
+          status: string
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          categoria: string
+          created_at?: string | null
+          id?: string
+          impacto?: number | null
+          nivel_risco?: number | null
+          organizacao_id?: string | null
+          organization_id: string
+          plano_acao?: string | null
+          prazo?: string | null
+          probabilidade?: number | null
+          responsavel_id?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string | null
+          id?: string
+          impacto?: number | null
+          nivel_risco?: number | null
+          organizacao_id?: string | null
+          organization_id?: string
+          plano_acao?: string | null
+          prazo?: string | null
+          probabilidade?: number | null
+          responsavel_id?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "riscos_organizacao_id_fkey"
+            columns: ["organizacao_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "riscos_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      riscos_avaliacoes: {
+        Row: {
+          avaliado_por: string | null
+          created_at: string | null
+          id: string
+          impacto_anterior: number | null
+          impacto_nova: number
+          justificativa: string | null
+          probabilidade_anterior: number | null
+          probabilidade_nova: number
+          risco_id: string
+        }
+        Insert: {
+          avaliado_por?: string | null
+          created_at?: string | null
+          id?: string
+          impacto_anterior?: number | null
+          impacto_nova: number
+          justificativa?: string | null
+          probabilidade_anterior?: number | null
+          probabilidade_nova: number
+          risco_id: string
+        }
+        Update: {
+          avaliado_por?: string | null
+          created_at?: string | null
+          id?: string
+          impacto_anterior?: number | null
+          impacto_nova?: number
+          justificativa?: string | null
+          probabilidade_anterior?: number | null
+          probabilidade_nova?: number
+          risco_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "riscos_avaliacoes_risco_id_fkey"
+            columns: ["risco_id"]
+            isOneToOne: false
+            referencedRelation: "riscos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      riscos_mitigacao: {
+        Row: {
+          created_at: string | null
+          descricao: string
+          id: string
+          prazo: string | null
+          responsavel_id: string | null
+          risco_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          descricao: string
+          id?: string
+          prazo?: string | null
+          responsavel_id?: string | null
+          risco_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string
+          id?: string
+          prazo?: string | null
+          responsavel_id?: string | null
+          risco_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "riscos_mitigacao_risco_id_fkey"
+            columns: ["risco_id"]
+            isOneToOne: false
+            referencedRelation: "riscos"
             referencedColumns: ["id"]
           },
         ]
@@ -2321,6 +3442,7 @@ export type Database = {
           organizacao_nome: string
         }[]
       }
+      trigger_monthly_reports: { Args: never; Returns: undefined }
       validate_template: { Args: { p_template_id: string }; Returns: Json }
     }
     Enums: {
@@ -2470,9 +3592,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       app_role: ["admin", "consultor", "cliente", "parceiro"],

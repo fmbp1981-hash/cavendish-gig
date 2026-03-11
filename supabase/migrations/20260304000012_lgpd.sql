@@ -1,7 +1,7 @@
 -- Módulo LGPD: inventário de tratamento + solicitações de titulares (DSARs)
 CREATE TABLE public.lgpd_inventario (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES public.organizacoes(id) ON DELETE CASCADE,
   processo TEXT NOT NULL,
   finalidade TEXT NOT NULL,
   base_legal TEXT NOT NULL CHECK (base_legal IN ('consentimento','contrato','obrigacao_legal','interesse_legitimo','outro')),
@@ -16,7 +16,7 @@ CREATE TABLE public.lgpd_inventario (
 
 CREATE TABLE public.lgpd_solicitacoes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES public.organizacoes(id) ON DELETE CASCADE,
   tipo TEXT NOT NULL CHECK (tipo IN ('acesso','correcao','exclusao','portabilidade','revogacao_consentimento')),
   solicitante_nome TEXT NOT NULL,
   solicitante_email TEXT NOT NULL,
@@ -37,28 +37,28 @@ ALTER TABLE public.lgpd_inventario ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lgpd_solicitacoes ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "lgpd_inventario_select" ON public.lgpd_inventario FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "lgpd_inventario_insert" ON public.lgpd_inventario FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "lgpd_inventario_update" ON public.lgpd_inventario FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "lgpd_inventario_delete" ON public.lgpd_inventario FOR DELETE USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 CREATE POLICY "lgpd_solicitacoes_select" ON public.lgpd_solicitacoes FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "lgpd_solicitacoes_insert" ON public.lgpd_solicitacoes FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "lgpd_solicitacoes_update" ON public.lgpd_solicitacoes FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 CREATE TRIGGER set_lgpd_inventario_updated_at
   BEFORE UPDATE ON public.lgpd_inventario
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();

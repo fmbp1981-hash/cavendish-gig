@@ -676,7 +676,6 @@ export default function AdminIntegracoes() {
   };
 
   const isProviderConfigured = (providerId: string) => {
-    if (providerId === "lovable-ai") return true;
     if (!vaultIntegrations) return false;
     const row = vaultIntegrations.find((r) => r.provider === providerId);
     return !!row?.configured;
@@ -688,7 +687,6 @@ export default function AdminIntegracoes() {
   };
 
   const isProviderEnabled = (providerId: string) => {
-    if (providerId === "lovable-ai") return true;
     const row = getProviderRow(providerId);
     return !!row?.enabled;
   };

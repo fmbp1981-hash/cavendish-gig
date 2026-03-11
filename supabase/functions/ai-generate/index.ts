@@ -70,17 +70,17 @@ async function getAIConfig(supabaseService: any): Promise<AIProviderConfig> {
     }
   }
 
-  // Default: Use Lovable AI Gateway
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) {
+  // Fallback: OPENAI_API_KEY da env (compatível com OpenAI-compatible APIs)
+  const fallbackKey = Deno.env.get("OPENAI_API_KEY");
+  if (!fallbackKey) {
     throw new Error("Nenhum provedor de IA configurado. Configure em Admin → Integrações.");
   }
 
   return {
-    provider: "lovable",
-    apiKey: LOVABLE_API_KEY,
-    model: "google/gemini-2.5-flash",
-    baseUrl: "https://ai.gateway.lovable.dev/v1"
+    provider: "openai",
+    apiKey: fallbackKey,
+    model: "gpt-4o-mini",
+    baseUrl: "https://api.openai.com/v1"
   };
 }
 

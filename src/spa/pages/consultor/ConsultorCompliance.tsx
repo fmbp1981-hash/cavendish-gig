@@ -16,7 +16,6 @@ import {
   Shield,
   Search,
   FileText,
-  Construction,
   ExternalLink,
   CheckCircle2,
   Clock,
@@ -24,6 +23,13 @@ import {
   BookMarked,
   AlertCircle,
 } from "lucide-react";
+// Módulos Fase 1
+import { RiscosTab } from "@/components/riscos/RiscosTab";
+import { PoliticasTab } from "@/components/politicas/PoliticasTab";
+import { ConflitosTab } from "@/components/conflitos/ConflitosTab";
+import { LGPDTab } from "@/components/lgpd/LGPDTab";
+// Módulo Fase 2
+import { DueDiligenceTab } from "@/components/fornecedores/DueDiligenceTab";
 import {
   BarChart,
   Bar,
@@ -61,15 +67,15 @@ const tabs = [
   { id: "ceis",           label: "Consulta CEIS",        icon: ExternalLink,  title: "Consulta CEIS",                description: "Consulta ao Cadastro de Empresas Inidôneas e Suspensas — impedimentos legais para contratar com o poder público." },
 ];
 
-const TABS_WITH_CONTENT = new Set(["kpis", "ceis"]);
+const TABS_WITH_CONTENT = new Set(["kpis", "ceis", "riscos", "politicas", "conflitos", "lgpd", "due-diligence"]);
 
-// ─── Placeholder ──────────────────────────────────────────────────────────────
+// ─── Placeholder (apenas para abas ainda não implementadas) ──────────────────
 
 function PlaceholderTab({ title, description }: { title: string; description: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
       <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center">
-        <Construction className="h-8 w-8 text-muted-foreground" />
+        <TrendingUp className="h-8 w-8 text-muted-foreground" />
       </div>
       <div>
         <h3 className="text-lg font-semibold">{title}</h3>
@@ -493,6 +499,16 @@ export default function ConsultorCompliance() {
                 <KPIsTab />
               ) : tab.id === "ceis" ? (
                 <CEISTab />
+              ) : tab.id === "riscos" ? (
+                <RiscosTab />
+              ) : tab.id === "politicas" ? (
+                <PoliticasTab />
+              ) : tab.id === "conflitos" ? (
+                <ConflitosTab />
+              ) : tab.id === "lgpd" ? (
+                <LGPDTab />
+              ) : tab.id === "due-diligence" ? (
+                <DueDiligenceTab />
               ) : (
                 <PlaceholderTab title={tab.title} description={tab.description} />
               )}

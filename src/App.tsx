@@ -36,6 +36,9 @@ import ConsultorAdesaoEtica from "./spa/pages/consultor/ConsultorAdesaoEtica";
 import ConsultorRelatorios from "./spa/pages/consultor/ConsultorRelatorios";
 import ConsultorConfiguracoes from "./spa/pages/consultor/ConsultorConfiguracoes";
 import ConsultorCompliance from "./spa/pages/consultor/ConsultorCompliance";
+import ComplianceCalendar from "./spa/pages/consultor/ComplianceCalendar";
+import ESGDashboard from "./spa/pages/consultor/ESGDashboard";
+import BoardDashboard from "./spa/pages/consultor/BoardDashboard";
 
 // Cliente Pages
 import RepositorioDocumentos from "./spa/pages/cliente/RepositorioDocumentos";
@@ -52,6 +55,7 @@ import AdminOrganizacoes from "./spa/pages/admin/AdminOrganizacoes";
 import AdminCatalogo from "./spa/pages/admin/AdminCatalogo";
 import AdminConfiguracoes from "./spa/pages/admin/AdminConfiguracoes";
 import AdminIntegracoes from "./spa/pages/admin/AdminIntegracoes";
+import AdminAuditTrail from "./spa/pages/admin/AdminAuditTrail";
 import AdminConsultores from "./spa/pages/admin/AdminConsultores";
 import AdminTemplates from "./spa/pages/admin/Templates";
 import AdminHistoricoRelatorios from "./spa/pages/admin/HistoricoRelatorios";
@@ -60,6 +64,7 @@ import AdminLogs from "./spa/pages/admin/AdminLogs";
 import AdminDocumentos from "./spa/pages/admin/AdminDocumentos";
 import Help from "./spa/pages/Help";
 import { installGlobalErrorHandlers } from "./utils/errorLogger";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Instala captura global de erros não tratados (uma única vez no carregamento)
 installGlobalErrorHandlers();
@@ -213,7 +218,31 @@ const App = () => (
                 path="/consultor/compliance"
                 element={
                   <ProtectedRoute requiredRoles={["admin", "consultor"]}>
-                    <ConsultorCompliance />
+                    <ErrorBoundary><ConsultorCompliance /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/compliance-calendar"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ErrorBoundary><ComplianceCalendar /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/esg"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ErrorBoundary><ESGDashboard /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consultor/board"
+                element={
+                  <ProtectedRoute requiredRoles={["admin", "consultor"]}>
+                    <ErrorBoundary><BoardDashboard /></ErrorBoundary>
                   </ProtectedRoute>
                 }
               />
@@ -304,6 +333,14 @@ const App = () => (
                 }
               />
 
+              <Route
+                path="/admin/audit-trail"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <ErrorBoundary><AdminAuditTrail /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/admin/branding"
                 element={

@@ -1,7 +1,7 @@
 -- Gestão de Incidentes
 CREATE TABLE public.incidentes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES public.organizacoes(id) ON DELETE CASCADE,
   titulo TEXT NOT NULL,
   descricao TEXT NOT NULL,
   tipo TEXT NOT NULL CHECK (tipo IN ('vazamento_dados','fraude','corrupcao','assedio','outro')),
@@ -23,18 +23,18 @@ CREATE INDEX idx_incidentes_severidade ON public.incidentes(severidade);
 ALTER TABLE public.incidentes ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "incidentes_select" ON public.incidentes FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "incidentes_insert" ON public.incidentes FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "incidentes_update" ON public.incidentes FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "incidentes_delete" ON public.incidentes FOR DELETE USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 CREATE TRIGGER set_incidentes_updated_at
   BEFORE UPDATE ON public.incidentes
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();

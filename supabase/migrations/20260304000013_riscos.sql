@@ -1,7 +1,7 @@
 -- Gestão Formal de Riscos
 CREATE TABLE public.riscos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES public.organizacoes(id) ON DELETE CASCADE,
   titulo TEXT NOT NULL,
   categoria TEXT NOT NULL CHECK (categoria IN ('legal','financeiro','reputacional','operacional','ambiental')),
   probabilidade INT CHECK (probabilidade BETWEEN 1 AND 5),
@@ -21,18 +21,18 @@ CREATE INDEX idx_riscos_status ON public.riscos(status);
 ALTER TABLE public.riscos ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "riscos_select" ON public.riscos FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "riscos_insert" ON public.riscos FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "riscos_update" ON public.riscos FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 CREATE POLICY "riscos_delete" ON public.riscos FOR DELETE USING (
-  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin','consultor'))
+  (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'consultor'::public.app_role))
 );
 
 CREATE TRIGGER set_riscos_updated_at
   BEFORE UPDATE ON public.riscos
-  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
