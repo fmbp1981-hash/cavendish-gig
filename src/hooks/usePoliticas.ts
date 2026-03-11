@@ -262,3 +262,47 @@ export function useRevogarPolitica() {
     onError: () => toast.error("Erro ao revogar política"),
   });
 }
+
+// ─── Aceites do usuário atual ──────────────────────────────────────────────────
+
+export function useMeuAceite(politicaId: string, userId: string | undefined) {
+  return useQuery({
+    queryKey: ["meu-aceite", politicaId, userId],
+    queryFn: async () => {
+      if (!politicaId || !userId) return null;
+      const { data } = await (supabase as any)
+        .from("politicas_aceites")
+        .select("*")
+        .eq("politica_id", politicaId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      return data as PoliticaAceite | null;
+    },
+    enabled: !!politicaId && !!userId,
+  });
+}
+
+export function useAssinarPolitica() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ politicaId }: { politicaId: string }) => {
+      if (!user?.id) throw new Error("Não autenticado");
+      const { data, error } = await (supabase as any)
+        .from("politicas_aceites")
+        .insert({ politica_id: politicaId, user_id: user.id })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as PoliticaAceite;
+    },
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["meu-aceite", vars.politicaId] });
+      queryClient.invalidateQueries({ queryKey: ["politica-aceites", vars.politicaId] });
+      queryClient.invalidateQueries({ queryKey: ["politica-stats"] });
+      toast.success("Política assinada digitalmente!");
+    },
+    onError: () => toast.error("Erro ao assinar política"),
+  });
+}

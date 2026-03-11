@@ -44,6 +44,8 @@ import BoardDashboard from "./spa/pages/consultor/BoardDashboard";
 import RepositorioDocumentos from "./spa/pages/cliente/RepositorioDocumentos";
 import ClienteCodigoEtica from "./spa/pages/cliente/CodigoEtica";
 import ClienteConfiguracoes from "./spa/pages/cliente/ClienteConfiguracoes";
+import ClientePoliticas from "./spa/pages/cliente/ClientePoliticas";
+import ClienteDeclaracaoConflito from "./spa/pages/cliente/ClienteDeclaracaoConflito";
 
 // Parceiro Pages
 import ParceiroDashboard from "./spa/pages/parceiro/ParceiroDashboard";
@@ -442,6 +444,24 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <ClienteConfiguracoes />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/meu-projeto/politicas"
+                element={
+                  <ProtectedRoute>
+                    <ClientePoliticas />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/meu-projeto/conflitos"
+                element={
+                  <ProtectedRoute>
+                    <ClienteDeclaracaoConflito />
                   </ProtectedRoute>
                 }
               />

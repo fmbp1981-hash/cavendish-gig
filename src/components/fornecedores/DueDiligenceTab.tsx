@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Loader2, Plus, Building2, AlertTriangle, CheckCircle2,
-  ExternalLink, ChevronRight, ClipboardList,
+  ExternalLink, ChevronRight, ClipboardList, Calendar, History,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -142,6 +142,66 @@ function FornecedorFormDialog({
   );
 }
 
+// ─── Reagendar avaliação ──────────────────────────────────────────────────────
+
+function ReagendarDialog({
+  fornecedor,
+  open,
+  onOpenChange,
+}: {
+  fornecedor: Fornecedor;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const atualizar = useAtualizarFornecedor();
+  const valorInicial = fornecedor.proxima_avaliacao
+    ? fornecedor.proxima_avaliacao.split("T")[0]
+    : "";
+  const [novaData, setNovaData] = useState(valorInicial);
+
+  const handleSalvar = async () => {
+    if (!novaData) return;
+    await atualizar.mutateAsync({ id: fornecedor.id, proxima_avaliacao: novaData });
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Reagendar Avaliação
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <p className="text-sm text-muted-foreground">
+            Defina a nova data para a próxima due diligence de{" "}
+            <span className="font-medium text-foreground">{fornecedor.nome}</span>.
+          </p>
+          <div className="space-y-1.5">
+            <Label>Nova data de avaliação</Label>
+            <Input
+              type="date"
+              value={novaData}
+              onChange={(e) => setNovaData(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSalvar} disabled={!novaData || atualizar.isPending}>
+            {atualizar.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Wizard de Due Diligence ──────────────────────────────────────────────────
 
 function DueDiligenceWizard({
@@ -156,10 +216,12 @@ function DueDiligenceWizard({
   onOpenChange: (v: boolean) => void;
 }) {
   const { data: perguntas, isLoading } = useDDPerguntas();
+  const { data: historico } = useDueDiligenceFornecedor(fornecedor.id);
   const finalizar = useFinalizarDueDiligence();
   const [respostas, setRespostas] = useState<Record<string, boolean>>({});
   const [step, setStep] = useState<"questionario" | "resultado">("questionario");
   const [scoreResultado, setScoreResultado] = useState<number | null>(null);
+  const [reagendarOpen, setReagendarOpen] = useState(false);
 
   const categorias = [...new Set((perguntas ?? []).map(p => p.categoria))];
 
@@ -200,122 +262,189 @@ function DueDiligenceWizard({
   };
 
   return (
-    <Sheet open={open} onOpenChange={v => !v && handleFechar()}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-        <SheetHeader className="mb-4">
-          <SheetTitle>Due Diligence — {fornecedor.nome}</SheetTitle>
-        </SheetHeader>
+    <>
+      <Sheet open={open} onOpenChange={v => !v && handleFechar()}>
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle>Due Diligence — {fornecedor.nome}</SheetTitle>
+          </SheetHeader>
 
-        {step === "resultado" && scoreResultado !== null ? (
-          <div className="space-y-6 py-4">
-            <div className="text-center space-y-2">
-              <div className={`text-6xl font-bold ${SCORE_COR(scoreResultado)}`}>
-                {scoreResultado}
+          {step === "resultado" && scoreResultado !== null ? (
+            <div className="space-y-6 py-4">
+              <div className="text-center space-y-2">
+                <div className={`text-6xl font-bold ${SCORE_COR(scoreResultado)}`}>
+                  {scoreResultado}
+                </div>
+                <p className="text-muted-foreground">Score de Conformidade (0–100)</p>
               </div>
-              <p className="text-muted-foreground">Score de Conformidade (0–100)</p>
-            </div>
 
-            <div className="space-y-2">
-              <Progress value={scoreResultado} className="h-4" />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Crítico</span><span>Alto</span><span>Médio</span><span>Baixo risco</span>
+              <div className="space-y-2">
+                <Progress value={scoreResultado} className="h-4" />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Crítico</span><span>Alto</span><span>Médio</span><span>Baixo risco</span>
+                </div>
               </div>
-            </div>
 
-            <div className={cn(
-              "rounded-lg p-4 text-sm",
-              scoreResultado >= 80 ? "bg-green-50 text-green-800 dark:bg-green-900/20" :
-              scoreResultado >= 60 ? "bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20" :
-              scoreResultado >= 40 ? "bg-orange-50 text-orange-800 dark:bg-orange-900/20" :
-                                     "bg-red-50 text-red-800 dark:bg-red-900/20"
-            )}>
-              <p className="font-medium mb-1">
-                {scoreResultado >= 80 ? "✅ Baixo risco" :
-                 scoreResultado >= 60 ? "⚠️ Risco médio" :
-                 scoreResultado >= 40 ? "🔶 Alto risco" :
-                                        "🔴 Risco crítico"}
+              <div className={cn(
+                "rounded-lg p-4 text-sm",
+                scoreResultado >= 80 ? "bg-green-50 text-green-800 dark:bg-green-900/20" :
+                scoreResultado >= 60 ? "bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20" :
+                scoreResultado >= 40 ? "bg-orange-50 text-orange-800 dark:bg-orange-900/20" :
+                                       "bg-red-50 text-red-800 dark:bg-red-900/20"
+              )}>
+                <p className="font-medium mb-1">
+                  {scoreResultado >= 80 ? "✅ Baixo risco" :
+                   scoreResultado >= 60 ? "⚠️ Risco médio" :
+                   scoreResultado >= 40 ? "🔶 Alto risco" :
+                                          "🔴 Risco crítico"}
+                </p>
+                <p className="text-xs">
+                  {scoreResultado >= 80
+                    ? "Fornecedor em conformidade adequada. Recomenda-se avaliação anual."
+                    : scoreResultado >= 60
+                    ? "Fornecedor apresenta pontos de atenção. Monitore os itens negativos."
+                    : scoreResultado >= 40
+                    ? "Fornecedor com lacunas relevantes. Exija plano de ação antes de contratar."
+                    : "Fornecedor de alto risco. Revise criticamente antes de aprovar."}
+                </p>
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                Score salvo. Próxima avaliação agendada para 12 meses.
               </p>
-              <p className="text-xs">
-                {scoreResultado >= 80
-                  ? "Fornecedor em conformidade adequada. Recomenda-se avaliação anual."
-                  : scoreResultado >= 60
-                  ? "Fornecedor apresenta pontos de atenção. Monitore os itens negativos."
-                  : scoreResultado >= 40
-                  ? "Fornecedor com lacunas relevantes. Exija plano de ação antes de contratar."
-                  : "Fornecedor de alto risco. Revise criticamente antes de aprovar."}
-              </p>
+
+              <Button onClick={handleFechar} className="w-full">Fechar</Button>
             </div>
-
-            <p className="text-xs text-muted-foreground text-center">
-              Score salvo. Próxima avaliação agendada para 12 meses.
-            </p>
-
-            <Button onClick={handleFechar} className="w-full">Fechar</Button>
-          </div>
-        ) : isLoading ? (
-          <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
-        ) : (
-          <div className="space-y-4">
-            {/* Progresso */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{totalRespondidas}/{totalPerguntas} respondidas</span>
-                <span>{progresso}%</span>
+          ) : isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          ) : (
+            <div className="space-y-4">
+              {/* Botão Reagendar */}
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setReagendarOpen(true)}
+                >
+                  <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                  Reagendar Avaliação
+                </Button>
               </div>
-              <Progress value={progresso} className="h-1.5" />
-            </div>
 
-            {/* Perguntas por categoria */}
-            <ScrollArea className="h-[calc(100vh-320px)]">
-              <div className="space-y-6 pr-2">
-                {categorias.map(cat => {
-                  const psCat = (perguntas ?? []).filter(p => p.categoria === cat);
-                  return (
-                    <div key={cat}>
-                      <p className="text-sm font-semibold mb-3 flex items-center gap-2">
-                        <span>{CATEGORIA_ICON[cat] ?? "📋"}</span>
-                        <span className="capitalize">{cat.replace("_", " ")}</span>
-                      </p>
-                      <div className="space-y-3">
-                        {psCat.map(p => (
-                          <label
-                            key={p.id}
-                            className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                          >
-                            <Checkbox
-                              checked={respostas[p.id] ?? false}
-                              onCheckedChange={v => handleToggle(p.id, v === true)}
-                              className="mt-0.5 shrink-0"
-                            />
-                            <div className="min-w-0">
-                              <p className="text-sm leading-snug">{p.pergunta}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">Peso: {p.peso}</p>
-                            </div>
-                          </label>
-                        ))}
+              {/* Progresso */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{totalRespondidas}/{totalPerguntas} respondidas</span>
+                  <span>{progresso}%</span>
+                </div>
+                <Progress value={progresso} className="h-1.5" />
+              </div>
+
+              {/* Perguntas por categoria */}
+              <ScrollArea className="h-[calc(100vh-440px)]">
+                <div className="space-y-6 pr-2">
+                  {categorias.map(cat => {
+                    const psCat = (perguntas ?? []).filter(p => p.categoria === cat);
+                    return (
+                      <div key={cat}>
+                        <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                          <span>{CATEGORIA_ICON[cat] ?? "📋"}</span>
+                          <span className="capitalize">{cat.replace("_", " ")}</span>
+                        </p>
+                        <div className="space-y-3">
+                          {psCat.map(p => (
+                            <label
+                              key={p.id}
+                              className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                            >
+                              <Checkbox
+                                checked={respostas[p.id] ?? false}
+                                onCheckedChange={v => handleToggle(p.id, v === true)}
+                                className="mt-0.5 shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-sm leading-snug">{p.pergunta}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">Peso: {p.peso}</p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </ScrollArea>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
 
-            <Button
-              onClick={handleFinalizar}
-              disabled={totalRespondidas < totalPerguntas || finalizar.isPending}
-              className="w-full"
-            >
-              {finalizar.isPending
-                ? <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                : <CheckCircle2 className="h-4 w-4 mr-2" />}
-              {totalRespondidas < totalPerguntas
-                ? `Responda todas as ${totalPerguntas - totalRespondidas} restantes`
-                : "Calcular Score e Finalizar"}
-            </Button>
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
+              {/* Histórico de avaliações */}
+              {historico && historico.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    Histórico de avaliações
+                  </p>
+                  <div className="space-y-1.5">
+                    {historico.map((dd, idx) => (
+                      <div
+                        key={dd.id}
+                        className="flex items-center justify-between rounded-md border border-border bg-muted/20 px-3 py-2"
+                      >
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(dd.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                          {idx === 0 && (
+                            <Badge variant="outline" className="ml-2 text-[10px]">
+                              Mais recente
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {dd.score_calculado !== null && (
+                            <span className={cn("text-xs font-bold", SCORE_COR(dd.score_calculado))}>
+                              Score: {dd.score_calculado}/100
+                            </span>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 text-xs px-2"
+                            onClick={() => {
+                              setRespostas({});
+                              setStep("questionario");
+                            }}
+                          >
+                            Re-avaliar
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <Button
+                onClick={handleFinalizar}
+                disabled={totalRespondidas < totalPerguntas || finalizar.isPending}
+                className="w-full"
+              >
+                {finalizar.isPending
+                  ? <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                {totalRespondidas < totalPerguntas
+                  ? `Responda todas as ${totalPerguntas - totalRespondidas} restantes`
+                  : "Calcular Score e Finalizar"}
+              </Button>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {reagendarOpen && (
+        <ReagendarDialog
+          fornecedor={fornecedor}
+          open={reagendarOpen}
+          onOpenChange={setReagendarOpen}
+        />
+      )}
+    </>
   );
 }
 
