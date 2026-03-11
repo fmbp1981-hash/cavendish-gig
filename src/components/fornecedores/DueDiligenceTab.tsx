@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -453,6 +453,14 @@ function DueDiligenceWizard({
 export function DueDiligenceTab() {
   const { data: orgs } = useOrganizacoes();
   const [selectedOrg, setSelectedOrg] = useState("");
+  // Auto-seleciona a primeira org se nenhuma selecionada
+  useEffect(() => {
+    if (!selectedOrg && orgs && orgs.length > 0) {
+      setSelectedOrg(orgs[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgs]);
+
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Fornecedor | null>(null);
   const [ddTarget, setDDTarget] = useState<Fornecedor | null>(null);

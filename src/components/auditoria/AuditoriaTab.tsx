@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -341,6 +341,14 @@ function AuditoriaRow({
 export function AuditoriaTab() {
   const { data: orgs } = useOrganizacoes();
   const [selectedOrg, setSelectedOrg] = useState("");
+  // Auto-seleciona a primeira org se nenhuma selecionada
+  useEffect(() => {
+    if (!selectedOrg && orgs && orgs.length > 0) {
+      setSelectedOrg(orgs[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgs]);
+
   const [novaOpen, setNovaOpen] = useState(false);
   const atualizar = useAtualizarAuditoria();
 
