@@ -9,7 +9,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Plus, BookOpen, ChevronRight, Users, CheckCircle2, ArrowRight } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2, Plus, BookOpen, ChevronRight, CheckCircle2, ArrowRight, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -26,6 +36,8 @@ import {
   useRevogarPolitica,
   usePoliticaAceites,
   usePoliticaAdesaoStats,
+  useNaoSignatarios,
+  useEnviarLembretePolitica,
 } from "@/hooks/usePoliticas";
 import { useOrganizacoes } from "@/hooks/useConsultorData";
 import { cn } from "@/lib/utils";
@@ -131,10 +143,13 @@ function PoliticaDetalheSheet({
   onClose: () => void;
 }) {
   const [editOpen, setEditOpen] = useState(false);
+  const [lembreteDialogOpen, setLembreteDialogOpen] = useState(false);
   const avancar = useAvancarStatusPolitica();
   const revogar = useRevogarPolitica();
+  const enviarLembrete = useEnviarLembretePolitica();
   const { data: aceites, isLoading: loadAceites } = usePoliticaAceites(politica?.id ?? "");
   const { data: stats } = usePoliticaAdesaoStats(politica?.id ?? "", organizacaoId);
+  const { data: naoSignatarios } = useNaoSignatarios(politica?.id ?? "", organizacaoId);
 
   if (!politica) return null;
   const proximo = PROXIMO_STATUS[politica.status];
@@ -158,7 +173,7 @@ function PoliticaDetalheSheet({
             {proximo && (
               <Button
                 size="sm"
-                onClick={() => avancar.mutate({ id: politica.id, statusAtual: politica.status })}
+                onClick={() => avancar.mutate({ id: politica.id, statusAtual: politica.status, titulo: politica.titulo })}
                 disabled={avancar.isPending}
               >
                 <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
@@ -193,8 +208,20 @@ function PoliticaDetalheSheet({
                 <span className="text-sm font-bold w-12 text-right">{stats.percentual}%</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                {stats.totalAceites} de {stats.totalMembros} membros aceitaram
+                {stats.totalAceites} de {stats.totalMembros} membros assinaram ({stats.percentual}%)
               </p>
+              {stats.percentual < 100 && (naoSignatarios?.length ?? 0) > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-amber-700 border-amber-400 hover:bg-amber-50"
+                  onClick={() => setLembreteDialogOpen(true)}
+                  disabled={enviarLembrete.isPending}
+                >
+                  <Mail className="h-3.5 w-3.5 mr-1.5" />
+                  Notificar não-signatários ({naoSignatarios?.length})
+                </Button>
+              )}
             </div>
           )}
 
@@ -234,6 +261,35 @@ function PoliticaDetalheSheet({
         organizacaoId={organizacaoId}
         politica={politica}
       />
+
+      <AlertDialog open={lembreteDialogOpen} onOpenChange={setLembreteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Enviar lembretes de aceite</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enviar email de lembrete para{" "}
+              <strong>{naoSignatarios?.length ?? 0} membro(s)</strong> que ainda não assinaram a política{" "}
+              <strong>"{politica.titulo}"</strong>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (naoSignatarios && naoSignatarios.length > 0) {
+                  enviarLembrete.mutate({
+                    tituloPolitica: politica.titulo,
+                    naoSignatarios,
+                  });
+                }
+                setLembreteDialogOpen(false);
+              }}
+            >
+              Enviar lembretes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

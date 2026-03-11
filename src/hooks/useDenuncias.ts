@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useInvestigacoes } from "@/hooks/useInvestigacoes";
 
 export interface Denuncia {
   id: string;
@@ -61,6 +62,44 @@ export function useAtualizarDenuncia() {
       queryClient.invalidateQueries({ queryKey: ["denuncias"] });
     },
   });
+}
+
+export interface DenunciasKPIs {
+  total: number;
+  emInvestigacao: number;
+  resolvidas: number;
+  semInvestigacao: number;
+}
+
+export function useDenunciasKPIs(): { data: DenunciasKPIs | undefined; isLoading: boolean } {
+  const { data: denuncias, isLoading: loadDenuncias } = useDenuncias();
+  const { data: investigacoes, isLoading: loadInv } = useInvestigacoes();
+
+  const isLoading = loadDenuncias || loadInv;
+
+  if (!denuncias || !investigacoes) {
+    return { data: undefined, isLoading };
+  }
+
+  const total = denuncias.length;
+
+  // Set of denuncia_ids that have an investigação
+  const invByDenuncia = new Map(investigacoes.map(i => [i.denuncia_id, i]));
+
+  const emInvestigacao = investigacoes.filter(
+    i => i.status === "em_analise" || i.status === "investigando"
+  ).length;
+
+  const resolvidas = investigacoes.filter(
+    i => i.status === "concluida" || i.status === "arquivada"
+  ).length;
+
+  const semInvestigacao = denuncias.filter(d => !invByDenuncia.has(d.id)).length;
+
+  return {
+    data: { total, emInvestigacao, resolvidas, semInvestigacao },
+    isLoading,
+  };
 }
 
 export async function enviarDenunciaAnonima(data: {

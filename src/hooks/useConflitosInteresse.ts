@@ -166,13 +166,36 @@ export function useEnviarDeclaracao() {
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return { data, anoReferencia, temConflito };
     },
-    onSuccess: () => {
+    onSuccess: ({ anoReferencia, temConflito }) => {
       queryClient.invalidateQueries({ queryKey: ["conflitos"] });
       queryClient.invalidateQueries({ queryKey: ["minha-declaracao"] });
       queryClient.invalidateQueries({ queryKey: ["conflitos-pendentes"] });
       toast.success("Declaração enviada com sucesso!");
+
+      // Fire-and-forget email notification to admin
+      (async () => {
+        try {
+          const { data: setting } = await supabase
+            .from("system_settings")
+            .select("value")
+            .eq("key", "admin_email")
+            .maybeSingle();
+          const adminEmail = (setting as any)?.value as string | undefined;
+          if (adminEmail) {
+            supabase.functions.invoke("send-email", {
+              body: {
+                type: "declaracao_conflito_enviada",
+                to: adminEmail,
+                data: { anoReferencia, temConflito },
+              },
+            }).catch(() => {});
+          }
+        } catch {
+          // ignore — email is non-critical
+        }
+      })();
     },
     onError: () => toast.error("Erro ao enviar declaração"),
   });

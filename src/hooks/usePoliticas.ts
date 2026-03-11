@@ -220,7 +220,7 @@ export function useAvancarStatusPolitica() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ id, statusAtual }: { id: string; statusAtual: PoliticaStatus }) => {
+    mutationFn: async ({ id, statusAtual, titulo }: { id: string; statusAtual: PoliticaStatus; titulo?: string }) => {
       const proximo = PROXIMO_STATUS[statusAtual];
       if (!proximo) throw new Error("Sem próximo status");
 
@@ -235,6 +235,31 @@ export function useAvancarStatusPolitica() {
         .update(updates)
         .eq("id", id);
       if (error) throw error;
+
+      // Fire-and-forget email when publishing
+      if (proximo === "publicado") {
+        (async () => {
+          try {
+            const { data: setting } = await supabase
+              .from("system_settings")
+              .select("value")
+              .eq("key", "admin_email")
+              .maybeSingle();
+            const adminEmail = (setting as any)?.value as string | undefined;
+            if (adminEmail) {
+              supabase.functions.invoke("send-email", {
+                body: {
+                  type: "politica_publicada",
+                  to: adminEmail,
+                  data: { tituloPolitica: titulo ?? "Política" },
+                },
+              }).catch(() => {});
+            }
+          } catch {
+            // ignore — email is non-critical
+          }
+        })();
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["politicas"] });
@@ -279,6 +304,77 @@ export function useMeuAceite(politicaId: string, userId: string | undefined) {
       return data as PoliticaAceite | null;
     },
     enabled: !!politicaId && !!userId,
+  });
+}
+
+export function useNaoSignatarios(politicaId: string, organizacaoId: string) {
+  return useQuery({
+    queryKey: ["nao-signatarios", politicaId, organizacaoId],
+    queryFn: async () => {
+      if (!politicaId || !organizacaoId) return [];
+
+      // Get all members
+      const { data: membros, error: err1 } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organizacao_id", organizacaoId);
+      if (err1) throw err1;
+
+      // Get members who already signed
+      const { data: aceites, error: err2 } = await supabase
+        .from("politicas_aceites")
+        .select("user_id")
+        .eq("politica_id", politicaId);
+      if (err2) throw err2;
+
+      const assinadoIds = new Set((aceites ?? []).map(a => a.user_id));
+      const naoAssinadoIds = (membros ?? [])
+        .filter(m => !assinadoIds.has(m.user_id))
+        .map(m => m.user_id);
+
+      if (naoAssinadoIds.length === 0) return [];
+
+      const { data: perfis } = await supabase
+        .from("profiles")
+        .select("id, nome, email")
+        .in("id", naoAssinadoIds);
+
+      return (perfis ?? []).filter(p => !!p.email) as Array<{
+        id: string;
+        nome: string | null;
+        email: string;
+      }>;
+    },
+    enabled: !!politicaId && !!organizacaoId,
+  });
+}
+
+export function useEnviarLembretePolitica() {
+  return useMutation({
+    mutationFn: async ({
+      tituloPolitica,
+      naoSignatarios,
+    }: {
+      tituloPolitica: string;
+      naoSignatarios: Array<{ id: string; nome: string | null; email: string }>;
+    }) => {
+      let count = 0;
+      for (const membro of naoSignatarios) {
+        supabase.functions.invoke("send-email", {
+          body: {
+            type: "lembrete_aceite_politica",
+            to: membro.email,
+            data: { tituloPolitica },
+          },
+        }).catch(() => {});
+        count++;
+      }
+      return count;
+    },
+    onSuccess: (count) => {
+      toast.success(`Lembretes enviados para ${count} membro(s)!`);
+    },
+    onError: () => toast.error("Erro ao enviar lembretes"),
   });
 }
 

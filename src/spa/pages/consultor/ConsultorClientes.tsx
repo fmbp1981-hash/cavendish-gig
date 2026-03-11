@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useOrganizacoes, useProjetosAll } from "@/hooks/useConsultorData";
-import { Building2, Search, ArrowRight, FolderOpen } from "lucide-react";
+import { Building2, Search, ArrowRight, FolderOpen, QrCode } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 const faseLabels: Record<string, string> = {
   diagnostico: "Diagnóstico",
@@ -23,8 +25,63 @@ const faseColors: Record<string, string> = {
   recorrencia: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
 };
 
+// ─── QR Code Dialog ───────────────────────────────────────────────────────────
+
+function QrCodeDenunciasDialog({
+  orgId,
+  orgNome,
+  open,
+  onOpenChange,
+}: {
+  orgId: string;
+  orgNome: string;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const url = `${window.location.origin}/denuncia/${orgId}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+
+  const handleCopiar = () => {
+    navigator.clipboard.writeText(url);
+    toast.success("Link copiado!");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Canal de Denúncias</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col items-center gap-4 py-2">
+          <p className="text-sm text-muted-foreground text-center">{orgNome}</p>
+          <img
+            src={qrUrl}
+            alt="QR Code do canal de denúncias"
+            className="rounded-lg border"
+            width={200}
+            height={200}
+          />
+          <div className="w-full space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Link público</p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs bg-muted px-2 py-1.5 rounded break-all">{url}</code>
+              <Button size="sm" variant="outline" onClick={handleCopiar} className="shrink-0">
+                Copiar
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            Compartilhe este QR Code ou link com seus colaboradores para denúncias anônimas
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function ConsultorClientes() {
   const [search, setSearch] = useState("");
+  const [qrOrg, setQrOrg] = useState<{ id: string; nome: string } | null>(null);
   const { data: projetos, isLoading } = useProjetosAll();
 
   const filteredProjetos = useMemo(() => {
@@ -101,12 +158,27 @@ export default function ConsultorClientes() {
                     </span>
                   </div>
 
-                  <Button asChild variant="outline" className="w-full mt-2">
-                    <Link to={`/consultor/clientes/${projeto.organizacoes?.id}`}>
-                      Ver Detalhes
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
+                  <div className="flex gap-2 mt-2">
+                    <Button asChild variant="outline" className="flex-1">
+                      <Link to={`/consultor/clientes/${projeto.organizacoes?.id}`}>
+                        Ver Detalhes
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      title="Link de Denúncias"
+                      onClick={() =>
+                        setQrOrg({
+                          id: projeto.organizacoes?.id,
+                          nome: projeto.organizacoes?.nome ?? "Organização",
+                        })
+                      }
+                    >
+                      <QrCode className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -123,6 +195,15 @@ export default function ConsultorClientes() {
           </Card>
         )}
       </div>
+
+      {qrOrg && (
+        <QrCodeDenunciasDialog
+          orgId={qrOrg.id}
+          orgNome={qrOrg.nome}
+          open={!!qrOrg}
+          onOpenChange={v => !v && setQrOrg(null)}
+        />
+      )}
     </ConsultorLayout>
   );
 }
