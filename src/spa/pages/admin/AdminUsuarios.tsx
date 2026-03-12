@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -29,7 +31,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -38,6 +52,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAllUsers, useConsultorOrganizacoes, useAllOrganizacoes } from "@/hooks/useAdminData";
+import {
+  useUserPreRegistrations,
+  useAddUserPreRegistration,
+  useRemoveUserPreRegistration,
+} from "@/hooks/useConsultorPreRegistration";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -47,7 +66,13 @@ import {
   Shield, 
   Mail,
   Calendar,
-  Building2
+  Building2,
+  UserPlus,
+  Trash2,
+  CheckCircle2,
+  Clock,
+  UserCog,
+  AlertCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -65,6 +90,13 @@ export default function AdminUsuarios() {
     consultorId: "",
     consultorName: "",
   });
+  
+  // Pre-registration states
+  const [preRegDialogOpen, setPreRegDialogOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newNome, setNewNome] = useState("");
+  const [newRole, setNewRole] = useState<AppRole>("consultor");
+
   const [selectedRole, setSelectedRole] = useState<AppRole>("cliente");
   const [selectedOrgs, setSelectedOrgs] = useState<string[]>([]);
   const [savingAssignment, setSavingAssignment] = useState(false);
@@ -73,6 +105,11 @@ export default function AdminUsuarios() {
   const { data: users, isLoading } = useAllUsers();
   const { data: organizacoes } = useAllOrganizacoes();
   const { data: consultorOrgs, isLoading: loadingConsultorOrgs } = useConsultorOrganizacoes(assignDialog.consultorId);
+  
+  const { data: preRegistrations, isLoading: loadingPreRegs } = useUserPreRegistrations();
+  const addPreRegMutation = useAddUserPreRegistration();
+  const removePreRegMutation = useRemoveUserPreRegistration();
+
   const queryClient = useQueryClient();
 
   const filteredUsers = users?.filter(user => 
@@ -80,12 +117,17 @@ export default function AdminUsuarios() {
     user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getRoleBadge = (roles: { role: string }[] | null) => {
-    if (!roles || roles.length === 0) {
-      return <Badge variant="outline">Sem role</Badge>;
+  const getRoleBadge = (roles: { role: string }[] | null | string) => {
+    let role = "";
+    if (typeof roles === "string") {
+      role = roles;
+    } else {
+      if (!roles || roles.length === 0) {
+        return <Badge variant="outline">Sem role</Badge>;
+      }
+      role = roles[0]?.role;
     }
     
-    const role = roles[0]?.role;
     switch (role) {
       case "admin":
         return <Badge variant="destructive">Admin</Badge>;
@@ -134,7 +176,6 @@ export default function AdminUsuarios() {
     setAssignDialog({ open: true, consultorId: userId, consultorName: userName });
   };
 
-  // Sync selectedOrgs when consultorOrgs loads
   const handleAssignDialogOpen = (open: boolean) => {
     if (!open) {
       setAssignDialog({ open: false, consultorId: "", consultorName: "" });
@@ -143,7 +184,6 @@ export default function AdminUsuarios() {
     }
   };
 
-  // Initialize selected orgs from DB once when the dialog opens (or consultor changes)
   useEffect(() => {
     if (!assignDialog.open) return;
     setAssignSelectionInitialized(false);
@@ -161,14 +201,11 @@ export default function AdminUsuarios() {
     try {
       setSavingAssignment(true);
       
-      // Get current assignments
       const currentOrgIds = consultorOrgs?.map(co => co.organizacao_id) || [];
       
-      // Find orgs to add and remove
       const toAdd = selectedOrgs.filter(id => !currentOrgIds.includes(id));
       const toRemove = currentOrgIds.filter(id => !selectedOrgs.includes(id));
 
-      // Remove unselected orgs
       if (toRemove.length > 0) {
         const { error: deleteError } = await supabase
           .from("consultor_organizacoes")
@@ -179,7 +216,6 @@ export default function AdminUsuarios() {
         if (deleteError) throw deleteError;
       }
 
-      // Add new orgs
       if (toAdd.length > 0) {
         const { error: insertError } = await supabase
           .from("consultor_organizacoes")
@@ -213,121 +249,379 @@ export default function AdminUsuarios() {
     );
   };
 
+  const handleAddPreRegistration = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!newEmail.trim()) return;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return;
+    }
+
+    await addPreRegMutation.mutateAsync({
+      email: newEmail,
+      nome: newNome || undefined,
+      role: newRole
+    });
+
+    setNewEmail("");
+    setNewNome("");
+    setNewRole("consultor");
+    setPreRegDialogOpen(false);
+  };
+
+  const handleRemovePreReg = async (id: string) => {
+    await removePreRegMutation.mutateAsync(id);
+  };
+
+  const pendingCount = preRegistrations?.filter(p => !p.used_at).length || 0;
+  const usedCount = preRegistrations?.filter(p => p.used_at).length || 0;
+
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Gestão de Usuários</h1>
-            <p className="text-muted-foreground">Gerencie todos os usuários do sistema</p>
+            <h1 className="text-2xl font-bold text-foreground">Gestão de Usuários e Perfis</h1>
+            <p className="text-muted-foreground">Gerencie todos os usuários do sistema, convites e perfis de acesso</p>
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
+        <Tabs defaultValue="users" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="users">Usuários Cadastrados</TabsTrigger>
+            <TabsTrigger value="prenovos">Convites & Pré-registros</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="users" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Usuários</CardTitle>
+                    <CardDescription>
+                      {users?.length || 0} usuários cadastrados
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar usuários..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-9 w-64"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Usuário</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Cadastrado em</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers?.map((user) => {
+                        const isConsultor = user.user_roles?.some(r => r.role === "consultor");
+                        return (
+                          <TableRow key={user.id}>
+                            <TableCell className="font-medium">
+                              {user.nome || "Sem nome"}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                {user.email}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {getRoleBadge(user.user_roles)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                {format(new Date(user.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      setSelectedRole(user.user_roles?.[0]?.role as AppRole || "cliente");
+                                      setRoleDialog({ 
+                                        open: true, 
+                                        userId: user.id,
+                                        currentRole: user.user_roles?.[0]?.role
+                                      });
+                                    }}
+                                  >
+                                    <Shield className="mr-2 h-4 w-4" />
+                                    Alterar Role
+                                  </DropdownMenuItem>
+                                  {(isConsultor && (
+                                    <DropdownMenuItem 
+                                      onClick={() => handleOpenAssignDialog(user.id, user.nome || user.email || "Consultor")}
+                                    >
+                                      <Building2 className="mr-2 h-4 w-4" />
+                                      Atribuir Organizações
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="prenovos" className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Usuários</CardTitle>
-                <CardDescription>
-                  {users?.length || 0} usuários cadastrados
-                </CardDescription>
+                <h3 className="text-lg font-medium">Convites & Pré-registros</h3>
+                <p className="text-sm text-muted-foreground">
+                  Adicione emails que receberão automaticamente um perfil específico (Consultor, Parceiro, Admin) ao criar conta.
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar usuários..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 w-64"
-                  />
-                </div>
-              </div>
+
+              <Dialog open={preRegDialogOpen} onOpenChange={setPreRegDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Novo Pré-registro
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <form onSubmit={handleAddPreRegistration}>
+                    <DialogHeader>
+                      <DialogTitle>Novo Pré-registro de Usuário</DialogTitle>
+                      <DialogDescription>
+                        Ao adicionar o email aqui, ele será associado a um perfil específico assim que a conta for gerada.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="usuario@empresa.com"
+                          value={newEmail}
+                          onChange={(e) => setNewEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="nome">Nome (opcional)</Label>
+                        <Input
+                          id="nome"
+                          type="text"
+                          placeholder="Nome do usuário"
+                          value={newNome}
+                          onChange={(e) => setNewNome(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="role">Perfil de Acesso (Role) *</Label>
+                        <Select value={newRole} onValueChange={(val: AppRole) => setNewRole(val)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um perfil" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="consultor">Consultor</SelectItem>
+                            <SelectItem value="parceiro">Parceiro</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="cliente">Cliente (Padrão)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setPreRegDialogOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button type="submit" disabled={addPreRegMutation.isPending}>
+                        {addPreRegMutation.isPending ? "Salvando..." : "Salvar"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Usuário</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Cadastrado em</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers?.map((user) => {
-                    const isConsultor = user.user_roles?.some(r => r.role === "consultor");
-                    return (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">
-                          {user.nome || "Sem nome"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                            {user.email}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {getRoleBadge(user.user_roles)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            {format(new Date(user.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setSelectedRole(user.user_roles?.[0]?.role as AppRole || "cliente");
-                                  setRoleDialog({ 
-                                    open: true, 
-                                    userId: user.id,
-                                    currentRole: user.user_roles?.[0]?.role
-                                  });
-                                }}
-                              >
-                                <Shield className="mr-2 h-4 w-4" />
-                                Alterar Role
-                              </DropdownMenuItem>
-                              {isConsultor && (
-                                <DropdownMenuItem 
-                                  onClick={() => handleOpenAssignDialog(user.id, user.nome || user.email || "Consultor")}
-                                >
-                                  <Building2 className="mr-2 h-4 w-4" />
-                                  Atribuir Organizações
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Total Pré-registros</CardTitle>
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{preRegistrations?.length || 0}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Aguardando Cadastro</CardTitle>
+                  <Clock className="h-4 w-4 text-yellow-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{pendingCount}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Já Cadastrados no Sistema</CardTitle>
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{usedCount}</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+              <CardContent className="pt-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                  <div className="text-sm text-blue-800 dark:text-blue-200">
+                    <p className="font-medium">Como funcionam os Pré-registros?</p>
+                    <p className="mt-1 text-blue-700 dark:text-blue-300">
+                      Na Área do Admin, você tem controle total sobre os perfis dos usuários. Você pode alterar o perfil de <strong>usuários já cadastrados</strong> na aba anterior, ou preparar o caminho adicionando o email do novo colaborador/parceiro <strong>antes dele se cadastrar</strong>.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Histórico de Convites e Pré-registros</CardTitle>
+                <CardDescription>
+                  Acompanhe os emails que aguardam cadastro ou que já ativaram seu perfil
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingPreRegs ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : preRegistrations && preRegistrations.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Perfil Solicitado</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Criado em</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {preRegistrations.map((reg) => (
+                        <TableRow key={reg.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">{reg.email}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{reg.nome || "-"}</TableCell>
+                          <TableCell>
+                            {getRoleBadge(reg.role)}
+                          </TableCell>
+                          <TableCell>
+                            {reg.used_at ? (
+                              <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                <CheckCircle2 className="mr-1 h-3 w-3" />
+                                Cadastrado
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-yellow-600 border-yellow-400">
+                                <Clock className="mr-1 h-3 w-3" />
+                                Aguardando
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Calendar className="h-4 w-4" />
+                              {format(new Date(reg.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {!reg.used_at && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Remover convite?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      O email <strong>{reg.email}</strong> não será mais vinculado automaticamente ao perfil desejado.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleRemovePreReg(reg.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Remover convite
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <UserCog className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
+                    <p>Nenhum email aguardando cadastro ou convidado</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Role Dialog */}
@@ -369,7 +663,7 @@ export default function AdminUsuarios() {
           <DialogHeader>
             <DialogTitle>Atribuir Organizações</DialogTitle>
             <DialogDescription>
-              Selecione as organizações que o consultor <strong>{assignDialog.consultorName}</strong> poderá gerenciar
+              Selecione as organizações que este consultor poderá gerenciar
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 max-h-80 overflow-y-auto">

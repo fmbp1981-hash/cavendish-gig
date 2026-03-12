@@ -448,36 +448,6 @@ export type Database = {
           },
         ]
       }
-      consultant_pre_registrations: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          email: string
-          id: string
-          nome: string | null
-          used_at: string | null
-          used_by_user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          email: string
-          id?: string
-          nome?: string | null
-          used_at?: string | null
-          used_by_user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          email?: string
-          id?: string
-          nome?: string | null
-          used_at?: string | null
-          used_by_user_id?: string | null
-        }
-        Relationships: []
-      }
       consultor_organizacoes: {
         Row: {
           consultor_id: string
@@ -3185,6 +3155,39 @@ export type Database = {
           tutorial_type?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_pre_registrations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          nome: string | null
+          role: string
+          used_at: string | null
+          used_by_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          id?: string
+          nome?: string | null
+          role?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          nome?: string | null
+          role?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
         }
         Relationships: []
       }

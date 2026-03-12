@@ -28,7 +28,6 @@ const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard",       href: "/admin",                       dataTour: "admin-nav-dashboard" },
   { icon: Building2,       label: "Organizações",    href: "/admin/organizacoes",          dataTour: "admin-nav-organizacoes" },
   { icon: Users,           label: "Usuários",         href: "/admin/usuarios",              dataTour: "admin-nav-usuarios" },
-  { icon: UserCog,         label: "Consultores",      href: "/admin/consultores",           dataTour: "admin-nav-consultores" },
   { icon: FileText,        label: "Documentos",       href: "/admin/documentos",            dataTour: "admin-nav-documentos" },
   { icon: Database,        label: "Catálogo",         href: "/admin/catalogo",              dataTour: "admin-nav-catalogo" },
   { icon: FileText,        label: "Templates",        href: "/admin/templates",             dataTour: "admin-nav-templates" },

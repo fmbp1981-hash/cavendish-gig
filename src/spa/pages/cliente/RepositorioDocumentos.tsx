@@ -93,11 +93,11 @@ export default function RepositorioDocumentos() {
     queryFn: async (): Promise<Array<{ id: string; nome: string; descricao: string | null; fase: string; obrigatorio: boolean; formatos_aceitos: string; tamanho_maximo_mb: number }>> => {
       if (!projeto?.id || !projeto?.organizacao_id) return [];
 
-      // Get all required docs for this org
+      // Get all required docs for this project
       const { data: allRequired, error: reqErr } = await (supabase as any)
         .from("documentos_requeridos")
         .select("id, nome, descricao, fase, obrigatorio, formatos_aceitos, tamanho_maximo_mb")
-        .eq("organizacao_id", projeto.organizacao_id);
+        .eq("projeto_id", projeto.id);
 
       if (reqErr) throw reqErr;
 

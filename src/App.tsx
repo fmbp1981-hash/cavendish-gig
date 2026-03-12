@@ -63,7 +63,6 @@ import AdminCatalogo from "./spa/pages/admin/AdminCatalogo";
 import AdminConfiguracoes from "./spa/pages/admin/AdminConfiguracoes";
 import AdminIntegracoes from "./spa/pages/admin/AdminIntegracoes";
 import AdminAuditTrail from "./spa/pages/admin/AdminAuditTrail";
-import AdminConsultores from "./spa/pages/admin/AdminConsultores";
 import AdminTemplates from "./spa/pages/admin/Templates";
 import AdminHistoricoRelatorios from "./spa/pages/admin/HistoricoRelatorios";
 import AdminBranding from "./spa/pages/admin/Branding";
@@ -274,16 +273,6 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
                     <AdminUsuarios />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Admin Consultores - Pre-registration management */}
-              <Route
-                path="/admin/consultores"
-                element={
-                  <ProtectedRoute requiredRoles={["admin"]}>
-                    <AdminConsultores />
                   </ProtectedRoute>
                 }
               />
