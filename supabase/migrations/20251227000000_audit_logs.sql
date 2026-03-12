@@ -110,24 +110,24 @@ BEGIN
     v_new_data := NULL;
     
     -- Try to get organizacao_id from OLD record
-    IF OLD ? 'organizacao_id' THEN
-      v_org_id := (OLD->>'organizacao_id')::UUID;
+    IF v_old_data ? 'organizacao_id' THEN
+      v_org_id := (v_old_data->>'organizacao_id')::UUID;
     END IF;
   ELSIF TG_OP = 'UPDATE' THEN
     v_record_id := NEW.id;
     v_old_data := to_jsonb(OLD);
     v_new_data := to_jsonb(NEW);
     
-    IF NEW ? 'organizacao_id' THEN
-      v_org_id := (NEW->>'organizacao_id')::UUID;
+    IF v_new_data ? 'organizacao_id' THEN
+      v_org_id := (v_new_data->>'organizacao_id')::UUID;
     END IF;
   ELSE -- INSERT
     v_record_id := NEW.id;
     v_old_data := NULL;
     v_new_data := to_jsonb(NEW);
     
-    IF NEW ? 'organizacao_id' THEN
-      v_org_id := (NEW->>'organizacao_id')::UUID;
+    IF v_new_data ? 'organizacao_id' THEN
+      v_org_id := (v_new_data->>'organizacao_id')::UUID;
     END IF;
   END IF;
   
