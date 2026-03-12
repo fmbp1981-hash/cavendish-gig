@@ -302,11 +302,17 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const [{ data: isAdmin }, { data: isConsultor }] = await Promise.all([
+    const request: DriveRequest = await req.json();
+
+    const [{ data: isAdmin }, { data: isConsultor }, { data: isCliente }] = await Promise.all([
       authClient.rpc("has_role", { _user_id: user.id, _role: "admin" }),
       authClient.rpc("has_role", { _user_id: user.id, _role: "consultor" }),
+      authClient.rpc("has_role", { _user_id: user.id, _role: "cliente" }),
     ]);
-    if (!isAdmin && !isConsultor) {
+
+    // Clients can only upload files; other actions require admin/consultor
+    const isUploadAction = request.action === "uploadFile";
+    if (!isAdmin && !isConsultor && !(isCliente && isUploadAction)) {
       return new Response(
         JSON.stringify({ error: "Acesso negado" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -334,7 +340,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const request: DriveRequest = await req.json();
     const accessToken = await getAccessToken(serviceAccountJson);
 
     let result;
