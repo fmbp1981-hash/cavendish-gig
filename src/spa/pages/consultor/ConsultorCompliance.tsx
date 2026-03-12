@@ -30,6 +30,10 @@ import { ConflitosTab } from "@/components/conflitos/ConflitosTab";
 import { LGPDTab } from "@/components/lgpd/LGPDTab";
 // Módulo Fase 2
 import { DueDiligenceTab } from "@/components/fornecedores/DueDiligenceTab";
+// Módulo Fase 1 — Conclusão
+import { IncidentesTab } from "@/components/incidentes/IncidentesTab";
+import { AuditoriaTab } from "@/components/auditoria/AuditoriaTab";
+import { RelatoriosRegTab } from "@/components/relatorios-reg/RelatoriosRegTab";
 import {
   BarChart,
   Bar,
@@ -67,7 +71,7 @@ const tabs = [
   { id: "ceis",           label: "Consulta CEIS",        icon: ExternalLink,  title: "Consulta CEIS",                description: "Consulta ao Cadastro de Empresas Inidôneas e Suspensas — impedimentos legais para contratar com o poder público." },
 ];
 
-const TABS_WITH_CONTENT = new Set(["kpis", "ceis", "riscos", "politicas", "conflitos", "lgpd", "due-diligence"]);
+const TABS_WITH_CONTENT = new Set(["kpis", "ceis", "riscos", "politicas", "conflitos", "lgpd", "due-diligence", "incidentes", "auditoria", "relatorios-reg"]);
 
 // ─── Placeholder (apenas para abas ainda não implementadas) ──────────────────
 
@@ -509,6 +513,12 @@ export default function ConsultorCompliance() {
                 <LGPDTab />
               ) : tab.id === "due-diligence" ? (
                 <DueDiligenceTab />
+              ) : tab.id === "incidentes" ? (
+                <IncidentesTab />
+              ) : tab.id === "auditoria" ? (
+                <AuditoriaTab />
+              ) : tab.id === "relatorios-reg" ? (
+                <RelatoriosRegTab />
               ) : (
                 <PlaceholderTab title={tab.title} description={tab.description} />
               )}

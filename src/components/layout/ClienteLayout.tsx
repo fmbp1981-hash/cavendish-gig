@@ -1,5 +1,8 @@
 import { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { BaseLayout, NavItem } from "./BaseLayout";
+import { useAuth } from "@/contexts/AuthContext";
+import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import {
   LayoutDashboard,
   FileText,
@@ -10,6 +13,9 @@ import {
   ScrollText,
   BookOpen,
   AlertTriangle,
+  ShieldCheck,
+  Users2,
+  Handshake,
 } from "lucide-react";
 
 const menuItems: NavItem[] = [
@@ -29,6 +35,35 @@ interface ClienteLayoutProps {
 }
 
 export function ClienteLayout({ children }: ClienteLayoutProps) {
+  const navigate = useNavigate();
+  const { isAdmin, isConsultor, roles } = useAuth();
+  
+  const isParceiro = roles?.includes("parceiro");
+
+  const extraMenuItems = (isAdmin || isConsultor || isParceiro) ? (
+    <>
+      {isAdmin && (
+        <DropdownMenuItem onClick={() => navigate("/admin")}>
+          <ShieldCheck className="mr-2 h-4 w-4" />
+          Painel Administrativo
+        </DropdownMenuItem>
+      )}
+      {isConsultor && (
+        <DropdownMenuItem onClick={() => navigate("/consultor")}>
+          <Users2 className="mr-2 h-4 w-4" />
+          Portal Consultor
+        </DropdownMenuItem>
+      )}
+      {isParceiro && (
+        <DropdownMenuItem onClick={() => navigate("/parceiro")}>
+          <Handshake className="mr-2 h-4 w-4" />
+          Portal do Parceiro
+        </DropdownMenuItem>
+      )}
+      <DropdownMenuSeparator />
+    </>
+  ) : null;
+
   return (
     <BaseLayout
       navItems={menuItems}
@@ -36,6 +71,7 @@ export function ClienteLayout({ children }: ClienteLayoutProps) {
       headerTitle={null}
       userRole="cliente"
       settingsHref="/meu-projeto/configuracoes"
+      extraMenuItems={extraMenuItems}
     >
       {children}
     </BaseLayout>

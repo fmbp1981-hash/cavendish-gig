@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 
 const Index = () => {
-  const { user, loading, isAdmin, isConsultor, roles } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -21,20 +21,7 @@ const Index = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirect based on role
-  if (isAdmin) {
-    return <Navigate to="/admin" replace />;
-  }
-
-  if (isConsultor) {
-    return <Navigate to="/consultor" replace />;
-  }
-
-  if (roles.includes('parceiro')) {
-    return <Navigate to="/parceiro" replace />;
-  }
-
-  // Default to client portal
+  // Default redirect for EVERYONE is the client portal
   return <Navigate to="/meu-projeto" replace />;
 };
 

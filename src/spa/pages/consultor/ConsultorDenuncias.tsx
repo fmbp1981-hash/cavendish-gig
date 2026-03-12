@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { ConsultorLayout } from "@/components/layout/ConsultorLayout";
-import { useDenuncias, useAtualizarDenuncia, Denuncia } from "@/hooks/useDenuncias";
+import { useDenuncias, useAtualizarDenuncia, useDenunciasKPIs, Denuncia } from "@/hooks/useDenuncias";
 import {
-  useKPIsDenuncias,
   useInvestigacaoPorDenuncia,
   useAbrirInvestigacao,
+  useTriagemIA,
   Investigacao,
 } from "@/hooks/useInvestigacoes";
 import { InvestigacaoDrawer } from "@/components/denuncias/InvestigacaoDrawer";
@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertTriangle, Eye, Clock, CheckCircle2, XCircle,
-  Loader2, Search, FileText, Timer,
+  Loader2, Search, FileText, Zap, ShieldAlert, ShieldCheck, ShieldOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -53,8 +53,16 @@ function DenunciaRow({
   onAbrirInvestigacao: () => void;
 }) {
   const { data: inv } = useInvestigacaoPorDenuncia(denuncia.id);
+  const triagemIA = useTriagemIA();
   const config = statusConfig[denuncia.status] ?? statusConfig.nova;
   const StatusIcon = config.icon;
+
+  const semTriagem = inv && !inv.categoria_triagem;
+
+  const handleTriagemIA = () => {
+    if (!inv) return;
+    triagemIA.mutate({ investigacaoId: inv.id, descricao: denuncia.descricao });
+  };
 
   return (
     <div className="border rounded-lg p-4 hover:bg-muted/40 transition-colors">
@@ -84,13 +92,18 @@ function DenunciaRow({
                 Investigação: {inv.status}
               </Badge>
             )}
+            {inv?.categoria_triagem && (
+              <Badge variant="outline" className="text-xs text-blue-700 border-blue-400">
+                IA: {inv.categoria_triagem}
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-muted-foreground line-clamp-2">{denuncia.descricao}</p>
           <p className="text-xs text-muted-foreground mt-1">
             {format(new Date(denuncia.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
           <Button variant="outline" size="sm" onClick={onVerDetalhes}>
             <Eye className="h-4 w-4 mr-1" />Ver
           </Button>
@@ -103,6 +116,20 @@ function DenunciaRow({
               <FileText className="h-4 w-4 mr-1" />Abrir Inv.
             </Button>
           )}
+          {semTriagem && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-amber-700 border-amber-400 hover:bg-amber-50"
+              onClick={handleTriagemIA}
+              disabled={triagemIA.isPending}
+            >
+              {triagemIA.isPending
+                ? <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                : <Zap className="h-3 w-3 mr-1" />}
+              Triagem IA
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -113,7 +140,7 @@ function DenunciaRow({
 
 export default function ConsultorDenuncias() {
   const { data: denuncias, isLoading } = useDenuncias();
-  const { data: kpis } = useKPIsDenuncias();
+  const { data: kpis } = useDenunciasKPIs();
   const atualizarDenuncia = useAtualizarDenuncia();
   const abrirInvestigacao = useAbrirInvestigacao();
 
@@ -140,13 +167,6 @@ export default function ConsultorDenuncias() {
     // Após abrir, o drawer ficará disponível via query
   };
 
-  const stats = {
-    total:     denuncias?.length ?? 0,
-    novas:     denuncias?.filter(d => d.status === "nova").length ?? 0,
-    emAnalise: denuncias?.filter(d => d.status === "em_analise").length ?? 0,
-    resolvidas:denuncias?.filter(d => d.status === "resolvida").length ?? 0,
-  };
-
   return (
     <ConsultorLayout>
       <div className="space-y-6">
@@ -159,31 +179,38 @@ export default function ConsultorDenuncias() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <div className="text-sm text-muted-foreground">Total</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-500">{stats.novas}</div>
-              <div className="text-sm text-muted-foreground">Novas</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-yellow-500">{stats.emAnalise}</div>
-              <div className="text-sm text-muted-foreground">Em Análise</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-1.5">
-                <Timer className="h-4 w-4 text-muted-foreground" />
-                <div className="text-2xl font-bold">
-                  {kpis?.tempoMedio != null ? `${kpis.tempoMedio}d` : "—"}
-                </div>
+              <div className="flex items-center gap-2 mb-1">
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                <div className="text-2xl font-bold">{kpis?.total ?? denuncias?.length ?? 0}</div>
               </div>
-              <div className="text-sm text-muted-foreground">Tempo médio resolução</div>
+              <div className="text-sm text-muted-foreground">Total de Denúncias</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <ShieldAlert className="h-4 w-4 text-yellow-500" />
+                <div className="text-2xl font-bold text-yellow-500">{kpis?.emInvestigacao ?? 0}</div>
+              </div>
+              <div className="text-sm text-muted-foreground">Em Investigação</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <ShieldCheck className="h-4 w-4 text-green-500" />
+                <div className="text-2xl font-bold text-green-500">{kpis?.resolvidas ?? 0}</div>
+              </div>
+              <div className="text-sm text-muted-foreground">Resolvidas</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <ShieldOff className="h-4 w-4 text-slate-400" />
+                <div className="text-2xl font-bold text-slate-500">{kpis?.semInvestigacao ?? 0}</div>
+              </div>
+              <div className="text-sm text-muted-foreground">Sem Investigação</div>
             </CardContent>
           </Card>
         </div>

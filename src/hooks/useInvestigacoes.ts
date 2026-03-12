@@ -280,6 +280,59 @@ export function useAdicionarNota() {
   });
 }
 
+export function useTriagemIA() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      investigacaoId,
+      descricao,
+    }: {
+      investigacaoId: string;
+      descricao: string;
+    }) => {
+      const prompt = `Analise esta denúncia e categorize como um dos tipos: assedio, fraude, corrupcao, vazamento_dados, outro. Retorne APENAS o tipo e o nível de risco: baixo, medio, alto ou critico, separados por vírgula. Denúncia: ${descricao}`;
+
+      const { data, error } = await supabase.functions.invoke("ai-generate", {
+        body: {
+          tipo: "chat",
+          input_data: { mensagem: prompt },
+        },
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error ?? "Erro na triagem IA");
+
+      const output: string = (data.output ?? "").trim().toLowerCase();
+      const parts = output.split(",").map((s: string) => s.trim());
+
+      const validCategorias = ["assedio", "fraude", "corrupcao", "vazamento_dados", "outro"];
+      const validNiveis: NivelRisco[] = ["baixo", "medio", "alto", "critico"];
+
+      const categoria_triagem = parts.find((p: string) => validCategorias.includes(p)) ?? "outro";
+      const nivel_risco = (parts.find((p: string) => validNiveis.includes(p as NivelRisco)) as NivelRisco | undefined) ?? "medio";
+
+      const { error: updateError } = await (supabase as any)
+        .from("investigacoes")
+        .update({ categoria_triagem, nivel_risco })
+        .eq("id", investigacaoId);
+
+      if (updateError) throw updateError;
+
+      return { categoria_triagem, nivel_risco };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["investigacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["investigacao-denuncia"] });
+      toast.success(`Triagem concluída: ${result.categoria_triagem} · risco ${result.nivel_risco}`);
+    },
+    onError: (e: unknown) => {
+      console.error(e);
+      toast.error("Erro na triagem IA");
+    },
+  });
+}
+
 export function useAdicionarEvidencia() {
   const queryClient = useQueryClient();
   const { user } = useAuth();

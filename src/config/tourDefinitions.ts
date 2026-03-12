@@ -424,6 +424,7 @@ const consultorTour: TourDefinition = {
     },
     {
       page: "/consultor",
+      element: '[data-tour="agente-chat-btn"]',
       title: "✨ IntelliX AI — Chat no Header",
       description: step(
         "O assistente de IA da IntelliX agora está fixo no cabeçalho do Portal do Consultor — disponível em qualquer página sem precisar procurar um botão flutuante.",

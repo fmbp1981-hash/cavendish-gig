@@ -118,6 +118,7 @@ export function AgenteChat({ mode = "floating" }: AgenteChatProps) {
       {/* Botão inline para o header */}
       {mode === "header" && (
         <button
+          data-tour="agente-chat-btn"
           onClick={() => setOpen((v) => !v)}
           className={cn(
             "h-9 w-9 rounded-lg flex items-center justify-center transition-colors",

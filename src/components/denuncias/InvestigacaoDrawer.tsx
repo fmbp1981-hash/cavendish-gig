@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, MessageSquare, Paperclip, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Loader2, MessageSquare, Paperclip, ArrowRight, ExternalLink } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -34,6 +35,9 @@ export function InvestigacaoDrawer({ investigacao, onClose }: Props) {
   const [novaNota, setNovaNota] = useState("");
   const [novaEvidDesc, setNovaEvidDesc] = useState("");
   const [conclusao, setConclusao] = useState(investigacao?.conclusao ?? "");
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: notas, isLoading: loadNotas } = useInvestigacaoNotas(investigacao?.id ?? "");
   const { data: evidencias, isLoading: loadEvid } = useInvestigacaoEvidencias(investigacao?.id ?? "");
@@ -63,8 +67,37 @@ export function InvestigacaoDrawer({ investigacao, onClose }: Props) {
 
   const handleAdicionarEvidencia = async () => {
     if (!novaEvidDesc.trim()) return;
-    await adicionarEvid.mutateAsync({ investigacaoId: investigacao.id, descricao: novaEvidDesc.trim() });
+
+    let arquivoUrl: string | undefined;
+
+    if (selectedFile) {
+      setUploadingFile(true);
+      try {
+        const path = `investigacoes/${investigacao.id}/${Date.now()}-${selectedFile.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("documentos")
+          .upload(path, selectedFile);
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
+            .from("documentos")
+            .getPublicUrl(path);
+          arquivoUrl = urlData?.publicUrl;
+        }
+      } catch {
+        // silently continue without arquivo_url
+      } finally {
+        setUploadingFile(false);
+      }
+    }
+
+    await adicionarEvid.mutateAsync({
+      investigacaoId: investigacao.id,
+      descricao: novaEvidDesc.trim(),
+      arquivoUrl,
+    });
     setNovaEvidDesc("");
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const denuncia = investigacao.denuncias as any;
@@ -199,8 +232,13 @@ export function InvestigacaoDrawer({ investigacao, onClose }: Props) {
                   <div className="min-w-0">
                     <p>{e.descricao}</p>
                     {e.arquivo_url && (
-                      <a href={e.arquivo_url} target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline">
+                      <a
+                        href={e.arquivo_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" />
                         Ver arquivo
                       </a>
                     )}
@@ -212,22 +250,57 @@ export function InvestigacaoDrawer({ investigacao, onClose }: Props) {
             <p className="text-xs text-muted-foreground italic">Nenhuma evidência registrada.</p>
           )}
 
-          <div className="flex gap-2">
-            <Input
-              placeholder="Descrição da evidência..."
-              value={novaEvidDesc}
-              onChange={e => setNovaEvidDesc(e.target.value)}
-              className="flex-1 h-8 text-sm"
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleAdicionarEvidencia}
-              disabled={!novaEvidDesc.trim() || adicionarEvid.isPending}
-              className="h-8 px-3"
-            >
-              {adicionarEvid.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add"}
-            </Button>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Descrição da evidência..."
+                value={novaEvidDesc}
+                onChange={e => setNovaEvidDesc(e.target.value)}
+                className="flex-1 h-8 text-sm"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleAdicionarEvidencia}
+                disabled={!novaEvidDesc.trim() || adicionarEvid.isPending || uploadingFile}
+                className="h-8 px-3"
+              >
+                {adicionarEvid.isPending || uploadingFile
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : "Add"}
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,application/pdf,.doc,.docx"
+                className="hidden"
+                onChange={e => setSelectedFile(e.target.files?.[0] ?? null)}
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs text-muted-foreground"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip className="h-3.5 w-3.5 mr-1" />
+                {selectedFile ? selectedFile.name : "Anexar arquivo (opcional)"}
+              </Button>
+              {selectedFile && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs text-muted-foreground"
+                  onClick={() => {
+                    setSelectedFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                >
+                  Remover
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </SheetContent>

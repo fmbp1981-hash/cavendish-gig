@@ -44,9 +44,16 @@ import BoardDashboard from "./spa/pages/consultor/BoardDashboard";
 import RepositorioDocumentos from "./spa/pages/cliente/RepositorioDocumentos";
 import ClienteCodigoEtica from "./spa/pages/cliente/CodigoEtica";
 import ClienteConfiguracoes from "./spa/pages/cliente/ClienteConfiguracoes";
+import ClientePoliticas from "./spa/pages/cliente/ClientePoliticas";
+import ClienteDeclaracaoConflito from "./spa/pages/cliente/ClienteDeclaracaoConflito";
 
 // Parceiro Pages
 import ParceiroDashboard from "./spa/pages/parceiro/ParceiroDashboard";
+import ParceiroCompliance from "./spa/pages/parceiro/ParceiroCompliance";
+import ParceiroAdesaoEtica from "./spa/pages/parceiro/ParceiroAdesaoEtica";
+import ParceiroComplianceCalendar from "./spa/pages/parceiro/ParceiroComplianceCalendar";
+import ParceiroESG from "./spa/pages/parceiro/ParceiroESG";
+import ParceiroCodigoEtica from "./spa/pages/parceiro/ParceiroCodigoEtica";
 
 // Admin Pages
 import AdminDashboard from "./spa/pages/admin/AdminDashboard";
@@ -377,6 +384,46 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/parceiro/compliance"
+                element={
+                  <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
+                    <ParceiroCompliance />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/parceiro/adesao-etica"
+                element={
+                  <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
+                    <ParceiroAdesaoEtica />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/parceiro/compliance-calendar"
+                element={
+                  <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
+                    <ParceiroComplianceCalendar />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/parceiro/esg"
+                element={
+                  <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
+                    <ParceiroESG />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/parceiro/codigo-etica"
+                element={
+                  <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
+                    <ParceiroCodigoEtica />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Client routes */}
               <Route
@@ -442,6 +489,24 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <ClienteConfiguracoes />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/meu-projeto/politicas"
+                element={
+                  <ProtectedRoute>
+                    <ClientePoliticas />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/meu-projeto/conflitos"
+                element={
+                  <ProtectedRoute>
+                    <ClienteDeclaracaoConflito />
                   </ProtectedRoute>
                 }
               />

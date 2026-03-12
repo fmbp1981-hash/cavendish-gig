@@ -16,6 +16,8 @@ import {
   Sparkles,
   Bug,
   ShieldCheck,
+  User,
+  Handshake,
 } from "lucide-react";
 import {
   DropdownMenuItem,
@@ -59,6 +61,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       <DropdownMenuItem onClick={() => navigate("/consultor")}>
         <Users2 className="mr-2 h-4 w-4" />
         Portal Consultor
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => navigate("/parceiro")}>
+        <Handshake className="mr-2 h-4 w-4" />
+        Portal do Parceiro
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => navigate("/meu-projeto")}>
+        <User className="mr-2 h-4 w-4" />
+        Portal do Cliente
       </DropdownMenuItem>
       <DropdownMenuSeparator />
     </>

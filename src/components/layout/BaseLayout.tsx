@@ -135,7 +135,7 @@ export function BaseLayout({
           {navItems.map((item) => {
             const isActive =
               location.pathname === item.href ||
-              (item.href !== homeHref && location.pathname.startsWith(item.href));
+              (item.href !== homeHref && location.pathname.startsWith(item.href + "/"));
             return (
               <Link
                 key={item.href}
