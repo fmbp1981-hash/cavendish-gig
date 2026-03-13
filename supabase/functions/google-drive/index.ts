@@ -14,6 +14,7 @@ interface DriveRequest {
   parentFolderId?: string;
   folderName?: string;
   clientName?: string;
+  organizacaoId?: string;
   email?: string;
   folderId?: string;
   fileId?: string;
@@ -310,9 +311,22 @@ const handler = async (req: Request): Promise<Response> => {
       authClient.rpc("has_role", { _user_id: user.id, _role: "cliente" }),
     ]);
 
-    // Clients can only upload files; other actions require admin/consultor
+    const canManageOwnOrgDrive =
+      isCliente &&
+      request.action === "createClientStructure" &&
+      !!request.organizacaoId &&
+      !!(
+        await authClient
+          .from("organization_members")
+          .select("organizacao_id")
+          .eq("organizacao_id", request.organizacaoId)
+          .eq("user_id", user.id)
+          .maybeSingle()
+      ).data;
+
+    // Clients can upload files and create the Drive structure only for their own organization.
     const isUploadAction = request.action === "uploadFile";
-    if (!isAdmin && !isConsultor && !(isCliente && isUploadAction)) {
+    if (!isAdmin && !isConsultor && !(isCliente && (isUploadAction || canManageOwnOrgDrive))) {
       return new Response(
         JSON.stringify({ error: "Acesso negado" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -352,12 +366,29 @@ const handler = async (req: Request): Promise<Response> => {
         break;
 
       case "createClientStructure":
-        if (!request.clientName) throw new Error("clientName is required");
+        if (!request.clientName || !request.organizacaoId) {
+          throw new Error("clientName and organizacaoId are required");
+        }
         result = await createClientFolderStructure(
           accessToken, 
           request.clientName,
           request.parentFolderId
         );
+
+        {
+          const { error: updateOrgError } = await service
+            .from("organizacoes")
+            .update({
+              drive_folder_id: result.rootFolder.id,
+              drive_folder_url: result.rootFolder.webViewLink,
+            })
+            .eq("id", request.organizacaoId);
+
+          if (updateOrgError) {
+            throw new Error(`Failed to persist Drive folder on organization: ${updateOrgError.message}`);
+          }
+        }
+
         console.log("Client structure created:", result.rootFolder.id);
         break;
 

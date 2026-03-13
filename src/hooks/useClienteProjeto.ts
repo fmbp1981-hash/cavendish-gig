@@ -7,6 +7,17 @@ interface ProjetoComOrganizacao extends Projeto {
   organizacao?: Organizacao;
 }
 
+export interface DocumentoArquivoProjeto {
+  id: string;
+  nome: string;
+  url: string | null;
+  storage_path: string | null;
+  drive_file_id: string | null;
+  tipo: string | null;
+  tamanho_bytes: number | null;
+  created_at: string;
+}
+
 export function useClienteProjeto() {
   const { user } = useAuth();
 
@@ -70,7 +81,7 @@ export function useDocumentosRequeridosProjeto(projetoId: string | undefined, or
       // Get status for each document
       const { data: statusList, error: statusError } = await supabase
         .from("documentos_requeridos_status")
-        .select("*")
+        .select("*, documentos(id, nome, url, storage_path, drive_file_id, tipo, tamanho_bytes, created_at)")
         .in("documento_requerido_id", documentos?.map((d: any) => d.id) || []);
 
       if (statusError) console.error("Status fetch error:", statusError);

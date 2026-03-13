@@ -69,9 +69,12 @@ export default function MeuProjeto() {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Building2 className="w-12 h-12 text-muted-foreground mb-4" />
               <h2 className="text-xl font-semibold text-foreground mb-2">Nenhum projeto encontrado</h2>
-              <p className="text-muted-foreground text-center max-w-md">
-                Você ainda não possui um projeto ativo. Entre em contato com seu consultor para iniciar.
+              <p className="text-muted-foreground text-center max-w-md mb-6">
+                Você ainda não possui um projeto ativo. Conclua o onboarding para criar sua organização, liberar o checklist e habilitar os uploads de documentos.
               </p>
+              <Button asChild>
+                <Link to="/onboarding">Concluir onboarding</Link>
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -190,7 +193,7 @@ export default function MeuProjeto() {
                 </Button>
               </Link>
 
-              <Link to="/meu-projeto/repositorio">
+              <Link to="/meu-projeto/documentos">
                 <Button variant="outline" className="w-full justify-start h-auto py-4">
                   <FolderOpen className="w-5 h-5 mr-3 text-secondary" />
                   <div className="text-left">

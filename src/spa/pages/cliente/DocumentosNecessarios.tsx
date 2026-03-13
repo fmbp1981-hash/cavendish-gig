@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useState } from "react";
 import { FileText, Upload } from "lucide-react";
 import { ClienteLayout } from "@/components/layout/ClienteLayout";
@@ -6,11 +7,13 @@ import { DocumentoRequeridoCard } from "@/components/documentos/DocumentoRequeri
 import { DocumentoUploadModal } from "@/components/documentos/DocumentoUploadModal";
 import { DocumentoRejeicaoModal } from "@/components/documentos/DocumentoRejeicaoModal";
 import { FiltroFaseDocumentos } from "@/components/documentos/FiltroFaseDocumentos";
+import { DocumentoPreviewButton } from "@/components/documentos/DocumentoPreviewButton";
+import { GoogleDrivePreviewButton } from "@/components/documentos/GoogleDrivePreviewButton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useClienteProjeto, useDocumentosRequeridosProjeto } from "@/hooks/useClienteProjeto";
+import { useClienteProjeto, useDocumentosRequeridosProjeto, type DocumentoArquivoProjeto } from "@/hooks/useClienteProjeto";
 import { useUploadDocumento } from "@/hooks/useUploadDocumento";
 import type { FaseProjeto, DocumentoRequerido, DocumentoRequeridoStatus } from "@/types/database";
 
@@ -20,7 +23,8 @@ const faseLabels: Record<FaseProjeto, string> = {
   recorrencia: "Recorrência",
 };
 
-type DocumentoComStatus = DocumentoRequerido & { status: DocumentoRequeridoStatus | null };
+type DocumentoStatusComArquivo = DocumentoRequeridoStatus & { documentos?: DocumentoArquivoProjeto | null };
+type DocumentoComStatus = DocumentoRequerido & { status: DocumentoStatusComArquivo | null };
 
 export default function DocumentosNecessarios() {
   const { toast } = useToast();
@@ -91,6 +95,26 @@ export default function DocumentosNecessarios() {
     }
   };
 
+  const handleOpenDocument = (doc: DocumentoComStatus) => {
+    const arquivo = doc.status?.documentos;
+
+    if (arquivo?.url) {
+      window.open(arquivo.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    if (arquivo?.drive_file_id) {
+      window.open(`https://drive.google.com/file/d/${arquivo.drive_file_id}/view`, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    toast({
+      title: "Arquivo não disponível",
+      description: "O documento ainda não possui arquivo acessível para visualização.",
+      variant: "destructive",
+    });
+  };
+
   const isLoading = projetoLoading || docsLoading;
 
   if (isLoading) {
@@ -117,9 +141,17 @@ export default function DocumentosNecessarios() {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <FileText className="w-12 h-12 text-muted-foreground mb-4" />
               <h2 className="text-xl font-semibold text-foreground mb-2">Nenhum projeto encontrado</h2>
-              <p className="text-muted-foreground text-center max-w-md">
-                Você ainda não possui um projeto ativo.
+              <p className="text-muted-foreground text-center max-w-md mb-6">
+                Você ainda não possui um projeto ativo. Finalize o onboarding para liberar checklist, uploads e o repositório de documentos.
               </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button asChild>
+                  <Link to="/onboarding">Finalizar onboarding</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/meu-projeto">Voltar ao portal</Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -236,15 +268,36 @@ export default function DocumentosNecessarios() {
                 <h2 className="text-lg font-semibold text-foreground mb-4">{faseLabels[fase]}</h2>
                 <div className="space-y-3">
                   {documentosPorFase[fase].map((doc: DocumentoComStatus) => (
-                    <DocumentoRequeridoCard
-                      key={doc.id}
-                      documento={doc}
-                      status={doc.status}
-                      onUpload={() => setUploadModalDoc(doc)}
-                      onView={() => toast({ title: "Visualizar documento", description: "Funcionalidade em desenvolvimento" })}
-                      onDownloadTemplate={() => doc.template_url && window.open(doc.template_url, "_blank")}
-                      onViewRejeicao={() => doc.status && setRejeicaoModalDoc(doc)}
-                    />
+                    <div key={doc.id} className="space-y-3">
+                      <DocumentoRequeridoCard
+                        documento={doc}
+                        status={doc.status}
+                        onUpload={() => setUploadModalDoc(doc)}
+                        onView={() => handleOpenDocument(doc)}
+                        onDownloadTemplate={() => doc.template_url && window.open(doc.template_url, "_blank")}
+                        onViewRejeicao={() => doc.status && setRejeicaoModalDoc(doc)}
+                      />
+
+                      {doc.status?.documentos && (
+                        <div className="flex flex-wrap items-center gap-2 pl-4">
+                          <span className="text-xs text-muted-foreground">
+                            Arquivo enviado: {doc.status.documentos.nome}
+                          </span>
+                          {doc.status.documentos.url && (
+                            <DocumentoPreviewButton
+                              url={doc.status.documentos.url}
+                              fileName={doc.status.documentos.nome}
+                            />
+                          )}
+                          {doc.status.documentos.drive_file_id && (
+                            <GoogleDrivePreviewButton
+                              driveFileId={doc.status.documentos.drive_file_id}
+                              fileName={doc.status.documentos.nome}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>

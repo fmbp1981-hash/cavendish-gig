@@ -7,6 +7,7 @@ import { IntelliXLogo } from "@/components/ui/IntelliXLogo";
 import { ArrowLeft, Eye, EyeOff, Loader2, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -20,7 +21,7 @@ const registerSchema = loginSchema.extend({
 });
 
 const Auth = () => {
-  const { signIn, signUp, resetPassword, updatePassword, user, loading: authLoading, rolesReady, isAdmin, isConsultor } = useAuth();
+  const { signIn, signUp, resetPassword, updatePassword, user, loading: authLoading, rolesReady, isAdmin, isConsultor, roles } = useAuth();
   const { toast } = useToast();
 
   const getQueryParam = (key: string) => {
@@ -48,13 +49,55 @@ const Auth = () => {
   // Redirect somente quando user existe, não está carregando E rolesReady=true
   // Isso evita redirect prematuro com roles=[] antes do banco responder
   useEffect(() => {
-    if (user && !authLoading && rolesReady && mode !== "reset-password") {
+    let cancelled = false;
+
+    const resolveRedirect = async () => {
+      if (!(user && !authLoading && rolesReady && mode !== "reset-password")) {
+        return;
+      }
+
       const next = getQueryParam("next");
       const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
-      const target = safeNext && safeNext !== "/auth" ? safeNext : isAdmin ? "/admin" : isConsultor ? "/consultor" : "/meu-projeto";
-      window.location.replace(target);
-    }
-  }, [user, authLoading, rolesReady, isAdmin, isConsultor, mode]);
+      if (safeNext && safeNext !== "/auth") {
+        window.location.replace(safeNext);
+        return;
+      }
+
+      if (isAdmin) {
+        window.location.replace("/admin");
+        return;
+      }
+
+      if (isConsultor) {
+        window.location.replace("/consultor");
+        return;
+      }
+
+      if (roles.includes("parceiro")) {
+        window.location.replace("/parceiro");
+        return;
+      }
+
+      const { data: membership } = await supabase
+        .from("organization_members")
+        .select("organizacao_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (cancelled) {
+        return;
+      }
+
+      window.location.replace(membership?.organizacao_id ? "/meu-projeto" : "/onboarding");
+    };
+
+    void resolveRedirect();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authLoading, rolesReady, isAdmin, isConsultor, roles, mode]);
 
   const validateForm = () => {
     try {

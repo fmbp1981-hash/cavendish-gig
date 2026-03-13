@@ -20,6 +20,8 @@ import {
   Eye,
   Building2,
   Loader2,
+  Mail,
+  User,
 } from "lucide-react";
 
 export default function ConsultorClienteDetalhe() {
@@ -41,6 +43,20 @@ export default function ConsultorClienteDetalhe() {
         .maybeSingle();
       if (error) throw error;
       return data;
+    },
+    enabled: !!organizacaoId,
+  });
+
+  const { data: membros, isLoading: loadingMembros } = useQuery({
+    queryKey: ["org-membros", organizacaoId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("organization_members")
+        .select("id, role, profiles:user_id(id, nome, email)")
+        .eq("organizacao_id", organizacaoId!);
+
+      if (error) throw error;
+      return data ?? [];
     },
     enabled: !!organizacaoId,
   });
@@ -148,6 +164,14 @@ export default function ConsultorClienteDetalhe() {
 
         <Tabs defaultValue="atas">
           <TabsList>
+            <TabsTrigger value="perfil">
+              Perfil do Cliente
+              {membros && membros.length > 0 && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {membros.length}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="atas">
               Atas de Reunião{" "}
               {atas && atas.length > 0 && (
@@ -165,6 +189,50 @@ export default function ConsultorClienteDetalhe() {
               )}
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="perfil" className="mt-4">
+            {loadingMembros ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              </div>
+            ) : membros && membros.length > 0 ? (
+              <div className="grid gap-3">
+                {membros.map((membro: any) => (
+                  <Card key={membro.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="py-4 px-5 flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <User className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {membro.profiles?.nome || "Usuário sem nome"}
+                          </p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                            <Mail className="w-3 h-3" />
+                            {membro.profiles?.email || "Email não informado"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Badge variant="outline" className="capitalize">
+                        {membro.role || "cliente"}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <User className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum perfil de cliente vinculado a esta organização.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
           {/* Aba Atas */}
           <TabsContent value="atas" className="mt-4">

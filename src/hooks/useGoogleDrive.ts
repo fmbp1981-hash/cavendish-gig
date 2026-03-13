@@ -110,6 +110,7 @@ export function useCreateClientDriveFolder() {
                 body: {
                     action: 'createClientStructure',
                     clientName,
+                    organizacaoId,
                     parentFolderId: baseFolderId,
                 },
             });
@@ -117,17 +118,7 @@ export function useCreateClientDriveFolder() {
             if (error) throw error;
 
             if (data?.success && data?.data) {
-                // Update the organization with the folder info
-                const folderResult = data.data as CreateFolderResult;
-                await sb
-                    .from('organizacoes')
-                    .update({
-                        drive_folder_id: folderResult.rootFolder.id,
-                        drive_folder_url: folderResult.rootFolder.webViewLink,
-                    })
-                    .eq('id', organizacaoId);
-
-                return folderResult;
+                return data.data as CreateFolderResult;
             }
 
             return null;
