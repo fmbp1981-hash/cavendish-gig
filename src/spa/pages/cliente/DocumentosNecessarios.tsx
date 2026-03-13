@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText } from "lucide-react";
+import { FileText, Upload } from "lucide-react";
 import { ClienteLayout } from "@/components/layout/ClienteLayout";
 import { ProgressoDocumentos } from "@/components/documentos/ProgressoDocumentos";
 import { DocumentoRequeridoCard } from "@/components/documentos/DocumentoRequeridoCard";
@@ -59,13 +59,25 @@ export default function DocumentosNecessarios() {
     if (!uploadModalDoc || !projeto) return;
 
     try {
-      await uploadMutation.mutateAsync({
-        file,
-        documentoRequeridoId: uploadModalDoc.id,
-        projetoId: projeto.id,
-        organizacaoId: projeto.organizacao_id,
-        nomeDocumento: uploadModalDoc.nome,
-      });
+      if (!uploadModalDoc.id) {
+        // Upload avulso / checklist sugerido
+        await uploadMutation.mutateAsync({
+          file,
+          documentoRequeridoId: undefined,
+          projetoId: projeto.id,
+          organizacaoId: projeto.organizacao_id,
+          nomeDocumento: uploadModalDoc.nome === "Documento Avulso" ? file.name : uploadModalDoc.nome,
+        });
+      } else {
+        await uploadMutation.mutateAsync({
+          file,
+          documentoRequeridoId: uploadModalDoc.id,
+          projetoId: projeto.id,
+          organizacaoId: projeto.organizacao_id,
+          nomeDocumento: uploadModalDoc.nome,
+        });
+      }
+
       toast({ title: "Documento enviado!", description: `${file.name} foi enviado com sucesso.` });
       setUploadModalDoc(null);
       refetch();
@@ -118,14 +130,34 @@ export default function DocumentosNecessarios() {
     <ClienteLayout>
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-primary" />
+        {/* Header Content with Upload Button */}
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <FileText className="w-5 h-5 text-primary" />
+              </div>
+              <h1 className="text-2xl font-bold text-foreground">Documentos Necessários</h1>
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Documentos Necessários</h1>
+            <p className="text-muted-foreground">Envie os documentos solicitados para cada fase do seu projeto.</p>
           </div>
-          <p className="text-muted-foreground">Envie os documentos solicitados para cada fase do projeto</p>
+          <Button onClick={() => setUploadModalDoc({
+            id: "",
+            nome: "Documento Avulso",
+            descricao: "Envie qualquer documento livremente para o projeto.",
+            fase: "diagnostico",
+            tipo_projeto: null,
+            obrigatorio: false,
+            ordem: 0,
+            template_url: null,
+            formatos_aceitos: "pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,zip",
+            tamanho_maximo_mb: 25,
+            ativo: true,
+            created_at: new Date().toISOString()
+          })}>
+            <Upload className="w-4 h-4 mr-2" />
+            Upload de Documento
+          </Button>
         </div>
 
         {/* Progress */}
@@ -140,12 +172,62 @@ export default function DocumentosNecessarios() {
 
         {/* Documents by Phase */}
         {documentos.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Nenhum documento requerido ainda.</p>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <Card className="border-dashed bg-accent/5">
+              <CardContent className="flex flex-col items-center justify-center py-8">
+                <FileText className="w-10 h-10 text-muted-foreground mb-3" />
+                <h3 className="font-medium text-lg">Checklist de Documentos (Visão Sugerida)</h3>
+                <p className="text-muted-foreground text-center text-sm max-w-md mt-1">
+                  O gerente do seu projeto ainda não atrelou um checklist estrito. Você pode utilizar o guia norteador abaixo ou fazer upload livremente de qualquer arquivo usando o botão "Upload Avulso".
+                </p>
+              </CardContent>
+            </Card>
+
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold text-foreground mb-4">Guia Prático Inicial (Norte)</h2>
+              {[
+                { nome: "Contrato Social ou Estatuto", obrigatorio: true },
+                { nome: "Comprovante de CNPJ", obrigatorio: true },
+                { nome: "Último Balanço Patrimonial", obrigatorio: false },
+                { nome: "Organograma da Empresa", obrigatorio: false },
+                { nome: "Políticas Internas Atuais (Código de Conduta, etc)", obrigatorio: false }
+              ].map((item, index) => (
+                <DocumentoRequeridoCard
+                  key={`sugerido-${index}`}
+                  documento={{
+                    id: "",
+                    nome: item.nome,
+                    descricao: "Documento sugerido para acelerar o diagnóstico do projeto.",
+                    fase: "diagnostico",
+                    tipo_projeto: null,
+                    obrigatorio: item.obrigatorio,
+                    ordem: index,
+                    template_url: null,
+                    formatos_aceitos: "pdf,jpg,png,doc,docx",
+                    tamanho_maximo_mb: 25,
+                    ativo: true,
+                    created_at: new Date().toISOString(),
+                  }}
+                  status={null}
+                  onUpload={() => setUploadModalDoc({
+                    id: "",
+                    nome: item.nome,
+                    descricao: "Documento sugerido para acelerar o diagnóstico do projeto.",
+                    fase: "diagnostico",
+                    tipo_projeto: null,
+                    obrigatorio: item.obrigatorio,
+                    ordem: index,
+                    template_url: null,
+                    formatos_aceitos: "pdf,jpg,png,doc,docx",
+                    tamanho_maximo_mb: 25,
+                    ativo: true,
+                    created_at: new Date().toISOString()
+                  })}
+                  onView={() => {}}
+                />
+              ))}
+            </div>
+          </div>
         ) : (
           <div className="space-y-8">
             {(Object.keys(documentosPorFase) as FaseProjeto[]).map((fase) => (

@@ -22,7 +22,7 @@ interface Documento {
 
 interface UploadParams {
   file: File;
-  documentoRequeridoId: string;
+  documentoRequeridoId?: string;
   projetoId: string;
   organizacaoId: string;
   nomeDocumento: string;
@@ -97,7 +97,8 @@ export function useUploadDocumento() {
 
       // Gerar nome único para o arquivo
       const fileExt = file.name.split('.').pop();
-      const fileName = `${organizacaoId}/${projetoId}/${documentoRequeridoId}/${Date.now()}.${fileExt}`;
+      const folderId = documentoRequeridoId || 'avulso';
+      const fileName = `${organizacaoId}/${projetoId}/${folderId}/${Date.now()}.${fileExt}`;
 
       // Upload do arquivo para o Supabase storage
       const { error: uploadError } = await supabase.storage
@@ -133,18 +134,20 @@ export function useUploadDocumento() {
       // Upload para Google Drive em background (não bloqueia o fluxo principal)
       uploadToGoogleDriveBackground(file, organizacaoId, documento.id);
 
-      // Atualizar ou criar status do documento requerido
-      const { error: statusError } = await sb
-        .from('documentos_requeridos_status')
-        .upsert({
-          documento_requerido_id: documentoRequeridoId,
-          documento_id: documento.id,
-          status: 'enviado'
-        }, {
-          onConflict: 'documento_requerido_id'
-        });
+      // Atualizar ou criar status do documento requerido, se fornecido
+      if (documentoRequeridoId) {
+        const { error: statusError } = await sb
+          .from('documentos_requeridos_status')
+          .upsert({
+            documento_requerido_id: documentoRequeridoId,
+            documento_id: documento.id,
+            status: 'enviado'
+          }, {
+            onConflict: 'documento_requerido_id'
+          });
 
-      if (statusError) throw statusError;
+        if (statusError) throw statusError;
+      }
 
       // Notificar consultores em background
       Promise.all([
