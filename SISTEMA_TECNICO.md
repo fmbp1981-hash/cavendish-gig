@@ -806,6 +806,19 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 
 **Build:** ✓ 0 erros TypeScript
 
+### 2026-03-12 — Correções do Agente de IA, Gestão Global de Usuários e Documentos
+
+**Edge Function `ai-generate` corrigida:**
+- A função tentava buscar as credenciais de provedores de IA (OpenAI, Gemini) em uma tabela legada `integration_vault` que já não existia. Refatorada para utilizar a tabela `integrations` atual, incluindo rotina de descriptografia segura das credenciais (`crypto.ts` / AES-GCM) em `secrets_encrypted`. Deploy realizado. 
+
+**Gestão Global de Usuário e Convites em `/admin/usuarios`**:
+- Antiga página `/admin/consultores` foi deletada e mesclada diretamente em `/admin/usuarios` através de um sistema estruturado em abas (`Tabs`).
+- A aba "Usuários Cadastrados" exibe a lista ativa permitindo trocar papéis (inclusive Parceiro, Consultor, Cliente, Admin) e designar organizações.
+- A aba "Convites & Pré-registros" agora gerencia a criação pendente global. Ao criar um convite, é possível selecionar a `role` com a qual a pessoa entrará (suportando qualquer role da aplicação e não apenas Consultor, o que era a limitação da tabela `consultant_pre_registrations` antiga). Roteamentos para `App.tsx` e referências corrigidas em hooks (`useUserPreRegistration`). Tabela `user_pre_registrations` foi alterada no Postgres.
+
+**Visibilidade dos Documentos Requeridos**:
+- No Portal do Cliente (`RepositorioDocumentos.tsx`), os documentos requeridos (Checklist) não carregavam se filtrassem por `organizacao_id` devido a tabela depender da entidade local `projeto_id` correspondente. Adicionado filtro correto (`projeto_id`).
+
 ### 2026-03-10 — Verificação e confirmação dos módulos Premium (Riscos, Calendar, LGPD)
 - Confirmado que **Gestão de Riscos**, **Compliance Calendar** e **LGPD Module** estavam 100% implementados desde 2026-03-09 mas não marcados como concluídos no SISTEMA_TECNICO.md
 - **Gestão de Riscos:** 3 tabelas (riscos, riscos_mitigacao, riscos_avaliacoes) + 5 componentes (heatmap 5×5, detalhes, form, mitigações) + hook completo → tab em `/consultor/compliance`
@@ -862,6 +875,21 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 ---
 
 ## 14. Bugs Corrigidos
+
+### 2026-03-12 — Bugs de IA, Documentos Requeridos e Gestão Global
+**Arquivos:** `supabase/functions/ai-generate/index.ts`, `src/spa/pages/cliente/RepositorioDocumentos.tsx`, `src/spa/pages/admin/AdminUsuarios.tsx`
+
+#### BUG 17 — CRÍTICO: Edge Function `ai-generate` não buscava credenciais de IA corretamente (`500`)
+- **Causa:** A consulta estava apontando silenciosamente para uma `integration_vault` depreciada, ignorando a tabela moderna `integrations` com chaves AES-GCM introduzidas recentemente.
+- **Fix:** Modificada a função `getAIConfig` para extrair de `integrations` onde config='ai' ou similar, implementando `decryptSecret` nativamente puxando a master key `INTEGRATIONS_ENCRYPTION_KEY` via `import { decryptSecret } from "../_shared/crypto.ts"`.
+
+#### BUG 18 — MÉDIA: Checklist de Documentos Requeridos "sumiu" da visão do Cliente
+- **Causa:** A interface `RepositorioDocumentos.tsx` buscava pela tabela `documentos_requeridos` filtrando `organizacao_id`. Entretanto o banco mapeou a obrigação do checklist sempre para `projeto_id`.
+- **Fix:** Refatorado `useQuery(["documentos_requeridos"])` para `.eq("projeto_id", projeto?.id)`.
+
+#### BUG 19 — MÉDIA: Área Admin criava Convites pre-setados unicamente como Consultores
+- **Causa:** Toda a lógica antiga de convites dependia da tabela estática `consultant_pre_registrations` e só aceitava e-mail gerando acesso para o Painel do Consultor (`app_role = 'consultor'`).
+- **Fix:** Tabela alterada para `user_pre_registrations`. Uma nova aba foi introduzida em `AdminUsuarios.tsx` descontinuando a página dedicada à consultores, permitindo um select visual para Administradores de forma flexível convidar `cliente`, `consultor`, `parceiro` ou até `admin`. 
 
 ### 2026-03-10 — Security headers + CSP adicionados ao next.config.mjs
 **Arquivo:** `next.config.mjs`
