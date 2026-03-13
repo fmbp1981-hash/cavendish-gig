@@ -162,7 +162,7 @@ export default function ConsultorClienteDetalhe() {
           </div>
         </div>
 
-        <Tabs defaultValue="atas">
+        <Tabs defaultValue="perfil">
           <TabsList>
             <TabsTrigger value="perfil">
               Perfil do Cliente

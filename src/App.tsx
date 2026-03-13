@@ -54,6 +54,7 @@ import ParceiroAdesaoEtica from "./spa/pages/parceiro/ParceiroAdesaoEtica";
 import ParceiroComplianceCalendar from "./spa/pages/parceiro/ParceiroComplianceCalendar";
 import ParceiroESG from "./spa/pages/parceiro/ParceiroESG";
 import ParceiroCodigoEtica from "./spa/pages/parceiro/ParceiroCodigoEtica";
+import ParceiroConfiguracoes from "./spa/pages/parceiro/ParceiroConfiguracoes";
 
 // Admin Pages
 import AdminDashboard from "./spa/pages/admin/AdminDashboard";
@@ -410,6 +411,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
                     <ParceiroCodigoEtica />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/parceiro/configuracoes"
+                element={
+                  <ProtectedRoute requiredRoles={["parceiro", "admin"]}>
+                    <ParceiroConfiguracoes />
                   </ProtectedRoute>
                 }
               />
