@@ -8,6 +8,7 @@ import { DocumentoRejeicaoModal } from "@/components/documentos/DocumentoRejeica
 import { FiltroFaseDocumentos } from "@/components/documentos/FiltroFaseDocumentos";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useClienteProjeto, useDocumentosRequeridosProjeto } from "@/hooks/useClienteProjeto";
 import { useUploadDocumento } from "@/hooks/useUploadDocumento";
