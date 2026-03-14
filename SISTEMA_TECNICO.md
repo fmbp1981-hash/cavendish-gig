@@ -1,8 +1,8 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-10 — Phase 1 CONCLUÍDA: tabs Incidentes, Auditoria Interna e Relatórios Regulatórios implementadas — 0 PlaceholderTabs em ConsultorCompliance. Phase 2 iniciada: triagem IA em denúncias (useTriagemIA) + página pública `/denuncia/[orgId]` (Next.js SSR, sem auth).
-**Versão do sistema:** 0.0.0 (pre-release) — branch `feature/gig-compliance-phase2`, 10 commits à frente do main
+**Última atualização:** 2026-03-13 — Correções de navegação entre perfis (role switching), is_admin() sem email hardcoded, página ParceiroConfiguracoes criada, upload de arquivos (áudio/PDF/imagem) como referência para geração de Código de Ética e Atas via IA.
+**Versão do sistema:** 0.0.0 (pre-release) — branch `main`
 **Desenvolvido por:** IntelliX.AI
 
 ---
@@ -819,6 +819,43 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 **Visibilidade dos Documentos Requeridos**:
 - No Portal do Cliente (`RepositorioDocumentos.tsx`), os documentos requeridos (Checklist) não carregavam se filtrassem por `organizacao_id` devido a tabela depender da entidade local `projeto_id` correspondente. Adicionado filtro correto (`projeto_id`).
 
+### 2026-03-13 — Role switching, ParceiroConfiguracoes, is_admin fix, upload de arquivos para IA
+
+**Navegação entre perfis (role switching) corrigida em todos os layouts:**
+- **`ConsultorLayout.tsx`** — Adicionados links para Admin, Parceiro e Cliente nos `extraMenuItems` do menu de perfil, condicionados às roles do usuário. Antes, um admin que acessasse o painel Consultor não conseguia navegar para o Cliente ou Parceiro.
+- **`ParceiroLayout.tsx`** — Adicionados `extraMenuItems` com links para Admin, Consultor e Cliente. Antes, não havia nenhum item extra, e o usuário ficava "preso" no painel Parceiro sem forma de voltar.
+
+**Página ParceiroConfiguracoes criada:**
+- **`src/spa/pages/parceiro/ParceiroConfiguracoes.tsx`** — Nova página com dados da conta (nome, email via profile) e troca de senha. Corrige 404 em `/parceiro/configuracoes`.
+- **`src/App.tsx`** — Import e rota `/parceiro/configuracoes` adicionados.
+
+**ConsultorClienteDetalhe — tab padrão corrigida:**
+- **`src/spa/pages/consultor/ConsultorClienteDetalhe.tsx`** — Default tab alterado de `"atas"` para `"perfil"`, garantindo que o consultor veja o perfil da organização ao abrir o detalhe do cliente.
+
+**Documentos Necessários — melhorias de UI:**
+- **`src/spa/pages/cliente/DocumentosNecessarios.tsx`** — Botões de preview adicionados para documentos já enviados; join com tabela `documentos` para exibir dados do arquivo; estado de "nenhum projeto" tratado corretamente.
+- **`src/hooks/useClienteProjeto.ts`** — Query de status agora faz join com `documentos` para trazer dados do arquivo (URL, nome, tamanho).
+
+**MeuProjeto — link corrigido:**
+- **`src/spa/pages/cliente/MeuProjeto.tsx`** — Link corrigido de `/meu-projeto/repositorio` para `/meu-projeto/documentos`.
+
+**Google Drive — auth para cliente:**
+- **`supabase/functions/google-drive/index.ts`** — Adicionada verificação `canManageOwnOrgDrive` que permite ao cliente criar pasta no Drive da própria organização durante onboarding.
+
+**Migration `20260313000001_fix_is_admin_and_handle_new_user.sql`:**
+- **`is_admin()`** refatorada: removido email hardcoded (`fmbp1981@gmail.com`), agora verifica apenas se o usuário possui a role `admin` na tabela `user_roles`.
+- **`handle_new_user()`** atualizada: busca pré-registros na tabela `user_pre_registrations` (antes usava `consultant_pre_registrations` que não existia mais), atribui role e `organizacao_id` conforme pré-registro.
+- **RLS policies** revisadas: `is_admin()` em `user_roles` e `profiles` atualizada para versão role-based.
+- **Executada** pelo usuário no Supabase SQL Editor em 2026-03-13.
+
+**Upload de arquivos como referência para IA (Código de Ética e Atas):**
+- **`src/spa/pages/consultor/ConsultorCodigoEtica.tsx`** — Adicionada área de upload de arquivos (drag-and-drop) que aceita PDFs, imagens e áudios. Texto de PDFs é extraído client-side via `FileReader`. Conteúdo dos arquivos é incluído no prompt como "Material de Referência". Áudios são transcritos via Whisper API através da edge function `ai-generate`.
+- **`src/spa/pages/consultor/ConsultorAtas.tsx`** — Mesma funcionalidade de upload de arquivos adicionada.
+- **`supabase/functions/ai-generate/index.ts`** — Suporte a `input_data.contexto_arquivos` adicionado em todas as construções de prompt (append ao userPrompt). Novo tipo `transcrever_audio` adicionado ao `VALID_TIPOS` para transcrição de áudio via OpenAI Whisper API.
+- **`src/hooks/useAIGenerate.ts`** — Tipos atualizados para incluir `transcrever_audio`.
+
+**Commits:** `3e55371`, `625302a`, `dfd7835`, `b1f8103` (todos em main, pushados para origin).
+
 ### 2026-03-10 — Verificação e confirmação dos módulos Premium (Riscos, Calendar, LGPD)
 - Confirmado que **Gestão de Riscos**, **Compliance Calendar** e **LGPD Module** estavam 100% implementados desde 2026-03-09 mas não marcados como concluídos no SISTEMA_TECNICO.md
 - **Gestão de Riscos:** 3 tabelas (riscos, riscos_mitigacao, riscos_avaliacoes) + 5 componentes (heatmap 5×5, detalhes, form, mitigações) + hook completo → tab em `/consultor/compliance`
@@ -890,6 +927,39 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 #### BUG 19 — MÉDIA: Área Admin criava Convites pre-setados unicamente como Consultores
 - **Causa:** Toda a lógica antiga de convites dependia da tabela estática `consultant_pre_registrations` e só aceitava e-mail gerando acesso para o Painel do Consultor (`app_role = 'consultor'`).
 - **Fix:** Tabela alterada para `user_pre_registrations`. Uma nova aba foi introduzida em `AdminUsuarios.tsx` descontinuando a página dedicada à consultores, permitindo um select visual para Administradores de forma flexível convidar `cliente`, `consultor`, `parceiro` ou até `admin`. 
+
+### 2026-03-13 — Role switching, is_admin, navegação e DocumentosNecessarios
+**Arquivos:** `ConsultorLayout.tsx`, `ParceiroLayout.tsx`, `ParceiroConfiguracoes.tsx`, `ConsultorClienteDetalhe.tsx`, `DocumentosNecessarios.tsx`, `MeuProjeto.tsx`, `google-drive/index.ts`, `App.tsx`, migration SQL
+
+#### BUG 20 — ALTA: Admin→Consultor→Cliente navegação impossível (role switching incompleto)
+- **Causa:** `ConsultorLayout.tsx` só exibia link para "Painel Admin" nos `extraMenuItems`. Não havia links para portal do Cliente ou Parceiro, mesmo se o usuário tivesse essas roles.
+- **Fix:** Adicionados `DropdownMenuItem` condicionais para Admin, Parceiro e Cliente baseados em `roles[]` do `useAuth()`.
+- **Arquivo:** `src/components/layout/ConsultorLayout.tsx`
+
+#### BUG 21 — ALTA: Parceiro ficava "preso" sem forma de voltar (sem extraMenuItems)
+- **Causa:** `ParceiroLayout.tsx` não passava `extraMenuItems` ao `BaseLayout`, portanto o menu de perfil não tinha links para outros portais.
+- **Fix:** Adicionados links para Admin, Consultor e Cliente nos `extraMenuItems`, condicionados às roles.
+- **Arquivo:** `src/components/layout/ParceiroLayout.tsx`
+
+#### BUG 22 — MÉDIA: Parceiro configurações retornava 404
+- **Causa:** A página `ParceiroConfiguracoes.tsx` não existia. O menu lateral do Parceiro apontava para `/parceiro/configuracoes` sem componente correspondente.
+- **Fix:** Criada página `ParceiroConfiguracoes.tsx` com dados da conta e troca de senha. Import e rota adicionados ao `App.tsx`.
+- **Arquivo:** `src/spa/pages/parceiro/ParceiroConfiguracoes.tsx`, `src/App.tsx`
+
+#### BUG 23 — MÉDIA: ConsultorClienteDetalhe abria na aba "atas" em vez de "perfil"
+- **Causa:** Default tab era `"atas"` — consultor tinha que clicar manualmente em "Perfil" para ver dados do cliente.
+- **Fix:** Alterado `defaultValue` do `Tabs` para `"perfil"`.
+- **Arquivo:** `src/spa/pages/consultor/ConsultorClienteDetalhe.tsx`
+
+#### BUG 24 — CRÍTICO: `is_admin()` hardcoded para email específico (admin não via outros usuários)
+- **Causa:** Função Postgres `is_admin()` verificava `auth.jwt()->>'email' = 'fmbp1981@gmail.com'` em vez de checar a tabela `user_roles`. Qualquer outro admin (exceto esse email) não conseguia ver usuários em Gestão de Usuários.
+- **Fix:** Migration `20260313000001` refatorou `is_admin()` para `EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')`.
+- **Arquivo:** `supabase/migrations/20260313000001_fix_is_admin_and_handle_new_user.sql`
+
+#### BUG 25 — ALTA: `handle_new_user()` referenciava tabela inexistente `consultant_pre_registrations`
+- **Causa:** A tabela foi renomeada para `user_pre_registrations` mas o trigger `handle_new_user` continuava buscando na tabela antiga, causando erro no signup de pré-registrados.
+- **Fix:** Migration `20260313000001` atualizou a função para buscar em `user_pre_registrations` e atribuir role + `organizacao_id` conforme o pré-registro.
+- **Arquivo:** `supabase/migrations/20260313000001_fix_is_admin_and_handle_new_user.sql`
 
 ### 2026-03-10 — Security headers + CSP adicionados ao next.config.mjs
 **Arquivo:** `next.config.mjs`

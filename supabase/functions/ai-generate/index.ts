@@ -5,7 +5,7 @@ import { buildCorsHeaders } from "../_shared/cors.ts";
 import { importAesGcmKeyFromEnv, decryptJsonAesGcm } from "../_shared/crypto.ts";
 
 interface AIRequest {
-  tipo: "codigo_etica" | "analise_documento" | "gerar_ata" | "chat" | "sumarizar_documento" | "detectar_riscos" | "gerar_contrato";
+  tipo: "codigo_etica" | "analise_documento" | "gerar_ata" | "chat" | "sumarizar_documento" | "detectar_riscos" | "gerar_contrato" | "transcrever_audio";
   input_data: Record<string, unknown>;
   projeto_id?: string;
   organizacao_id?: string;
@@ -94,7 +94,7 @@ async function getAIConfig(supabaseService: any): Promise<AIProviderConfig> {
   };
 }
 
-const VALID_TIPOS = ["codigo_etica", "analise_documento", "gerar_ata", "chat", "sumarizar_documento", "detectar_riscos", "gerar_contrato"] as const;
+const VALID_TIPOS = ["codigo_etica", "analise_documento", "gerar_ata", "chat", "sumarizar_documento", "detectar_riscos", "gerar_contrato", "transcrever_audio"] as const;
 const AI_TIMEOUT_MS = 25_000;
 
 /** Wrapper de fetch com AbortController para timeout */
@@ -441,6 +441,75 @@ Formate em Markdown.`;
 Inclua TODAS as 11 cláusulas do modelo oficial CCE.`;
         break;
 
+      case "transcrever_audio": {
+        // Audio transcription via OpenAI Whisper API
+        const audioBase64 = input_data.audio_base64 as string;
+        const audioFilename = (input_data.audio_filename as string) || "audio.webm";
+        const audioMimetype = (input_data.audio_mimetype as string) || "audio/webm";
+
+        if (!audioBase64) {
+          return new Response(
+            JSON.stringify({ error: "audio_base64 é obrigatório para transcrição" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Decode base64 to binary
+        const binaryString = atob(audioBase64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const audioBlob = new Blob([bytes], { type: audioMimetype });
+
+        // Determine the API key for Whisper (OpenAI)
+        let whisperKey = aiConfig.apiKey;
+        if (aiConfig.provider !== "openai") {
+          // Try to get OpenAI key specifically
+          const fallbackKey = Deno.env.get("OPENAI_API_KEY");
+          if (fallbackKey) whisperKey = fallbackKey;
+        }
+
+        const formData = new FormData();
+        formData.append("file", audioBlob, audioFilename);
+        formData.append("model", "whisper-1");
+        formData.append("language", "pt");
+        formData.append("response_format", "text");
+
+        const whisperResponse = await fetchWithTimeout("https://api.openai.com/v1/audio/transcriptions", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${whisperKey}` },
+          body: formData,
+        }, AI_TIMEOUT_MS);
+
+        if (!whisperResponse.ok) {
+          const errText = await whisperResponse.text();
+          console.error("Whisper error:", errText);
+          throw new Error(`Erro na transcrição: ${whisperResponse.status}`);
+        }
+
+        const transcription = await whisperResponse.text();
+
+        // Save to history
+        await supabaseService.from("ai_generations").insert({
+          tipo: "transcrever_audio",
+          input_data: { audio_filename: audioFilename },
+          output_text: transcription,
+          user_id: user.id,
+          organizacao_id: organizacao_id || null,
+          tokens_used: 0,
+          duracao_ms: Date.now() - Date.now(),
+          status: "completed",
+          provider: "openai",
+          model: "whisper-1",
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, output: transcription }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       case "chat":
       default: {
         systemPrompt = `Você é um assistente especializado em governança corporativa, compliance e gestão empresarial.
@@ -454,6 +523,14 @@ Responda de forma clara, profissional e objetiva.`;
         }
         break;
       }
+    }
+
+    // Use client prompt if provided (includes file content already), otherwise use structured prompt
+    if (input_data.prompt && typeof input_data.prompt === "string" && tipo !== "chat") {
+      userPrompt = input_data.prompt as string;
+    } else if (input_data.contexto_arquivos && typeof input_data.contexto_arquivos === "string") {
+      // Append contexto_arquivos only if using structured prompt (backward compatibility)
+      userPrompt += `\n\n**Material de Referência (arquivos carregados pelo usuário):**\n${input_data.contexto_arquivos}`;
     }
 
     // Extrai messages para chat com histórico

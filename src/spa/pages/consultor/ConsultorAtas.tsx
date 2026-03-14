@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { ConsultorLayout } from "@/components/layout/ConsultorLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import {
 import { useOrganizacoes } from "@/hooks/useConsultorData";
 import { useAIGenerate } from "@/hooks/useAIGenerate";
 import { toast } from "sonner";
-import { Sparkles, Copy, Download, RefreshCw, FileText, Plus, X, Calendar } from "lucide-react";
+import { Sparkles, Copy, Download, RefreshCw, FileText, Plus, X, Calendar, Upload, Image, Music, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -25,6 +25,35 @@ import { ptBR } from "date-fns/locale";
 interface Participante {
   nome: string;
   cargo: string;
+}
+
+interface ArquivoReferencia {
+  file: File;
+  textoExtraido?: string;
+  status: "pendente" | "processando" | "pronto" | "erro";
+}
+
+function getTipoIcone(tipo: string) {
+  if (tipo.startsWith("audio/")) return <Music className="h-4 w-4" />;
+  if (tipo.startsWith("image/")) return <Image className="h-4 w-4" />;
+  return <FileText className="h-4 w-4" />;
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function extrairTextoPDF(file: File): Promise<string> {
+  try {
+    const text = await file.text();
+    const cleaned = text.replace(/[^\x20-\x7E\xA0-\xFF\n\r\t]/g, " ").replace(/\s+/g, " ").trim();
+    if (cleaned.length > 100) return cleaned.slice(0, 15000);
+    return `[Arquivo PDF: ${file.name} — conteúdo binário não extraível client-side]`;
+  } catch {
+    return `[Arquivo PDF: ${file.name}]`;
+  }
 }
 
 export default function ConsultorAtas() {
@@ -37,11 +66,112 @@ export default function ConsultorAtas() {
   const [participantes, setParticipantes] = useState<Participante[]>([{ nome: "", cargo: "" }]);
   const [notas, setNotas] = useState("");
   const [ataGerada, setAtaGerada] = useState("");
+  const [arquivos, setArquivos] = useState<ArquivoReferencia[]>([]);
+  const [processandoArquivos, setProcessandoArquivos] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: organizacoes, isLoading: loadingOrgs } = useOrganizacoes();
   const { generate, loading: isGenerating } = useAIGenerate();
 
   const selectedOrgData = organizacoes?.find(org => org.id === selectedOrg);
+
+  const processarArquivo = useCallback(async (file: File): Promise<string> => {
+    const tipo = file.type;
+    if (tipo === "application/pdf") {
+      return await extrairTextoPDF(file);
+    }
+    if (tipo.startsWith("image/")) {
+      return `[Imagem anexada: ${file.name} (${formatFileSize(file.size)})]`;
+    }
+    if (tipo.startsWith("audio/")) {
+      try {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(",")[1] || "");
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const result = await generate({
+          tipo: "transcrever_audio",
+          input_data: {
+            audio_base64: base64,
+            audio_filename: file.name,
+            audio_mimetype: file.type,
+          },
+        });
+
+        if (result.success && result.output) {
+          return `[Transcrição do áudio "${file.name}"]:\n${result.output}`;
+        }
+        return `[Áudio: ${file.name} — transcrição não disponível]`;
+      } catch {
+        return `[Áudio: ${file.name} — erro na transcrição]`;
+      }
+    }
+    try {
+      const text = await file.text();
+      return text.slice(0, 15000);
+    } catch {
+      return `[Arquivo: ${file.name}]`;
+    }
+  }, [generate]);
+
+  const adicionarArquivos = useCallback(async (files: FileList | File[]) => {
+    const novosArquivos: ArquivoReferencia[] = Array.from(files)
+      .filter(f => {
+        const tipoValido = f.type.startsWith("audio/") || f.type.startsWith("image/") ||
+          f.type === "application/pdf" || f.type.startsWith("text/");
+        const tamanhoValido = f.size <= 25 * 1024 * 1024;
+        if (!tipoValido) toast.error(`Tipo não suportado: ${f.name}`);
+        if (!tamanhoValido) toast.error(`Arquivo muito grande: ${f.name} (máx. 25MB)`);
+        return tipoValido && tamanhoValido;
+      })
+      .map(f => ({ file: f, status: "pendente" as const }));
+
+    if (novosArquivos.length === 0) return;
+    setArquivos(prev => [...prev, ...novosArquivos]);
+    setProcessandoArquivos(true);
+
+    for (const arq of novosArquivos) {
+      setArquivos(prev => prev.map(a =>
+        a.file === arq.file ? { ...a, status: "processando" } : a
+      ));
+      try {
+        const texto = await processarArquivo(arq.file);
+        setArquivos(prev => prev.map(a =>
+          a.file === arq.file ? { ...a, textoExtraido: texto, status: "pronto" } : a
+        ));
+      } catch {
+        setArquivos(prev => prev.map(a =>
+          a.file === arq.file ? { ...a, status: "erro" } : a
+        ));
+      }
+    }
+    setProcessandoArquivos(false);
+  }, [processarArquivo]);
+
+  const removerArquivo = (index: number) => {
+    setArquivos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+    else if (e.type === "dragleave") setDragActive(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files?.length) adicionarArquivos(e.dataTransfer.files);
+  }, [adicionarArquivos]);
 
   const addParticipante = () => {
     setParticipantes([...participantes, { nome: "", cargo: "" }]);
@@ -94,6 +224,10 @@ ${participantesText || "Não especificados"}
 **Notas e Pontos Discutidos:**
 ${notas}
 
+${arquivos.filter(a => a.textoExtraido).length > 0
+  ? `**Material de Referência (arquivos carregados):**\n${arquivos.filter(a => a.textoExtraido).map(a => a.textoExtraido).join("\n\n")}`
+  : ""}
+
 A ata deve conter:
 1. Cabeçalho com informações da reunião
 2. Lista de presença
@@ -107,10 +241,18 @@ Use linguagem formal. O documento deve estar em português brasileiro, bem forma
 
     setAtaGerada("");
 
+    const contextoArquivos = arquivos
+      .filter(a => a.textoExtraido)
+      .map(a => a.textoExtraido)
+      .join("\n\n");
+
     try {
       const result = await generate({
         tipo: "gerar_ata",
-        input_data: { prompt },
+        input_data: {
+          prompt,
+          ...(contextoArquivos ? { contexto_arquivos: contextoArquivos } : {}),
+        },
         projeto_id: undefined,
         organizacao_id: selectedOrg,
         stream: true,
@@ -294,9 +436,70 @@ Use linguagem formal. O documento deve estar em português brasileiro, bem forma
                 />
               </div>
 
+              {/* Área de Upload de Arquivos */}
+              <div className="space-y-2">
+                <Label>Arquivos de Referência</Label>
+                <p className="text-xs text-muted-foreground">
+                  Carregue áudios da reunião, PDFs ou imagens como referência para a IA
+                </p>
+                <div
+                  className={`relative border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer ${
+                    dragActive
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="application/pdf,image/*,audio/*,text/*"
+                    onChange={(e) => {
+                      if (e.target.files?.length) adicionarArquivos(e.target.files);
+                      e.target.value = "";
+                    }}
+                    className="hidden"
+                  />
+                  <Upload className="mx-auto h-6 w-6 text-muted-foreground mb-1" />
+                  <p className="text-sm text-muted-foreground">
+                    Arraste arquivos ou clique para selecionar
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Áudios, PDFs, imagens (máx. 25MB cada)
+                  </p>
+                </div>
+                {arquivos.length > 0 && (
+                  <div className="space-y-1.5 mt-2">
+                    {arquivos.map((arq, idx) => (
+                      <div key={idx} className="flex items-center gap-2 bg-muted/50 rounded-md px-3 py-1.5 text-sm">
+                        {getTipoIcone(arq.file.type)}
+                        <span className="truncate flex-1">{arq.file.name}</span>
+                        <span className="text-xs text-muted-foreground">{formatFileSize(arq.file.size)}</span>
+                        {arq.status === "processando" && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+                        {arq.status === "pronto" && <Badge variant="secondary" className="text-xs">Pronto</Badge>}
+                        {arq.status === "erro" && <Badge variant="destructive" className="text-xs">Erro</Badge>}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={(e) => { e.stopPropagation(); removerArquivo(idx); }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <Button
                 onClick={handleGenerate}
-                disabled={isGenerating || !selectedOrg || !assunto || !notas}
+                disabled={isGenerating || processandoArquivos || !selectedOrg || !assunto || !notas}
                 className="w-full"
               >
                 {isGenerating ? (
