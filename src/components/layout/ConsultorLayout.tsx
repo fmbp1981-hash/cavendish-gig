@@ -19,6 +19,8 @@ import {
   Building2,
   Leaf,
   PresentationIcon,
+  User,
+  Handshake,
 } from "lucide-react";
 import {
   DropdownMenuItem,
@@ -48,18 +50,41 @@ interface ConsultorLayoutProps {
 }
 
 export function ConsultorLayout({ children }: ConsultorLayoutProps) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, roles } = useAuth();
   const navigate = useNavigate();
 
-  const extraMenuItems = isAdmin ? (
+  const isParceiro = roles?.includes("parceiro");
+  const hasAnyExtra = isAdmin || isParceiro;
+
+  const extraMenuItems = hasAnyExtra ? (
     <>
-      <DropdownMenuItem onClick={() => navigate("/admin")}>
-        <Shield className="mr-2 h-4 w-4" />
-        Painel Admin
+      {isAdmin && (
+        <DropdownMenuItem onClick={() => navigate("/admin")}>
+          <Shield className="mr-2 h-4 w-4" />
+          Painel Admin
+        </DropdownMenuItem>
+      )}
+      {isParceiro && (
+        <DropdownMenuItem onClick={() => navigate("/parceiro")}>
+          <Handshake className="mr-2 h-4 w-4" />
+          Portal do Parceiro
+        </DropdownMenuItem>
+      )}
+      <DropdownMenuItem onClick={() => navigate("/meu-projeto")}>
+        <User className="mr-2 h-4 w-4" />
+        Portal do Cliente
       </DropdownMenuItem>
       <DropdownMenuSeparator />
     </>
-  ) : null;
+  ) : (
+    <>
+      <DropdownMenuItem onClick={() => navigate("/meu-projeto")}>
+        <User className="mr-2 h-4 w-4" />
+        Portal do Cliente
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+    </>
+  );
 
   return (
     <BaseLayout

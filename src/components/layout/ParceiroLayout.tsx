@@ -1,4 +1,6 @@
 import { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { BaseLayout, NavItem } from "./BaseLayout";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -8,7 +10,14 @@ import {
   Leaf,
   Sparkles,
   Settings,
+  Shield,
+  Users2,
+  User,
 } from "lucide-react";
+import {
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 const navItems: NavItem[] = [
   { icon: ShieldCheck,  label: "Compliance",            href: "/parceiro/compliance",            dataTour: "parceiro-nav-compliance" },
@@ -33,6 +42,33 @@ interface ParceiroLayoutProps {
 }
 
 export function ParceiroLayout({ children }: ParceiroLayoutProps) {
+  const navigate = useNavigate();
+  const { isAdmin, isConsultor } = useAuth();
+
+  const hasAnyExtra = isAdmin || isConsultor;
+
+  const extraMenuItems = hasAnyExtra ? (
+    <>
+      {isAdmin && (
+        <DropdownMenuItem onClick={() => navigate("/admin")}>
+          <Shield className="mr-2 h-4 w-4" />
+          Painel Admin
+        </DropdownMenuItem>
+      )}
+      {isConsultor && (
+        <DropdownMenuItem onClick={() => navigate("/consultor")}>
+          <Users2 className="mr-2 h-4 w-4" />
+          Portal Consultor
+        </DropdownMenuItem>
+      )}
+      <DropdownMenuItem onClick={() => navigate("/meu-projeto")}>
+        <User className="mr-2 h-4 w-4" />
+        Portal do Cliente
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+    </>
+  ) : null;
+
   return (
     <BaseLayout
       navItems={navItems}
@@ -40,6 +76,7 @@ export function ParceiroLayout({ children }: ParceiroLayoutProps) {
       headerTitle={headerTitle}
       userRole="parceiro"
       settingsHref="/parceiro/configuracoes"
+      extraMenuItems={extraMenuItems}
     >
       {children}
     </BaseLayout>
