@@ -1,0 +1,22 @@
+{
+  "passed": 68,
+  "failed": 4,
+  "errors": [
+    {
+      "test": "GET /onboarding",
+      "detail": "HTTPConnectionPool(host='localhost', port=3000): Read timed out. (read timeout=30)"
+    },
+    {
+      "test": "GET /help",
+      "detail": "HTTPConnectionPool(host='localhost', port=3000): Read timed out. (read timeout=30)"
+    },
+    {
+      "test": "Edge Function 'denuncias' acessível",
+      "detail": "HTTPSConnectionPool(host='fenfgjqlsqzvxloeavdc.supabase.co', port=443): Max retries exceeded with url: /functions/v1/denuncias (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1077)')))"
+    },
+    {
+      "test": "GET /auth tempo",
+      "detail": "HTTPConnectionPool(host='localhost', port=3000): Read timed out. (read timeout=30)"
+    }
+  ]
+}

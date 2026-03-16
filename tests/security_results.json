@@ -1,0 +1,22 @@
+{
+  "passed": 62,
+  "failed": 4,
+  "errors": [
+    {
+      "test": "XSS não refletido em / (javascript:alert(1)...)",
+      "detail": "Payload XSS refletido na resposta!"
+    },
+    {
+      "test": "XSS não refletido em /auth (javascript:alert(1)...)",
+      "detail": "Payload XSS refletido na resposta!"
+    },
+    {
+      "test": "XSS não refletido em /denuncia (javascript:alert(1)...)",
+      "detail": "Payload XSS refletido na resposta!"
+    },
+    {
+      "test": "XSS não refletido em /consulta-protocolo (javascript:alert(1)...)",
+      "detail": "Payload XSS refletido na resposta!"
+    }
+  ]
+}

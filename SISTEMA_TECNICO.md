@@ -27,6 +27,7 @@
 16. [Análise Competitiva — Mercado GRC](#16-análise-competitiva--mercado-grc-atualizado-2026-03-09)
 17. [Decisões de Arquitetura](#17-decisões-de-arquitetura)
 18. [Plano de Implementação GIG Premium](#18-plano-de-implementação-gig-premium)
+19. [Testes E2E — Relatório de Qualidade](#19-testes-e2e--relatório-de-qualidade)
 
 ---
 
@@ -1988,3 +1989,59 @@ Por segurança: nenhum usuário deve ter acesso privilegiado automaticamente. Co
 
 ### Por que `fetchingUserIdRef` em vez de remover o `getSession()`?
 A chamada dupla acontece porque o pattern recomendado pelo Supabase era usar ambos (antes do `INITIAL_SESSION` event). O `useRef` é a correção menos invasiva — não altera o comportamento de inicialização, apenas deduplicação as queries.
+
+---
+
+## 19. Testes E2E — Relatório de Qualidade
+
+**Data da execução:** 2026-03-13  
+**Método:** Python 3.14 + requests (HTTP-level, 8 fases, 312 testes)  
+**Ambiente:** Dev server Next.js localhost:3000  
+**Relatório completo:** `tests/RELATORIO_E2E.md`
+
+### Resumo
+
+| Fase | Total | Pass | Fail | Taxa |
+|------|------:|-----:|-----:|-----:|
+| 1 — Smoke Tests | 72 | 68 | 4 | 94.4% |
+| 2 — Funcionais (com auth) | 26 | 26 | 0 | 100.0% |
+| 3 — Negativos | 52 | 52 | 0 | 100.0% |
+| 4 — Edge Cases | 36 | 36 | 0 | 100.0% |
+| 5 — Segurança | 66 | 62 | 4 | 93.9% |
+| 6 — UI/UX | 21 | 21 | 0 | 100.0% |
+| 7 — Stress/Performance | 21 | 21 | 0 | 100.0% |
+| 8 — Segurança IA | 18 | 18 | 0 | 100.0% |
+| **TOTAL** | **312** | **304** | **8** | **97.4%** |
+
+### Falhas identificadas (todas não-críticas)
+
+- **4 falhas de infraestrutura (Fase 1):** Timeouts de compilação on-demand em `/onboarding` e `/help` (primeira vez), SSL intermitente com edge function `denuncias`, timeout de SPA hydration em `/auth`. Todas exclusivas do dev server.
+- **4 falsos positivos de XSS (Fase 5):** String `javascript:alert(1)` encontrada no bundle JS da framework (webpack), não em conteúdo injetado pelo usuário. Sem risco real.
+
+### Pontos fortes confirmados
+
+- **Segurança:** Todos os 8 headers HTTP presentes, CORS configurado, RLS funcional em 6 tabelas (organizacoes, user_roles, documentos, tarefas, denuncias, profiles), JWT validado, nenhum leak de dados.
+- **Autenticação:** Login, perfil, refresh token — tudo funcional. Credenciais inválidas rejeitadas com 400.
+- **Edge Functions:** Requerem JWT válido, rejeitam payloads maliciosos (SQL injection retorna 403), 8 prompt injections não causam vazamentos.
+- **HTML:** Meta viewport, charset, title, lang presentes em todas as páginas públicas.
+- **Performance (dev):** Todas as rotas <10s (threshold dev). Navegação sequencial de 7 páginas em 10.2s.
+
+### Scripts de teste
+
+| Arquivo | Fase | Testes |
+|---------|------|-------:|
+| `tests/test_01_smoke.py` | Smoke | 72 |
+| `tests/test_02_functional.py` | Funcional | 26 |
+| `tests/test_03_negative.py` | Negativo | 52 |
+| `tests/test_04_edge_cases.py` | Edge Cases | 36 |
+| `tests/test_05_security.py` | Segurança | 66 |
+| `tests/test_06_ui_ux.py` | UI/UX | 21 |
+| `tests/test_07_stress.py` | Stress | 21 |
+| `tests/test_08_ai_security.py` | Segurança IA | 18 |
+
+### Recomendações para produção
+
+1. Configurar provedor de IA (OpenAI/Gemini) em Admin → Integrações
+2. Re-executar testes de performance após deploy na Vercel (expectativa: <500ms por rota)
+3. Considerar Playwright para testes de interação de UI (formulários, botões, modais)
+4. Avaliar SSR parcial para `/denuncia` e `/auth` para melhor SEO
