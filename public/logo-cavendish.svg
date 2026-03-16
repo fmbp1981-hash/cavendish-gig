@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 550" fill="none">
+  <!-- Shield outline -->
+  <path d="M250 30 C250 30 430 70 430 70 C430 70 430 300 430 300 C430 400 250 480 250 480 C250 480 70 400 70 300 C70 300 70 70 70 70 C70 70 250 30 250 30 Z" 
+        stroke="#C5A55A" stroke-width="12" fill="none" stroke-linejoin="round"/>
+  
+  <!-- Trend line with dots (going up) -->
+  <polyline points="140,310 200,270 280,230 340,180 380,140" 
+            stroke="#C5A55A" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Dots on trend points -->
+  <circle cx="200" cy="270" r="8" fill="#C5A55A"/>
+  <circle cx="280" cy="230" r="8" fill="#C5A55A"/>
+  <circle cx="380" cy="140" r="8" fill="#C5A55A"/>
+  
+  <!-- CAVENDISH text -->
+  <text x="250" y="520" text-anchor="middle" fill="#C5A55A" 
+        font-family="'Playfair Display', 'Georgia', serif" font-size="52" font-weight="400" letter-spacing="8">
+    CAVENDISH
+  </text>
+  
+  <!-- CONSULTORIA EMPRESARIAL text -->
+  <text x="250" y="548" text-anchor="middle" fill="#C5A55A" 
+        font-family="'Inter', 'Helvetica', sans-serif" font-size="18" font-weight="300" letter-spacing="4" opacity="0.8">
+    CONSULTORIA EMPRESARIAL
+  </text>
+</svg>
