@@ -100,7 +100,9 @@ export function BaseLayout({
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain rounded shrink-0" />
               ) : (
-                <img src="/logo-cavendish.png" alt="Cavendish" className="h-8 w-auto object-contain shrink-0" />
+                <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center shrink-0">
+                  <span className="text-sidebar-primary-foreground font-bold text-xs">GIG</span>
+                </div>
               )}
               <span className="font-semibold text-sidebar-foreground text-sm truncate">
                 Sistema<span className="text-sidebar-primary">GIG</span>
@@ -200,7 +202,11 @@ export function BaseLayout({
 
           {sidebarOpen && (
             <div className="mt-3 pt-3 border-t border-sidebar-border">
-              <IntelliXLogo size="sm" />
+              <img
+                src="/logo-cavendish.png"
+                alt="Cavendish Consultoria Empresarial"
+                className="h-20 w-auto object-contain mx-auto"
+              />
             </div>
           )}
         </div>

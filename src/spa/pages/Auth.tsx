@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/ui/Logo";
 import { IntelliXLogo } from "@/components/ui/IntelliXLogo";
-import { ArrowLeft, Eye, EyeOff, Loader2, TrendingUp } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -611,9 +611,11 @@ const Auth = () => {
         </div>
 
         <div className="relative text-center max-w-md">
-          <div className="w-20 h-20 rounded-2xl bg-sidebar-primary/20 flex items-center justify-center mx-auto mb-8">
-            <TrendingUp className="w-10 h-10 text-sidebar-primary" />
-          </div>
+          <img
+            src="/logo-cavendish.png"
+            alt="Cavendish Consultoria Empresarial"
+            className="w-64 h-auto object-contain mx-auto mb-8 drop-shadow-lg"
+          />
           <h2 className="text-3xl font-bold text-sidebar-foreground mb-4">
             Governança simplificada
           </h2>
