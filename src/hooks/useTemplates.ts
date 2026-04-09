@@ -265,6 +265,7 @@ export function useTemplates() {
    * Helper: Extrair variáveis de um conteúdo
    */
   const extrairVariaveis = (conteudo: string): string[] => {
+    if (!conteudo) return [];
     const regex = /\{\{([a-zA-Z0-9._]+)\}\}/g;
     const matches = conteudo.matchAll(regex);
     const variaveis = Array.from(matches, m => m[1]);

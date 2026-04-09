@@ -53,7 +53,7 @@ export function TemplateEditor({ template, open, onClose, onSave }: TemplateEdit
       setNome(template.nome);
       setDescricao(template.descricao || "");
       setCategoria(template.categoria);
-      setConteudo(template.conteudo);
+      setConteudo(template.conteudo || "");
       setIsPublico(template.is_publico);
       setTags(template.tags?.join(", ") || "");
     } else {
