@@ -125,7 +125,7 @@ export function useUploadDocumento() {
           tamanho_bytes: file.size,
           uploaded_by: user.id
         })
-        .select()
+        .select('id, organizacao_id, projeto_id, nome, url, storage_path, tipo, tamanho_bytes, uploaded_by, descricao, drive_file_id, created_at, updated_at')
         .single();
 
       if (docError) throw docError;
