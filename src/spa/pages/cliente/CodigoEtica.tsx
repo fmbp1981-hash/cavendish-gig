@@ -64,6 +64,7 @@ export default function ClienteCodigoEtica() {
 
   // Renderizar conteúdo markdown simples
   const renderConteudo = (conteudo: string) => {
+    if (!conteudo) return null;
     return conteudo.split('\n').map((line, i) => {
       if (line.startsWith('# ')) {
         return <h1 key={i} className="text-2xl font-bold mt-6 mb-4">{line.slice(2)}</h1>;

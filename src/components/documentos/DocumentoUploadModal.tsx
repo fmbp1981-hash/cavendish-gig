@@ -31,10 +31,11 @@ export function DocumentoUploadModal({
   const [error, setError] = useState<string | null>(null);
 
   const formatosAceitos = Array.isArray(documento.formatos_aceitos)
-    ? documento.formatos_aceitos.map(f => f.trim())
-    : (documento.formatos_aceitos || '').split(',').map(f => f.trim());
+    ? documento.formatos_aceitos.map(f => f.trim()).filter(Boolean)
+    : (documento.formatos_aceitos || 'pdf,jpg,png').split(',').map(f => f.trim());
   const acceptString = formatosAceitos.map(f => `.${f}`).join(',');
-  const tamanhoMaximoBytes = documento.tamanho_maximo_mb * 1024 * 1024;
+  const tamanhoMaximoMb = documento.tamanho_maximo_mb ?? 10;
+  const tamanhoMaximoBytes = tamanhoMaximoMb * 1024 * 1024;
 
   const validateFile = useCallback((file: File): string | null => {
     const extension = file.name.split('.').pop()?.toLowerCase();
@@ -42,7 +43,7 @@ export function DocumentoUploadModal({
       return `Formato não aceito. Use: ${formatosAceitos.join(', ')}`;
     }
     if (file.size > tamanhoMaximoBytes) {
-      return `Arquivo muito grande. Máximo: ${documento.tamanho_maximo_mb}MB`;
+      return `Arquivo muito grande. Máximo: ${tamanhoMaximoMb}MB`;
     }
     return null;
   }, [formatosAceitos, tamanhoMaximoBytes, documento.tamanho_maximo_mb]);
@@ -162,7 +163,7 @@ export function DocumentoUploadModal({
                   Formatos: {formatosAceitos.join(', ').toUpperCase()}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Tamanho máximo: {documento.tamanho_maximo_mb}MB
+                  Tamanho máximo: {tamanhoMaximoMb}MB
                 </p>
               </>
             )}
