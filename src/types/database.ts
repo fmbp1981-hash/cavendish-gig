@@ -8,7 +8,7 @@ export type Json =
 
 export type AppRole = 'admin' | 'consultor' | 'parceiro' | 'cliente';
 export type FaseProjeto = 'diagnostico' | 'implementacao' | 'recorrencia';
-export type TipoProjeto = 'diagnostico_inicial' | 'gig_completo' | 'compliance_avulso' | 'treinamento_avulso';
+export type TipoProjeto = 'gig_completo' | 'gig_modular' | 'consultoria_pontual';
 export type StatusDocumento = 'pendente' | 'enviado' | 'em_analise' | 'aprovado' | 'rejeitado';
 
 export interface Database {
@@ -19,7 +19,6 @@ export interface Database {
           id: string
           nome: string
           cnpj: string | null
-          logo_url: string | null
           created_at: string
           updated_at: string
         }
@@ -27,7 +26,6 @@ export interface Database {
           id?: string
           nome: string
           cnpj?: string | null
-          logo_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -35,7 +33,6 @@ export interface Database {
           id?: string
           nome?: string
           cnpj?: string | null
-          logo_url?: string | null
           created_at?: string
           updated_at?: string
         }

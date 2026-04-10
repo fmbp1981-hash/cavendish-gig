@@ -1,7 +1,7 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-03-13 — Correções de navegação entre perfis (role switching), is_admin() sem email hardcoded, página ParceiroConfiguracoes criada, upload de arquivos (áudio/PDF/imagem) como referência para geração de Código de Ética e Atas via IA.
+**Última atualização:** 2026-04-10 — Fix crash matchAll em templates, sistema de upload reconstruído (trigger + 48 registros + coluna ordem), 8 null guards proativos, PostgREST embedded FK joins substituídos por queries separadas em 3 arquivos (fix definitivo do erro 400), fix build Vercel (import mismatch AdminConsultores). Total: 10 novos bugs documentados (BUG-26 a BUG-35), 6 commits.
 **Versão do sistema:** 0.0.0 (pre-release) — branch `main`
 **Desenvolvido por:** IntelliX.AI
 
@@ -910,6 +910,98 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - Padrão híbrido: App Router (páginas públicas) + React Router SPA (autenticada)
 - `supabase/client.ts` refatorado: lazy init + proxy SSR para evitar erros no build
 
+### 2026-04-09 — Crash matchAll, sistema de upload quebrado, null guards proativos
+
+**Problema inicial reportado:** `Uncaught TypeError: Cannot read properties of undefined (reading 'matchAll')` em produção (`cavendish-gig.vercel.app`) na rota `/admin/templates`.
+
+**Investigação revelou problemas em cascata:**
+
+1. **Fix `extrairVariaveis` null guard** (`src/hooks/useTemplates.ts`):
+   - `conteudo.matchAll(regex)` chamado sem null check — crash quando template não tem conteúdo
+   - Adicionado `if (!conteudo) return [];` antes do matchAll
+   - **Commit:** `36bef53`
+
+2. **Fix `setConteudo` fallback** (`src/components/templates/TemplateEditor.tsx`):
+   - `setConteudo(data.conteudo)` podia settar undefined, quebrando operações downstream
+   - Adicionado `|| ""` fallback
+   - **Commit:** `36bef53`
+
+3. **Upload de documentos completamente quebrado** — investigação revelou:
+   - Tabela `documentos_requeridos` tinha **0 registros** — clientes não tinham nada para fazer upload
+   - Trigger function `create_required_documents_for_project()` e trigger `on_project_created` **não existiam** no Supabase de produção
+   - **Fix (DB):** Criada trigger function + trigger via SQL. Provisionados 24 `documentos_requeridos` + 24 `documentos_requeridos_status` para projetos existentes
+
+4. **Coluna `ordem` inexistente** em `documentos_requeridos`:
+   - Código ordenava por `fase.asc, ordem.asc` mas coluna `ordem` não existia → 400 do PostgREST
+   - **Fix (DB):** `ALTER TABLE documentos_requeridos ADD COLUMN ordem integer;` + populated com dados do catálogo + trigger atualizado para incluir `ordem` + `NOTIFY pgrst, 'reload schema'`
+
+5. **`formatos_aceitos.split is not a function`** (`src/components/documentos/DocumentoUploadModal.tsx`):
+   - `formatos_aceitos` é `text[]` (array Postgres) mas código chamava `.split(',')` assumindo string
+   - Adicionado `Array.isArray()` check para tratar ambos os casos
+   - **Commit:** `64c5b3b`
+
+6. **`tamanho_maximo_mb` null crash** (`src/components/documentos/DocumentoUploadModal.tsx`):
+   - Operações aritméticas falhavam com valor null
+   - Adicionado `?? 10` fallback (default 10MB)
+   - **Commit:** `c19b51a`
+
+7. **`CodigoEtica.renderConteudo` null crash** (`src/spa/pages/cliente/CodigoEtica.tsx`):
+   - `conteudo.split('\n')` chamado quando `conteudo` é null/undefined
+   - Adicionado `if (!conteudo) return null;` guard
+   - **Commit:** `c19b51a`
+
+8. **File extension fallback** (`src/hooks/useUploadDocumento.ts`):
+   - `file.name.split('.').pop()` podia retornar undefined se arquivo não tem extensão
+   - Adicionado `|| 'bin'` fallback + `folderId` fallback
+   - **Commit:** `64c5b3b`
+
+**Commits:** `36bef53`, `64c5b3b`, `4a87932`, `c19b51a` (todos em main, pushados para origin).
+
+### 2026-04-10 — PostgREST embedded FK joins → separate queries (fix definitivo do erro 400) + fix build Vercel
+
+**Problema persistente:** Mesmo após todos os fixes do dia anterior, as páginas `/meu-projeto/documentos-necessarios` e Repositório continuavam retornando **erro 400** nas queries ao Supabase.
+
+**Investigação profunda (análise de causa raiz):**
+- Queries diretas a `documentos?select=*` retornavam 200 OK (tanto com anon key quanto service_role)
+- Queries com `.in()` vazio retornavam 200 OK
+- Todas as RLS policies estavam corretas e permissivas
+- Todas as FKs existiam no schema
+- `formatos_aceitos` tinha valores de array corretos no DB
+
+**Causa raiz identificada:** O erro 400 era gerado internamente pelo **PostgREST** ao resolver **embedded FK joins** (sintaxe `documentos(...)` dentro de `.select()`). Após a adição da coluna `ordem` à tabela `documentos_requeridos`, o **schema cache** do PostgREST em instâncias load-balanced do Supabase ficou **stale** — incapaz de resolver os relacionamentos FK embutidos.
+
+**3 arquivos afetados — todos usavam embedded FK joins:**
+
+1. **`src/hooks/useClienteProjeto.ts`** (função `useDocumentosRequeridosProjeto`):
+   - **Antes:** `.from("documentos_requeridos_status").select("*, documentos(id, nome, url, ...)")`
+   - **Depois:** 2 queries separadas — (1) `.select("*")` no status, (2) `.from("documentos").select(...)` por IDs — combinados em JS com `Map`
+   - **Commit:** `059ea18`
+
+2. **`src/spa/pages/cliente/RepositorioDocumentos.tsx`** (query inline):
+   - **Antes:** `.select("*, documentos_requeridos(...), documentos(...)")` — **duplo** embedded FK join
+   - **Depois:** 3 queries separadas — (1) status records, (2) documentos_requeridos por IDs, (3) documentos por IDs — combinados em JS
+   - **Commit:** `059ea18`
+
+3. **`src/hooks/useConsultorData.ts`** (função `useDocumentosPendentes`):
+   - **Antes:** `.select("*, documentos_requeridos(id, nome, ..., projetos(id, nome, organizacoes(id, nome))), documentos(...)")` — **triplo** nested FK join
+   - **Depois:** 5 queries sequenciais — (1) status, (2) documentos_requeridos, (3) projetos, (4) organizacoes, (5) documentos — estrutura aninhada reconstruída em JS
+   - **Commit:** `059ea18`
+
+**Fix build Vercel — import mismatch em `AdminConsultores.tsx`:**
+- Arquivo `src/spa/pages/admin/AdminConsultores.tsx` (incluído no commit `059ea18`) importava `useConsultorPreRegistrations`, `useAddConsultorPreRegistration`, `useRemoveConsultorPreRegistration`
+- Hook `useConsultorPreRegistration.ts` exporta como `useUserPreRegistrations`, `useAddUserPreRegistration`, `useRemoveUserPreRegistration`
+- **Fix:** Renomeados os 3 imports + 3 usos para corresponder aos nomes exportados
+- **Commit:** `3a5050e`
+
+**Commits:** `059ea18`, `3a5050e` (todos em main, pushados para origin).
+
+**Soluções tentadas antes do fix definitivo (cronologia de debugging):**
+1. ❌ Reload do PostgREST schema cache via `NOTIFY pgrst, 'reload schema'` — funcionou apenas na instância local, não propagou para todas as instâncias load-balanced
+2. ❌ Verificação de RLS policies — todas estavam corretas
+3. ❌ Teste com service_role key vs anon key — ambos retornavam 200 em queries simples, confirmando que o problema não era autenticação
+4. ❌ Verificação de `.in()` com array vazio — não era a causa
+5. ✅ **Solução definitiva:** Eliminar completamente os embedded FK joins do PostgREST, substituindo por queries separadas combinadas em JavaScript — imune a problemas de schema cache
+
 ---
 
 ## 14. Bugs Corrigidos
@@ -961,6 +1053,86 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - **Causa:** A tabela foi renomeada para `user_pre_registrations` mas o trigger `handle_new_user` continuava buscando na tabela antiga, causando erro no signup de pré-registrados.
 - **Fix:** Migration `20260313000001` atualizou a função para buscar em `user_pre_registrations` e atribuir role + `organizacao_id` conforme o pré-registro.
 - **Arquivo:** `supabase/migrations/20260313000001_fix_is_admin_and_handle_new_user.sql`
+
+### 2026-04-09 — Crash em produção, upload quebrado, null guards (8 bugs)
+**Arquivos:** `src/hooks/useTemplates.ts`, `src/components/templates/TemplateEditor.tsx`, `src/hooks/useUploadDocumento.ts`, `src/components/documentos/DocumentoUploadModal.tsx`, `src/spa/pages/cliente/CodigoEtica.tsx`
+**Tipo:** Code fixes + Database fixes
+
+#### BUG 26 — CRÍTICO: `extrairVariaveis` crash — `matchAll` on undefined
+- **Causa:** Função `extrairVariaveis` em `useTemplates.ts` (linha 267) chamava `conteudo.matchAll(regex)` sem verificar se `conteudo` era null/undefined. Templates sem conteúdo causavam crash em produção na rota `/admin/templates`.
+- **Fix:** Adicionado `if (!conteudo) return [];` null guard antes do matchAll.
+- **Arquivo:** `src/hooks/useTemplates.ts`
+- **Commit:** `36bef53`
+
+#### BUG 27 — ALTA: `setConteudo` sem fallback no TemplateEditor
+- **Causa:** `setConteudo(data.conteudo)` podia settar `undefined` quando o template não tinha conteúdo, quebrando operações downstream que dependiam de string.
+- **Fix:** Adicionado `|| ""` fallback: `setConteudo(data.conteudo || "")`.
+- **Arquivo:** `src/components/templates/TemplateEditor.tsx`
+- **Commit:** `36bef53`
+
+#### BUG 28 — CRÍTICO: Upload de documentos não funcionava (0 registros em `documentos_requeridos`)
+- **Causa:** A trigger function `create_required_documents_for_project()` e o trigger `on_project_created` **não existiam** no Supabase de produção. A tabela `documentos_requeridos` tinha 0 registros — clientes acessavam a página de upload mas não havia nenhum documento para enviar.
+- **Investigação:** Erro foi descoberto ao investigar se o crash de `matchAll` (BUG-26) causava falha no upload. São rotas completamente diferentes (`/admin/templates` vs `/meu-projeto/documentos-necessarios`), mas a investigação revelou este problema maior.
+- **Fix (Database):** Criada trigger function `create_required_documents_for_project()` com catálogo de 24 documentos por fase (implantacao, operacao, manutencao, outros). Criado trigger `on_project_created` em `projetos` (AFTER INSERT). Provisionados manualmente 24 `documentos_requeridos` + 24 `documentos_requeridos_status` para os projetos já existentes.
+- **Tipo:** Database-only fix (SQL)
+
+#### BUG 29 — ALTA: Coluna `ordem` inexistente em `documentos_requeridos` — 400 no PostgREST
+- **Causa:** Código ordenava por `.order("fase").order("ordem", { ascending: true })` mas a coluna `ordem` não existia na tabela `documentos_requeridos`. PostgREST retornava 400.
+- **Fix (Database):** `ALTER TABLE documentos_requeridos ADD COLUMN ordem integer;` + populado com valores do catálogo de documentos. Trigger function atualizada para incluir `ordem` nos INSERTs. Cache do PostgREST recarregado via `NOTIFY pgrst, 'reload schema'`.
+- **Tipo:** Database-only fix (SQL)
+
+#### BUG 30 — ALTA: `formatos_aceitos.split is not a function` crash
+- **Causa:** Coluna `formatos_aceitos` é do tipo `text[]` (array Postgres), mas `DocumentoUploadModal.tsx` chamava `.split(',')` assumindo que era string. Em runtime, o Supabase retorna array JS (`["pdf","docx","xlsx"]`), e `.split()` não existe em arrays.
+- **Fix:** Adicionado `Array.isArray(s.formatos_aceitos) ? s.formatos_aceitos : s.formatos_aceitos?.split(',')` para tratar ambos os casos.
+- **Arquivo:** `src/components/documentos/DocumentoUploadModal.tsx`
+- **Commit:** `64c5b3b`
+
+#### BUG 31 — MÉDIA: `tamanho_maximo_mb` null causa crash em operações aritméticas
+- **Causa:** `tamanho_maximo_mb` podia ser null no banco, e o componente usava o valor diretamente em comparações (`file.size > tamanhoMaximoMb * 1024 * 1024`), causando `NaN` e comportamento imprevisível.
+- **Fix:** Adicionado `?? 10` fallback: `const tamanhoMaximoMb = s.tamanho_maximo_mb ?? 10;`
+- **Arquivo:** `src/components/documentos/DocumentoUploadModal.tsx`
+- **Commit:** `c19b51a`
+
+#### BUG 32 — MÉDIA: `CodigoEtica.renderConteudo` crash quando `conteudo` é null
+- **Causa:** Função `renderConteudo` chamava `conteudo.split('\n')` sem null check. Se nenhum Código de Ética estivesse cadastrado, a página crashava.
+- **Fix:** Adicionado `if (!conteudo) return null;` guard no início da função.
+- **Arquivo:** `src/spa/pages/cliente/CodigoEtica.tsx`
+- **Commit:** `c19b51a`
+
+#### BUG 33 — MÉDIA: Extensão do arquivo sem fallback no hook de upload
+- **Causa:** `file.name.split('.').pop()` retornava `undefined` se o arquivo não tinha extensão, gerando path de storage inválido no Supabase.
+- **Fix:** Adicionado `|| 'bin'` fallback para extensão + fallback para `folderId`.
+- **Arquivo:** `src/hooks/useUploadDocumento.ts`
+- **Commit:** `64c5b3b`
+
+### 2026-04-10 — PostgREST FK joins quebrando queries + build failure
+**Arquivos:** `src/hooks/useClienteProjeto.ts`, `src/spa/pages/cliente/RepositorioDocumentos.tsx`, `src/hooks/useConsultorData.ts`, `src/spa/pages/admin/AdminConsultores.tsx`
+
+#### BUG 34 — CRÍTICO: Erro 400 persistente em queries de documentos (PostgREST embedded FK joins)
+- **Causa raiz:** 3 arquivos usavam a sintaxe de **embedded FK join** do PostgREST (ex: `.select("*, documentos(id, nome, ...)")`) para buscar dados relacionados em uma única query. Após a adição da coluna `ordem` à tabela `documentos_requeridos` (BUG-29), o **schema cache** do PostgREST nas instâncias load-balanced do Supabase ficou **stale** — não conseguia resolver os relacionamentos FK embutidos, retornando 400 em todas as queries que usavam essa sintaxe.
+- **Diagnóstico detalhado:**
+  - Queries simples (`documentos?select=*`) retornavam 200 OK com ambas as keys (anon e service_role)
+  - Queries com `.in()` vazio retornavam 200 OK
+  - Todas as RLS policies estavam corretas e permissivas
+  - Todas as FKs existiam no schema
+  - O problema era **exclusivamente** na resolução de embedded FK joins pelo PostgREST
+- **Soluções tentadas que NÃO funcionaram:**
+  1. `NOTIFY pgrst, 'reload schema'` — propagou apenas para a instância local
+  2. Verificação de RLS policies — todas corretas
+  3. Teste com service_role key — confirmou que não era problema de auth
+  4. Verificação de `.in()` com array vazio — não era a causa
+- **Fix definitivo (3 arquivos refatorados):**
+  - `useClienteProjeto.ts`: `.select("*, documentos(...)")` → 2 queries separadas + Map em JS
+  - `RepositorioDocumentos.tsx`: `.select("*, documentos_requeridos(...), documentos(...)")` → 3 queries separadas + Maps em JS
+  - `useConsultorData.ts`: triple nested FK join `documentos_requeridos(projetos(organizacoes(...)))` → 5 queries sequenciais + reconstrução da estrutura aninhada em JS
+- **Arquivos:** `src/hooks/useClienteProjeto.ts`, `src/spa/pages/cliente/RepositorioDocumentos.tsx`, `src/hooks/useConsultorData.ts`
+- **Commit:** `059ea18`
+
+#### BUG 35 — CRÍTICO (Build): Import mismatch em `AdminConsultores.tsx` — deploy Vercel falhava
+- **Causa:** Arquivo `AdminConsultores.tsx` (adicionado no commit `059ea18`) importava `useConsultorPreRegistrations`, `useAddConsultorPreRegistration`, `useRemoveConsultorPreRegistration` mas o hook `useConsultorPreRegistration.ts` exporta com nomes diferentes: `useUserPreRegistrations`, `useAddUserPreRegistration`, `useRemoveUserPreRegistration`. TypeScript compilava localmente (possivelmente por cache), mas o build limpo no Vercel falhava com: `'"@/hooks/useConsultorPreRegistration"' has no exported member named 'useConsultorPreRegistrations'. Did you mean 'useUserPreRegistrations'?`
+- **Fix:** Renomeados os 3 imports e 3 usos no componente para corresponder aos nomes reais exportados pelo hook.
+- **Arquivo:** `src/spa/pages/admin/AdminConsultores.tsx`
+- **Commit:** `3a5050e`
 
 ### 2026-03-10 — Security headers + CSP adicionados ao next.config.mjs
 **Arquivo:** `next.config.mjs`
