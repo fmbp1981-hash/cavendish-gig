@@ -78,16 +78,35 @@ export function useDocumentosRequeridosProjeto(projetoId: string | undefined, or
 
       if (docError) throw docError;
 
-      // Get status for each document
+      // Get status for each document (separate queries to avoid PostgREST FK join issues)
+      const docIds = documentos?.map((d: any) => d.id) || [];
+      if (docIds.length === 0) {
+        return (documentos || []).map((doc: any) => ({ ...doc, status: null }));
+      }
+
       const { data: statusList, error: statusError } = await supabase
         .from("documentos_requeridos_status")
-        .select("*, documentos(id, nome, url, storage_path, drive_file_id, tipo, tamanho_bytes, created_at)")
-        .in("documento_requerido_id", documentos?.map((d: any) => d.id) || []);
+        .select("*")
+        .in("documento_requerido_id", docIds);
 
       if (statusError) console.error("Status fetch error:", statusError);
 
-      // Map status to documents
-      const statusMap = new Map((statusList || []).map((s: any) => [s.documento_requerido_id, s]));
+      // Fetch uploaded documents separately
+      const uploadedDocIds = (statusList || []).map((s: any) => s.documento_id).filter(Boolean);
+      let docsMap = new Map();
+      if (uploadedDocIds.length > 0) {
+        const { data: uploadedDocs } = await supabase
+          .from("documentos")
+          .select("id, nome, url, storage_path, drive_file_id, tipo, tamanho_bytes, created_at")
+          .in("id", uploadedDocIds);
+        docsMap = new Map((uploadedDocs || []).map((d: any) => [d.id, d]));
+      }
+
+      // Map status + uploaded docs to required documents
+      const statusMap = new Map((statusList || []).map((s: any) => [
+        s.documento_requerido_id,
+        { ...s, documentos: s.documento_id ? docsMap.get(s.documento_id) || null : null }
+      ]));
 
       return (documentos || []).map((doc: any) => ({
         ...doc,

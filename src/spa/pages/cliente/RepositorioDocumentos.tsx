@@ -69,20 +69,48 @@ export default function RepositorioDocumentos() {
   const uploadMutation = useUploadDocumento();
   const queryClient = useQueryClient();
 
-  // Fetch ALL documents (not just approved)
+  // Fetch ALL documents (not just approved) — separate queries to avoid PostgREST FK join issues
   const { data: todosDocumentos, isLoading } = useQuery({
     queryKey: ["repositorio-completo", projeto?.id],
     queryFn: async () => {
       if (!projeto?.id) return [] as DocumentoComStatus[];
 
-      const { data, error } = await supabase
+      // 1. Fetch all status records
+      const { data: statusData, error: statusErr } = await supabase
         .from("documentos_requeridos_status")
-        .select(
-          "*, documentos_requeridos(id, nome, descricao, fase, obrigatorio, formatos_aceitos, tamanho_maximo_mb), documentos(id, nome, url, storage_path, drive_file_id, tipo, tamanho_bytes, created_at)"
-        );
+        .select("*");
 
-      if (error) throw error;
-      return (data || []) as unknown as DocumentoComStatus[];
+      if (statusErr) throw statusErr;
+      if (!statusData || statusData.length === 0) return [] as DocumentoComStatus[];
+
+      // 2. Fetch related documentos_requeridos
+      const reqIds = [...new Set(statusData.map((s: any) => s.documento_requerido_id).filter(Boolean))];
+      let reqMap = new Map();
+      if (reqIds.length > 0) {
+        const { data: reqDocs } = await supabase
+          .from("documentos_requeridos")
+          .select("id, nome, descricao, fase, obrigatorio, formatos_aceitos, tamanho_maximo_mb")
+          .in("id", reqIds);
+        reqMap = new Map((reqDocs || []).map((d: any) => [d.id, d]));
+      }
+
+      // 3. Fetch related uploaded documentos
+      const docIds = [...new Set(statusData.map((s: any) => s.documento_id).filter(Boolean))];
+      let docMap = new Map();
+      if (docIds.length > 0) {
+        const { data: docs } = await supabase
+          .from("documentos")
+          .select("id, nome, url, storage_path, drive_file_id, tipo, tamanho_bytes, created_at")
+          .in("id", docIds);
+        docMap = new Map((docs || []).map((d: any) => [d.id, d]));
+      }
+
+      // 4. Combine in JS
+      return statusData.map((s: any) => ({
+        ...s,
+        documentos_requeridos: reqMap.get(s.documento_requerido_id) || null,
+        documentos: s.documento_id ? docMap.get(s.documento_id) || null : null,
+      })) as unknown as DocumentoComStatus[];
     },
     enabled: !!projeto?.id,
   });
