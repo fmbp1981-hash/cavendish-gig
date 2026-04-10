@@ -35,9 +35,9 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-    useConsultorPreRegistrations,
-    useAddConsultorPreRegistration,
-    useRemoveConsultorPreRegistration,
+    useUserPreRegistrations,
+    useAddUserPreRegistration,
+    useRemoveUserPreRegistration,
 } from "@/hooks/useConsultorPreRegistration";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -57,9 +57,9 @@ export default function AdminConsultores() {
     const [newEmail, setNewEmail] = useState("");
     const [newNome, setNewNome] = useState("");
 
-    const { data: preRegistrations, isLoading } = useConsultorPreRegistrations();
-    const addMutation = useAddConsultorPreRegistration();
-    const removeMutation = useRemoveConsultorPreRegistration();
+    const { data: preRegistrations, isLoading } = useUserPreRegistrations();
+    const addMutation = useAddUserPreRegistration();
+    const removeMutation = useRemoveUserPreRegistration();
 
     const handleAddPreRegistration = async (e: React.FormEvent) => {
         e.preventDefault();
