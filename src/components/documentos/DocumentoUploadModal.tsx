@@ -30,7 +30,9 @@ export function DocumentoUploadModal({
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const formatosAceitos = documento.formatos_aceitos.split(',').map(f => f.trim());
+  const formatosAceitos = Array.isArray(documento.formatos_aceitos)
+    ? documento.formatos_aceitos.map(f => f.trim())
+    : (documento.formatos_aceitos || '').split(',').map(f => f.trim());
   const acceptString = formatosAceitos.map(f => `.${f}`).join(',');
   const tamanhoMaximoBytes = documento.tamanho_maximo_mb * 1024 * 1024;
 
