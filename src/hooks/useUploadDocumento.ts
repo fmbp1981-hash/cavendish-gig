@@ -96,14 +96,9 @@ export function useUploadDocumento() {
       if (!user) throw new Error('Usuário não autenticado');
 
       // Gerar nome único para o arquivo
-<<<<<<< HEAD
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop() || 'bin';
       const folderId = documentoRequeridoId || 'avulso';
       const fileName = `${organizacaoId}/${projetoId}/${folderId}/${Date.now()}.${fileExt}`;
-=======
-      const fileExt = file.name.split('.').pop() || 'bin';
-      const fileName = `${organizacaoId}/${projetoId}/${documentoRequeridoId}/${Date.now()}.${fileExt}`;
->>>>>>> cc9d9ce (fix: null guard em extrairVariaveis e fallback em upload de documentos)
 
       // Upload do arquivo para o Supabase storage
       const { error: uploadError } = await supabase.storage
