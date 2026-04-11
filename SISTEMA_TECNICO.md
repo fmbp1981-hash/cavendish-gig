@@ -1,7 +1,7 @@
 # SISTEMA_TECNICO.md — Sistema GIG (Cavendish)
 > Documento vivo de contexto técnico completo. Atualizar a cada modificação, feature, fix ou decisão relevante.
 
-**Última atualização:** 2026-04-10 — Fix crash matchAll em templates, sistema de upload reconstruído (trigger + 48 registros + coluna ordem), 8 null guards proativos, PostgREST embedded FK joins substituídos por queries separadas em 3 arquivos (fix definitivo do erro 400), fix build Vercel (import mismatch AdminConsultores). Total: 10 novos bugs documentados (BUG-26 a BUG-35), 6 commits.
+**Última atualização:** 2026-04-10 — Fix triggers documento_versoes com colunas erradas (NEW.tamanho/mime_type → NEW.tamanho_bytes/NULL), fix .select() sem args no INSERT de documentos. 2 bugs adicionais (BUG-36, BUG-37). Anteriormente: fix crash matchAll, upload reconstruído, null guards, PostgREST FK joins, fix build Vercel. Total: 12 bugs (BUG-26 a BUG-37), 8 commits.
 **Versão do sistema:** 0.0.0 (pre-release) — branch `main`
 **Desenvolvido por:** IntelliX.AI
 
@@ -1133,6 +1133,22 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - **Fix:** Renomeados os 3 imports e 3 usos no componente para corresponder aos nomes reais exportados pelo hook.
 - **Arquivo:** `src/spa/pages/admin/AdminConsultores.tsx`
 - **Commit:** `3a5050e`
+
+### 2026-04-10 — Triggers documento_versoes com colunas erradas + select() sem args
+**Arquivos:** `supabase/migrations/20260410000001_fix_documento_versoes_triggers.sql`, `src/hooks/useUploadDocumento.ts`
+**Tipo:** Database fix + Code fix
+
+#### BUG 36 — CRÍTICO: Triggers documento_versoes quebravam todo INSERT em documentos
+- **Causa:** A migration `20251214000000_documento_versoes.sql` criou 3 funções trigger que referenciam colunas que **não existem** na tabela `documentos`: `NEW.tamanho` (deveria ser `NEW.tamanho_bytes`) e `NEW.mime_type` (não existe em `documentos`). O trigger `create_initial_document_version` disparava em todo INSERT, causando erro PostgreSQL `record "new" has no field "tamanho"` → rollback → PostgREST retornava 400.
+- **Fix:** Migration `20260410000001_fix_documento_versoes_triggers.sql` corrige as 3 funções: `create_initial_document_version()`, `create_document_version_on_update()` e `restore_document_version()`. Substituídas todas as referências a `.tamanho` por `.tamanho_bytes` e `.mime_type` por `NULL`.
+- **Arquivo:** `supabase/migrations/20260410000001_fix_documento_versoes_triggers.sql`
+- **Commit:** `d8470af`
+
+#### BUG 37 — ALTA: .select() sem argumentos no INSERT gerava select=* → 400
+- **Causa:** `useUploadDocumento.ts` fazia `.insert({...}).select()` sem especificar colunas. Isso gera `POST /documentos?select=*`, que o PostgREST retorna 400 por FK ambígua no schema cache (mesmo padrão dos embedded FK joins).
+- **Fix:** Substituído por `.select('id, organizacao_id, projeto_id, nome, url, storage_path, tipo, tamanho_bytes, uploaded_by, descricao, drive_file_id, created_at, updated_at')`.
+- **Arquivo:** `src/hooks/useUploadDocumento.ts`
+- **Commit:** `d513e1a`
 
 ### 2026-03-10 — Security headers + CSP adicionados ao next.config.mjs
 **Arquivo:** `next.config.mjs`
