@@ -1,6 +1,17 @@
-import { FileText, Download, Upload, Eye, RefreshCw, AlertCircle, User, Calendar } from "lucide-react";
+import { FileText, Download, Upload, Eye, RefreshCw, AlertCircle, User, Calendar, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import type { DocumentoRequerido, DocumentoRequeridoStatus, StatusDocumento } from "@/types/database";
 
 interface DocumentoRequeridoCardProps {
@@ -11,6 +22,7 @@ interface DocumentoRequeridoCardProps {
   onDownloadTemplate?: () => void;
   onViewRejeicao?: () => void;
   onAnalyze?: () => void;
+  onDelete?: () => void;
   isConsultor?: boolean;
   enviadoPorNome?: string;
 }
@@ -21,7 +33,37 @@ const statusConfig: Record<StatusDocumento, { label: string; variant: "default" 
   em_analise: { label: "Em Análise", variant: "default", className: "bg-accent/10 text-accent border-accent/20" },
   aprovado: { label: "Aprovado", variant: "default", className: "bg-secondary/10 text-secondary border-secondary/20" },
   rejeitado: { label: "Rejeitado", variant: "destructive", className: "bg-destructive/10 text-destructive border-destructive/20" },
-};
+} as const;
+
+function DeleteConfirmDialog({ onDelete }: { onDelete: () => void }): JSX.Element {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Excluir documento?</AlertDialogTitle>
+          <AlertDialogDescription>
+            O arquivo será removido permanentemente e o documento voltará ao status{" "}
+            <strong>Pendente</strong>. Essa ação não pode ser desfeita.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onDelete}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Excluir
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
 
 export function DocumentoRequeridoCard({
   documento,
@@ -31,13 +73,14 @@ export function DocumentoRequeridoCard({
   onDownloadTemplate,
   onViewRejeicao,
   onAnalyze,
+  onDelete,
   isConsultor = false,
   enviadoPorNome,
-}: DocumentoRequeridoCardProps) {
-  const currentStatus = status?.status || "pendente";
+}: DocumentoRequeridoCardProps): JSX.Element {
+  const currentStatus = status?.status ?? "pendente";
   const config = statusConfig[currentStatus];
 
-  const renderClienteActions = () => {
+  const renderClienteActions = (): JSX.Element | null => {
     switch (currentStatus) {
       case "pendente":
         return (
@@ -55,6 +98,19 @@ export function DocumentoRequeridoCard({
           </div>
         );
       case "enviado":
+        return (
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={onView}>
+              <Eye className="w-4 h-4 mr-1" />
+              Ver
+            </Button>
+            <Button size="sm" variant="outline" onClick={onUpload}>
+              <RefreshCw className="w-4 h-4 mr-1" />
+              Substituir
+            </Button>
+            {onDelete && <DeleteConfirmDialog onDelete={onDelete} />}
+          </div>
+        );
       case "em_analise":
         return (
           <div className="flex gap-2">
@@ -62,12 +118,6 @@ export function DocumentoRequeridoCard({
               <Eye className="w-4 h-4 mr-1" />
               Ver
             </Button>
-            {currentStatus === "enviado" && (
-              <Button size="sm" variant="outline" onClick={onUpload}>
-                <RefreshCw className="w-4 h-4 mr-1" />
-                Substituir
-              </Button>
-            )}
           </div>
         );
       case "aprovado":
@@ -88,6 +138,7 @@ export function DocumentoRequeridoCard({
               <Upload className="w-4 h-4 mr-1" />
               Enviar Novamente
             </Button>
+            {onDelete && <DeleteConfirmDialog onDelete={onDelete} />}
           </div>
         );
       default:
@@ -95,7 +146,7 @@ export function DocumentoRequeridoCard({
     }
   };
 
-  const renderConsultorActions = () => {
+  const renderConsultorActions = (): JSX.Element | null => {
     if (currentStatus === "enviado" && onAnalyze) {
       return (
         <Button size="sm" onClick={onAnalyze}>
@@ -136,8 +187,7 @@ export function DocumentoRequeridoCard({
                 {documento.descricao}
               </p>
             )}
-            
-            {/* Consultor extra info */}
+
             {isConsultor && status?.enviado_em && (
               <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
                 {enviadoPorNome && (
@@ -148,7 +198,7 @@ export function DocumentoRequeridoCard({
                 )}
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
-                  {new Date(status.enviado_em).toLocaleDateString('pt-BR')}
+                  {new Date(status.enviado_em).toLocaleDateString("pt-BR")}
                 </span>
               </div>
             )}

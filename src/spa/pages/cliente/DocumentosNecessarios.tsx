@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 import { useClienteProjeto, useDocumentosRequeridosProjeto, type DocumentoArquivoProjeto } from "@/hooks/useClienteProjeto";
 import { useUploadDocumento } from "@/hooks/useUploadDocumento";
+import { useDeleteDocumento } from "@/hooks/useDeleteDocumento";
 import type { FaseProjeto, DocumentoRequerido, DocumentoRequeridoStatus } from "@/types/database";
 
 const faseLabels: Record<FaseProjeto, string> = {
@@ -40,6 +41,7 @@ export default function DocumentosNecessarios() {
   );
 
   const uploadMutation = useUploadDocumento();
+  const deleteMutation = useDeleteDocumento();
 
   const documentosFiltrados = filtroFase === "todas"
     ? documentos
@@ -286,6 +288,11 @@ export default function DocumentosNecessarios() {
                         onView={() => handleOpenDocument(doc)}
                         onDownloadTemplate={() => doc.template_url && window.open(doc.template_url, "_blank")}
                         onViewRejeicao={() => doc.status && setRejeicaoModalDoc(doc)}
+                        onDelete={doc.status?.documento_id ? () => deleteMutation.mutate({
+                          documentoId: doc.status!.documento_id!,
+                          storagePath: doc.status!.documentos?.storage_path ?? null,
+                          documentoRequeridoId: doc.id,
+                        }) : undefined}
                       />
 
                       {doc.status?.documentos && (
