@@ -441,9 +441,10 @@ export default function RepositorioDocumentos() {
                                   documentoNome={doc.documentos.nome}
                                 />
                               )}
-                              {doc.documentos?.url && (
+                              {(doc.documentos?.url || doc.documentos?.storage_path) && (
                                 <DocumentoPreviewButton
                                   url={doc.documentos.url}
+                                  storagePath={doc.documentos.storage_path}
                                   fileName={doc.documentos.nome}
                                 />
                               )}

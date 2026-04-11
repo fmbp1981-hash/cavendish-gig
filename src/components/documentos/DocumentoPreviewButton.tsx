@@ -3,17 +3,18 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
+import { Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
-// Dynamic import to prevent SSR issues with react-pdf
 const PDFViewer = dynamic(() => import('./PDFViewer').then(mod => ({ default: mod.PDFViewer })), {
   ssr: false,
   loading: () => null
 });
 
 interface DocumentoPreviewButtonProps {
-  url: string | null;
+  url?: string | null;
+  storagePath?: string | null;
   fileName: string;
   className?: string;
   variant?: 'default' | 'outline' | 'ghost';
@@ -22,33 +23,56 @@ interface DocumentoPreviewButtonProps {
 
 export function DocumentoPreviewButton({
   url,
+  storagePath,
   fileName,
   className,
   variant = 'outline',
   size = 'sm'
 }: DocumentoPreviewButtonProps) {
   const [open, setOpen] = useState(false);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handlePreview = () => {
-    if (!url) {
-      toast.error('URL do documento não disponível');
-      return;
-    }
+  const isPDF = fileName.toLowerCase().endsWith('.pdf') ||
+    (url ?? '').toLowerCase().endsWith('.pdf');
 
-    // Check if it's a PDF
-    const isPDF = url.toLowerCase().endsWith('.pdf') || fileName.toLowerCase().endsWith('.pdf');
-
+  const handlePreview = async () => {
     if (!isPDF) {
-      toast.info('Preview disponível apenas para PDFs. Baixe o arquivo para visualizar.');
+      toast.info('Preview disponível apenas para PDFs. Use o botão Baixar para outros formatos.');
       return;
     }
 
-    setOpen(true);
+    // Gera signed URL a partir do storage_path (bucket privado)
+    if (storagePath) {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase.storage
+          .from('documentos')
+          .createSignedUrl(storagePath, 3600); // 1 hora
+
+        if (error) throw error;
+        setSignedUrl(data.signedUrl);
+        setOpen(true);
+      } catch (err) {
+        console.error('Erro ao gerar URL de preview:', err);
+        toast.error('Não foi possível gerar o link de preview.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Fallback: usa url direta (apenas para URLs externas/públicas)
+    if (url) {
+      setSignedUrl(url);
+      setOpen(true);
+      return;
+    }
+
+    toast.error('Arquivo não disponível para preview.');
   };
 
-  if (!url) {
-    return null;
-  }
+  if (!storagePath && !url) return null;
 
   return (
     <>
@@ -56,18 +80,27 @@ export function DocumentoPreviewButton({
         variant={variant}
         size={size}
         onClick={handlePreview}
+        disabled={loading}
         className={className}
       >
-        <Eye className="h-4 w-4 mr-2" />
+        {loading
+          ? <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          : <Eye className="h-4 w-4 mr-2" />
+        }
         Visualizar
       </Button>
 
-      <PDFViewer
-        url={url}
-        fileName={fileName}
-        open={open}
-        onOpenChange={setOpen}
-      />
+      {signedUrl && (
+        <PDFViewer
+          url={signedUrl}
+          fileName={fileName}
+          open={open}
+          onOpenChange={(v) => {
+            setOpen(v);
+            if (!v) setSignedUrl(null);
+          }}
+        />
+      )}
     </>
   );
 }

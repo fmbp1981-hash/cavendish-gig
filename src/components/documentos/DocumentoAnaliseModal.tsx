@@ -261,9 +261,10 @@ export function DocumentoAnaliseModal({
                       documentoNome={documentoArquivo.nome}
                     />
                   )}
-                  {(documentoArquivo?.url || null) && (
+                  {(documentoArquivo?.url || documentoArquivo?.storage_path) && (
                     <DocumentoPreviewButton
                       url={documentoArquivo?.url ?? null}
+                      storagePath={documentoArquivo?.storage_path ?? null}
                       fileName={documentoArquivo?.nome ?? documento.nome}
                     />
                   )}

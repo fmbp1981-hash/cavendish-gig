@@ -283,9 +283,10 @@ export default function DocumentosNecessarios() {
                           <span className="text-xs text-muted-foreground">
                             Arquivo enviado: {doc.status.documentos.nome}
                           </span>
-                          {doc.status.documentos.url && (
+                          {(doc.status.documentos.url || doc.status.documentos.storage_path) && (
                             <DocumentoPreviewButton
                               url={doc.status.documentos.url}
+                              storagePath={doc.status.documentos.storage_path}
                               fileName={doc.status.documentos.nome}
                             />
                           )}
