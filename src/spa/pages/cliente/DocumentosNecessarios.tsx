@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from '@/integrations/supabase/client';
 import { useClienteProjeto, useDocumentosRequeridosProjeto, type DocumentoArquivoProjeto } from "@/hooks/useClienteProjeto";
 import { useUploadDocumento } from "@/hooks/useUploadDocumento";
 import type { FaseProjeto, DocumentoRequerido, DocumentoRequeridoStatus } from "@/types/database";
@@ -95,11 +96,20 @@ export default function DocumentosNecessarios() {
     }
   };
 
-  const handleOpenDocument = (doc: DocumentoComStatus) => {
+  const handleOpenDocument = async (doc: DocumentoComStatus) => {
     const arquivo = doc.status?.documentos;
 
-    if (arquivo?.url) {
-      window.open(arquivo.url, "_blank", "noopener,noreferrer");
+    // Signed URL para bucket privado
+    if (arquivo?.storage_path) {
+      try {
+        const { data, error } = await supabase.storage
+          .from('documentos')
+          .createSignedUrl(arquivo.storage_path, 3600);
+        if (error) throw error;
+        window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+      } catch {
+        toast({ title: 'Erro ao abrir arquivo', description: 'Não foi possível gerar o link de visualização.', variant: 'destructive' });
+      }
       return;
     }
 

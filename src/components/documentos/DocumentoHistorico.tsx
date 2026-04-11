@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { History, RotateCcw, FileText, Clock, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 interface DocumentoHistoricoProps {
@@ -203,7 +204,18 @@ export function DocumentoHistorico({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => window.open(versao.url, '_blank')}
+                              onClick={async () => {
+                                // Extrai o storage path da URL pública para gerar signed URL
+                                const match = versao.url?.match(/\/documentos\/(.+?)(?:\?|$)/);
+                                const path = match?.[1];
+                                if (path) {
+                                  const { data } = await supabase.storage
+                                    .from('documentos')
+                                    .createSignedUrl(decodeURIComponent(path), 3600);
+                                  if (data?.signedUrl) { window.open(data.signedUrl, '_blank'); return; }
+                                }
+                                if (versao.url) window.open(versao.url, '_blank');
+                              }}
                             >
                               <FileText className="h-3 w-3 mr-1" />
                               Visualizar
