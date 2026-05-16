@@ -18,8 +18,9 @@ import {
   getDimensoes,
   getNivelMaturidadeLabel,
   getNivelMaturidadeColor,
-  DiagnosticoPergunta,
 } from "@/hooks/useDiagnostico";
+import { useBenchmarkSetorial, type SetorType } from "@/hooks/useBenchmarkSetorial";
+import { BenchmarkRadarChart } from "@/components/diagnostico/BenchmarkRadarChart";
 
 const DIMENSOES = getDimensoes();
 
@@ -39,6 +40,14 @@ export default function Diagnostico() {
 
   const [etapaAtual, setEtapaAtual] = useState(1);
   const [respostas, setRespostas] = useState<Record<string, { resposta: string; valor: number }>>({});
+  const [setorBenchmark, setSetorBenchmark] = useState<SetorType>(
+    (organizacao?.setor as SetorType) || 'servicos'
+  );
+
+  const { pontos: benchmarkPontos, isLoading: benchmarkLoading } = useBenchmarkSetorial(
+    setorBenchmark,
+    diagnostico
+  );
 
   // Sync etapa with diagnostico
   useEffect(() => {
@@ -46,6 +55,13 @@ export default function Diagnostico() {
       setEtapaAtual(diagnostico.etapa_atual);
     }
   }, [diagnostico?.etapa_atual]);
+
+  // Sync benchmark setor when org loads
+  useEffect(() => {
+    if (organizacao?.setor) {
+      setSetorBenchmark(organizacao.setor as SetorType);
+    }
+  }, [organizacao?.setor]);
 
   // Sync respostas with existing ones
   useEffect(() => {
@@ -315,6 +331,16 @@ export default function Diagnostico() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Benchmark Setorial */}
+            <div className="md:col-span-2">
+              <BenchmarkRadarChart
+                pontos={benchmarkPontos}
+                setor={setorBenchmark}
+                onSetorChange={setSetorBenchmark}
+                isLoading={benchmarkLoading}
+              />
+            </div>
           </div>
         </div>
       </ClienteLayout>
