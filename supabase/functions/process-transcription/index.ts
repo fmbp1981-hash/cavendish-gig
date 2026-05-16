@@ -179,7 +179,7 @@ Formato: Markdown profissional`;
         url: publicUrl.publicUrl,
         organizacao_id: organizacaoId,
         projeto_id: projeto?.id || null,
-        status: "aprovado",
+        status: "em_analise",
         metadata: {
           meeting_id: webhookData.meetingId,
           meeting_datetime: webhookData.dateTime,

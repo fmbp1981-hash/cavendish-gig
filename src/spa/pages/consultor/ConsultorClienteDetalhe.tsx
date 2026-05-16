@@ -81,10 +81,12 @@ export default function ConsultorClienteDetalhe() {
   const { data: atas, isLoading: loadingAtas } = useQuery({
     queryKey: ["atas", organizacaoId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from("documentos")
         .select("id, nome, url, created_at")
         .eq("organizacao_id", organizacaoId!)
+        .eq("status", "aprovado")
         .like("nome", "Ata - %")
         .order("created_at", { ascending: false });
       if (error) throw error;

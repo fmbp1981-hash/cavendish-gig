@@ -10,7 +10,7 @@ import { buildCorsHeaders } from "../_shared/cors.ts";
 const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "Cavendish GIG <noreply@cavendishgig.com.br>";
 
 interface EmailRequest {
-  type: "documento_aprovado" | "documento_rejeitado" | "documento_enviado" | "lembrete_documentos";
+  type: "documento_aprovado" | "documento_rejeitado" | "documento_enviado" | "lembrete_documentos" | "ata_aprovada";
   to: string;
   data: {
     documentoNome?: string;
@@ -18,6 +18,9 @@ interface EmailRequest {
     observacao?: string;
     userName?: string;
     pendingCount?: number;
+    ataUrl?: string;
+    ataNome?: string;
+    reuniaoData?: string;
   };
 }
 
@@ -142,6 +145,44 @@ const getEmailTemplate = (type: string, data: EmailRequest["data"]) => {
             <div class="footer">
               Este é um email automático. Por favor, não responda diretamente.
             </div>
+          </div>
+        </body>
+        </html>
+      `,
+    },
+    ata_aprovada: {
+      subject: `📝 Ata de Reunião disponível — ${data.ataNome || data.organizacaoNome}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; }
+            .header { background: linear-gradient(135deg, #6366f1, #4f46e5); padding: 30px; text-align: center; color: white; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .content { padding: 30px; }
+            .badge { display: inline-block; background: #ede9fe; color: #5b21b6; padding: 8px 16px; border-radius: 20px; font-weight: 600; margin-bottom: 20px; }
+            .btn { display: inline-block; background: #6366f1; color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 20px; }
+            .meta { background: #f8fafc; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 14px; color: #475569; }
+            .footer { background: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #64748b; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header"><h1>📝 Ata de Reunião</h1></div>
+            <div class="content">
+              <span class="badge">Disponível para consulta</span>
+              <p>Olá${data.userName ? `, ${data.userName}` : ''},</p>
+              <p>A ata da reunião foi revisada e aprovada pelo seu consultor. Você já pode acessar o documento completo.</p>
+              <div class="meta">
+                <strong>Reunião:</strong> ${data.ataNome || "Reunião"}<br/>
+                ${data.reuniaoData ? `<strong>Data:</strong> ${data.reuniaoData}<br/>` : ''}
+                ${data.organizacaoNome ? `<strong>Organização:</strong> ${data.organizacaoNome}` : ''}
+              </div>
+              ${data.ataUrl ? `<a href="${data.ataUrl}" class="btn">Visualizar Ata</a>` : ''}
+            </div>
+            <div class="footer">Cavendish GIG · Sistema de Governança Integrada</div>
           </div>
         </body>
         </html>

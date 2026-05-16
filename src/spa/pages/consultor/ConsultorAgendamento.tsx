@@ -7,11 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Calendar, Clock, Users, X, Plus, Loader2, Video, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Calendar, Clock, Users, X, Plus, Loader2, Video, AlertCircle, CheckCircle2, FileText, Send, Eye } from "lucide-react";
 import { agendarReuniaoKickoff, agendarReuniaoAcompanhamento } from "@/hooks/useGoogleCalendar";
 import { useOrganizacoes } from "@/hooks/useConsultorData";
 import { useInsertReuniao, useAtualizarReuniaoGoogleId } from "@/hooks/useReunioes";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -173,6 +177,109 @@ export default function ConsultorAgendamento() {
       setIsAgendando(false);
     }
   };
+
+  // --- Atas pendentes de revisão ---
+  const queryClient = useQueryClient();
+
+  const { data: atasPendentes, isLoading: loadingAtas } = useQuery({
+    queryKey: ["atas-pendentes-consultor"],
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from("documentos")
+        .select("id, nome, url, created_at, organizacao_id, metadata, organizacoes(nome)")
+        .eq("status", "em_analise")
+        .like("nome", "Ata - %")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string; nome: string; url: string; created_at: string;
+        organizacao_id: string; metadata: Record<string, unknown> | null;
+        organizacoes: { nome: string } | null;
+      }>;
+    },
+    refetchInterval: 30_000,
+  });
+
+  const [ataVisualizando, setAtaVisualizando] = useState<{
+    id: string; nome: string; conteudo: string; url: string;
+    organizacaoNome: string; organizacaoId: string;
+  } | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  const visualizarAta = async (ata: { id: string; nome: string; url: string; organizacaoNome: string; organizacaoId: string }) => {
+    setLoadingPreview(true);
+    try {
+      const resp = await fetch(ata.url);
+      const conteudo = resp.ok ? await resp.text() : "Não foi possível carregar o conteúdo.";
+      setAtaVisualizando({ ...ata, conteudo });
+    } catch {
+      setAtaVisualizando({ ...ata, conteudo: "Erro ao carregar a ata." });
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
+  const aprovarAta = useMutation({
+    mutationFn: async ({ ataId, organizacaoId, ataNome, ataUrl }: {
+      ataId: string; organizacaoId: string; ataNome: string; ataUrl: string;
+    }) => {
+      // 1. Atualiza status para aprovado
+      const { error: updateErr } = await supabase
+        .from("documentos")
+        .update({ status: "aprovado" } as any)
+        .eq("id", ataId);
+      if (updateErr) throw updateErr;
+
+      // 2. Busca emails dos membros clientes da organização
+      const { data: membros } = await supabase
+        .from("organization_members")
+        .select("profiles:user_id(email, nome)")
+        .eq("organizacao_id", organizacaoId)
+        .eq("role", "cliente");
+
+      // 3. Busca nome da organização
+      const { data: org } = await supabase
+        .from("organizacoes")
+        .select("nome")
+        .eq("id", organizacaoId)
+        .maybeSingle();
+
+      // 4. Envia email para cada membro cliente
+      const clientes = (membros ?? []).map((m: any) => m.profiles).filter(Boolean);
+      for (const cliente of clientes) {
+        if (!cliente.email) continue;
+        await supabase.functions.invoke("send-email", {
+          body: {
+            type: "ata_aprovada",
+            to: cliente.email,
+            data: {
+              ataNome,
+              ataUrl,
+              organizacaoNome: org?.nome ?? "",
+              userName: cliente.nome ?? "",
+              reuniaoData: new Date().toLocaleDateString("pt-BR"),
+            },
+          },
+        });
+      }
+
+      return { clientesNotificados: clientes.length };
+    },
+    onSuccess: ({ clientesNotificados }, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["atas-pendentes-consultor"] });
+      queryClient.invalidateQueries({ queryKey: ["atas", vars.organizacaoId] });
+      setAtaVisualizando(null);
+      toast.success("Ata aprovada e enviada!", {
+        description: clientesNotificados > 0
+          ? `${clientesNotificados} cliente(s) notificado(s) por email.`
+          : "Ata aprovada. Nenhum cliente cadastrado para notificar.",
+      });
+    },
+    onError: (err: any) => {
+      toast.error("Erro ao aprovar ata", { description: err.message });
+    },
+  });
 
   const dataFormatada = data
     ? format(new Date(data + "T12:00:00"), "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })
@@ -455,7 +562,116 @@ export default function ConsultorAgendamento() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Atas Pendentes de Revisão */}
+        {(loadingAtas || (atasPendentes && atasPendentes.length > 0)) && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-indigo-500" />
+              <h2 className="text-lg font-semibold text-foreground">
+                Atas para Revisar
+              </h2>
+              {atasPendentes && atasPendentes.length > 0 && (
+                <Badge className="bg-indigo-600 hover:bg-indigo-600">
+                  {atasPendentes.length}
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Atas geradas pelo Fireflies.ai aguardando sua revisão antes de serem enviadas ao cliente.
+            </p>
+
+            {loadingAtas ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                {atasPendentes!.map((ata: any) => (
+                  <Card key={ata.id} className="border-indigo-200 bg-indigo-50/30">
+                    <CardContent className="flex items-center justify-between py-4 px-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                          <FileText className="w-4 h-4 text-indigo-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{ata.nome}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(ata.organizacoes as any)?.nome} ·{" "}
+                            {new Date(ata.created_at).toLocaleDateString("pt-BR")}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-indigo-600 border-indigo-300 text-xs">
+                          Aguardando revisão
+                        </Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={loadingPreview}
+                          onClick={() => visualizarAta({
+                            id: ata.id,
+                            nome: ata.nome,
+                            url: ata.url,
+                            organizacaoNome: (ata.organizacoes as any)?.nome ?? "",
+                            organizacaoId: ata.organizacao_id,
+                          })}
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1" />
+                          Revisar
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Dialog de revisão da ata */}
+      <Dialog open={!!ataVisualizando} onOpenChange={(open) => { if (!open) setAtaVisualizando(null); }}>
+        <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-indigo-500" />
+              {ataVisualizando?.nome}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 pr-4">
+            <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed text-foreground">
+              {ataVisualizando?.conteudo}
+            </pre>
+          </ScrollArea>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setAtaVisualizando(null)}>
+              Fechar
+            </Button>
+            <Button
+              className="bg-indigo-600 hover:bg-indigo-700"
+              disabled={aprovarAta.isPending}
+              onClick={() => {
+                if (!ataVisualizando) return;
+                aprovarAta.mutate({
+                  ataId: ataVisualizando.id,
+                  organizacaoId: ataVisualizando.organizacaoId,
+                  ataNome: ataVisualizando.nome,
+                  ataUrl: ataVisualizando.url,
+                });
+              }}
+            >
+              {aprovarAta.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Aprovar e Enviar ao Cliente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ConsultorLayout>
   );
 }
