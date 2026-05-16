@@ -69,6 +69,7 @@ import AdminHistoricoRelatorios from "./spa/pages/admin/HistoricoRelatorios";
 import AdminBranding from "./spa/pages/admin/Branding";
 import AdminLogs from "./spa/pages/admin/AdminLogs";
 import AdminDocumentos from "./spa/pages/admin/AdminDocumentos";
+import AdminConsultores from "./spa/pages/admin/AdminConsultores";
 import Help from "./spa/pages/Help";
 import { installGlobalErrorHandlers } from "./utils/errorLogger";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -274,6 +275,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
                     <AdminUsuarios />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/consultores"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminConsultores />
                   </ProtectedRoute>
                 }
               />

@@ -18,7 +18,6 @@ import {
 import {
   Sparkles,
   Mail,
-  Phone,
   Calendar,
   Mic,
   Key,
@@ -31,7 +30,6 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  LayoutGrid
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -94,47 +92,6 @@ const integrations: IntegrationConfig[] = [
       "Crie uma chave JSON para a Service Account",
       "Compartilhe seu calendário com o email da Service Account",
       "Cole o conteúdo JSON completo no campo abaixo"
-    ]
-  },
-  {
-    id: "twilio",
-    name: "Twilio (SMS/WhatsApp)",
-    description: "Notificações via SMS e WhatsApp para lembretes e alertas urgentes",
-    secretName: "TWILIO_ACCOUNT_SID",
-    secondarySecretName: "TWILIO_AUTH_TOKEN",
-    docsUrl: "https://console.twilio.com",
-    icon: Phone,
-    color: "text-red-500",
-    placeholder: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    secondaryPlaceholder: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    inputType: "password",
-    status: "available",
-    instructions: [
-      "Crie uma conta em twilio.com",
-      "Acesse o Console para obter Account SID e Auth Token",
-      "Compre ou configure um número de telefone",
-      "Para WhatsApp: configure o WhatsApp Business Sandbox ou número verificado",
-      "Cole as credenciais nos campos abaixo"
-    ]
-  },
-  {
-    id: "trello",
-    name: "Trello",
-    description: "Preparação para integração futura com Trello (sync de tarefas/kanban)",
-    secretName: "TRELLO_API_KEY",
-    secondarySecretName: "TRELLO_API_TOKEN",
-    docsUrl: "https://developer.atlassian.com/cloud/trello/guides/rest-api/api-introduction/",
-    icon: LayoutGrid,
-    color: "text-sky-500",
-    placeholder: "sua_api_key",
-    secondaryPlaceholder: "seu_api_token",
-    inputType: "password",
-    status: "available",
-    instructions: [
-      "Acesse Trello Developer API para obter sua API key",
-      "Gere um token associado à sua conta",
-      "Cole a API key e o token nos campos abaixo",
-      "Esta é uma preparação: o sync automático será ativado posteriormente"
     ]
   },
   {
@@ -593,7 +550,6 @@ export default function AdminIntegracoes() {
   const [configuring, setConfiguring] = useState<IntegrationConfig | null>(null);
   const [secretValue, setSecretValue] = useState("");
   const [secondarySecretValue, setSecondarySecretValue] = useState("");
-  const [twilioPhoneNumber, setTwilioPhoneNumber] = useState("");
   const [showSecret, setShowSecret] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -618,7 +574,6 @@ export default function AdminIntegracoes() {
     setConfiguring(integration);
     setSecretValue("");
     setSecondarySecretValue("");
-    setTwilioPhoneNumber("");
     setShowSecret(false);
   };
 
@@ -643,16 +598,10 @@ export default function AdminIntegracoes() {
         secrets[configuring.secondarySecretName] = secondarySecretValue.trim();
       }
 
-      const config: Record<string, any> = {};
-      if (configuring.id === "twilio" && twilioPhoneNumber.trim()) {
-        config.TWILIO_PHONE_NUMBER = twilioPhoneNumber.trim();
-      }
-
       await upsertVaultIntegration({
         provider: configuring.id,
         scope: "system",
         secrets,
-        config: Object.keys(config).length > 0 ? config : undefined,
         enabled: true,
       });
 
@@ -665,7 +614,6 @@ export default function AdminIntegracoes() {
       setConfiguring(null);
       setSecretValue("");
       setSecondarySecretValue("");
-      setTwilioPhoneNumber("");
     } catch (error) {
       toast.error("Erro ao salvar configuração", {
         description: "Tente novamente ou entre em contato com o suporte."
@@ -1086,21 +1034,6 @@ export default function AdminIntegracoes() {
                   </div>
                 )}
 
-                {configuring.id === "twilio" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="twilio-phone">TWILIO_PHONE_NUMBER (opcional)</Label>
-                    <Input
-                      id="twilio-phone"
-                      type="text"
-                      placeholder="+5511999999999"
-                      value={twilioPhoneNumber}
-                      onChange={(e) => setTwilioPhoneNumber(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Usado como remetente padrão em SMS/WhatsApp (quando aplicável).
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
           )}

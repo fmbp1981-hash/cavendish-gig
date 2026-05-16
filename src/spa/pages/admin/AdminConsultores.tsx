@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlocacaoMatriz } from "@/components/admin/AlocacaoMatriz";
 import {
     Table,
     TableBody,
@@ -160,6 +162,14 @@ export default function AdminConsultores() {
                     </Dialog>
                 </div>
 
+                <Tabs defaultValue="pre-registros" className="w-full">
+                <TabsList className="mb-6">
+                  <TabsTrigger value="pre-registros">Pré-Registros</TabsTrigger>
+                  <TabsTrigger value="atribuicoes">Atribuições de Clientes</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="pre-registros">
+
                 {/* Stats */}
                 <div className="grid gap-4 md:grid-cols-3">
                     <Card>
@@ -309,6 +319,13 @@ export default function AdminConsultores() {
                         )}
                     </CardContent>
                 </Card>
+                </TabsContent>
+
+                <TabsContent value="atribuicoes">
+                  <AlocacaoMatriz />
+                </TabsContent>
+
+                </Tabs>
             </div>
         </AdminLayout>
     );

@@ -7,7 +7,6 @@ import { DocumentoRequeridoCard } from "@/components/documentos/DocumentoRequeri
 import { DocumentoUploadModal } from "@/components/documentos/DocumentoUploadModal";
 import { DocumentoRejeicaoModal } from "@/components/documentos/DocumentoRejeicaoModal";
 import { FiltroFaseDocumentos } from "@/components/documentos/FiltroFaseDocumentos";
-import { DocumentoPreviewButton } from "@/components/documentos/DocumentoPreviewButton";
 import { GoogleDrivePreviewButton } from "@/components/documentos/GoogleDrivePreviewButton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -300,13 +299,6 @@ export default function DocumentosNecessarios() {
                           <span className="text-xs text-muted-foreground">
                             Arquivo enviado: {doc.status.documentos.nome}
                           </span>
-                          {(doc.status.documentos.url || doc.status.documentos.storage_path) && (
-                            <DocumentoPreviewButton
-                              url={doc.status.documentos.url}
-                              storagePath={doc.status.documentos.storage_path}
-                              fileName={doc.status.documentos.nome}
-                            />
-                          )}
                           {doc.status.documentos.drive_file_id && (
                             <GoogleDrivePreviewButton
                               driveFileId={doc.status.documentos.drive_file_id}
