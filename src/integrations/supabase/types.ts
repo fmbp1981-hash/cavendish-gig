@@ -882,6 +882,7 @@ export type Database = {
           nome: string
           organizacao_id: string | null
           projeto_id: string | null
+          status: Database["public"]["Enums"]["status_documento"]
           storage_path: string | null
           tamanho_bytes: number | null
           tipo: string | null
@@ -897,6 +898,7 @@ export type Database = {
           nome: string
           organizacao_id?: string | null
           projeto_id?: string | null
+          status?: Database["public"]["Enums"]["status_documento"]
           storage_path?: string | null
           tamanho_bytes?: number | null
           tipo?: string | null
@@ -912,6 +914,7 @@ export type Database = {
           nome?: string
           organizacao_id?: string | null
           projeto_id?: string | null
+          status?: Database["public"]["Enums"]["status_documento"]
           storage_path?: string | null
           tamanho_bytes?: number | null
           tipo?: string | null

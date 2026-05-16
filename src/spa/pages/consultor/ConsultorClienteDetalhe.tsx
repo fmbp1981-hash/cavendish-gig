@@ -33,6 +33,27 @@ import {
 } from "@/hooks/useDocumentosComplementares";
 import { SolicitarDocComplementarDialog } from "@/components/documentos/SolicitarDocComplementarDialog";
 
+const MIME_LABELS: Record<string, string> = {
+  "application/pdf": "PDF",
+  "image/png": "PNG",
+  "image/jpeg": "JPEG",
+  "image/jpg": "JPEG",
+  "image/gif": "GIF",
+  "image/webp": "WebP",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "DOCX",
+  "application/msword": "DOC",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "XLSX",
+  "application/vnd.ms-excel": "XLS",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "PPTX",
+  "text/plain": "TXT",
+  "text/csv": "CSV",
+};
+
+function formatTipo(tipo: string | null): string {
+  if (!tipo) return "Arquivo";
+  return MIME_LABELS[tipo.toLowerCase()] ?? tipo.split("/").pop()?.toUpperCase() ?? "Arquivo";
+}
+
 export default function ConsultorClienteDetalhe() {
   const { id: organizacaoId } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -417,9 +438,21 @@ export default function ConsultorClienteDetalhe() {
                           </p>
                         </div>
                       </div>
-                      <Badge variant="secondary" className="text-xs capitalize">
-                        {doc.tipo || "documento"}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {formatTipo(doc.tipo)}
+                        </Badge>
+                        {doc.url && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(doc.url!, "_blank")}
+                          >
+                            <Eye className="w-3.5 h-3.5 mr-1" />
+                            Abrir
+                          </Button>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

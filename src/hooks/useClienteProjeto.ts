@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Projeto, Organizacao } from "@/types/database";
+import type { Projeto, Organizacao, DocumentoRequerido, DocumentoRequeridoStatus } from "@/types/database";
 
 interface ProjetoComOrganizacao extends Projeto {
   organizacao?: Organizacao;
@@ -80,9 +80,9 @@ export function useDocumentosRequeridosProjeto(projetoId: string | undefined, or
       if (docError) throw docError;
 
       // Get status for each document (separate queries to avoid PostgREST FK join issues)
-      const docIds = documentos?.map((d: any) => d.id) || [];
+      const docIds = documentos?.map((d) => d.id) || [];
       if (docIds.length === 0) {
-        return (documentos || []).map((doc: any) => ({ ...doc, status: null }));
+        return (documentos || []).map((doc) => ({ ...doc, status: null })) as (DocumentoRequerido & { status: null })[];
       }
 
       const { data: statusList, error: statusError } = await supabase
@@ -93,26 +93,27 @@ export function useDocumentosRequeridosProjeto(projetoId: string | undefined, or
       if (statusError) console.error("Status fetch error:", statusError);
 
       // Fetch uploaded documents separately
-      const uploadedDocIds = (statusList || []).map((s: any) => s.documento_id).filter(Boolean);
-      let docsMap = new Map();
+      const uploadedDocIds = (statusList || []).map((s) => s.documento_id).filter(Boolean);
+      let docsMap = new Map<string, unknown>();
       if (uploadedDocIds.length > 0) {
         const { data: uploadedDocs } = await supabase
           .from("documentos")
           .select("id, nome, descricao, url, storage_path, drive_file_id, tipo, tamanho_bytes, created_at")
           .in("id", uploadedDocIds);
-        docsMap = new Map((uploadedDocs || []).map((d: any) => [d.id, d]));
+        docsMap = new Map((uploadedDocs || []).map((d) => [d.id, d]));
       }
 
       // Map status + uploaded docs to required documents
-      const statusMap = new Map((statusList || []).map((s: any) => [
+      const statusMap = new Map((statusList || []).map((s) => [
         s.documento_requerido_id,
         { ...s, documentos: s.documento_id ? docsMap.get(s.documento_id) || null : null }
       ]));
 
-      return (documentos || []).map((doc: any) => ({
+      type StatusComArquivo = DocumentoRequeridoStatus & { documentos?: DocumentoArquivoProjeto | null };
+      return (documentos || []).map((doc) => ({
         ...doc,
-        status: statusMap.get(doc.id) || null,
-      }));
+        status: (statusMap.get(doc.id) || null) as unknown as StatusComArquivo | null,
+      })) as (DocumentoRequerido & { status: StatusComArquivo | null })[];
     },
     enabled: !!projetoId && !!organizacaoId,
   });

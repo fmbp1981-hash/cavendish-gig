@@ -184,17 +184,16 @@ export default function ConsultorAgendamento() {
   const { data: atasPendentes, isLoading: loadingAtas } = useQuery({
     queryKey: ["atas-pendentes-consultor"],
     queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("documentos")
-        .select("id, nome, url, created_at, organizacao_id, metadata, organizacoes(nome)")
+        .select("id, nome, url, created_at, organizacao_id, organizacoes(nome)")
         .eq("status", "em_analise")
         .like("nome", "Ata - %")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Array<{
         id: string; nome: string; url: string; created_at: string;
-        organizacao_id: string; metadata: Record<string, unknown> | null;
+        organizacao_id: string;
         organizacoes: { nome: string } | null;
       }>;
     },
@@ -227,7 +226,7 @@ export default function ConsultorAgendamento() {
       // 1. Atualiza status para aprovado
       const { error: updateErr } = await supabase
         .from("documentos")
-        .update({ status: "aprovado" } as any)
+        .update({ status: "aprovado" as const })
         .eq("id", ataId);
       if (updateErr) throw updateErr;
 
