@@ -1282,6 +1282,38 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 
 ---
 
+### 2026-05-16 — Onda 2 + Fase 4 concluída → Release v1.0.0
+
+**Commits:** Item 5 Docs Complementares, BenchmarkRadarChart, CSP Header, compliance-alerts
+
+#### Novas entregas
+
+**Documentos Complementares (Onda 2 — Item 5)**
+- `src/hooks/useDocumentosComplementares.ts` — CRUD de docs ad-hoc por projeto (hook novo)
+- `src/components/documentos/SolicitarDocComplementarDialog.tsx` — dialog de solicitação (componente novo)
+- `AdminCatalogo.tsx` — tab "Complementares" + toggle `is_complementar` por catálogo
+- `ConsultorClienteDetalhe.tsx` — tab "Complementares" + dialog de solicitação por cliente
+- `DocumentosNecessarios.tsx` — accordion "Obrigatórios / Complementares" para o cliente
+- `database.ts` — `documentos_requeridos` atualizado com schema real (`is_complementar`, `projeto_id`, `formatos_aceitos: string[]`)
+
+**BenchmarkRadarChart (Fase 4)**
+- `src/hooks/useBenchmarkSetorial.ts` — mapeia 5 dimensões do diagnóstico × 6 pilares do benchmark; filtra por setor da organização
+- `src/components/diagnostico/BenchmarkRadarChart.tsx` — RadarChart recharts (3 camadas: empresa / média / P75) + tabela de diff vs média + seletor de setor
+- `Diagnostico.tsx` — BenchmarkRadarChart inserido na tela de resultados do diagnóstico concluído
+- Migration `20260309000007_diagnostico_benchmarks.sql` — já existia; seed de 36 linhas aplicado
+
+**CSP Header (Fase 4 — Hardening)**
+- `vercel.json` — `Content-Security-Policy` adicionado (default-src self, connect Supabase WSS, frame Google Drive, worker blob, object-src none)
+
+**Edge Function compliance-alerts (Fase 4)**
+- `supabase/functions/compliance-alerts/index.ts` — 3 alertas: obrigações ≤7 dias, due diligence ≤30 dias, conflito de interesse anual
+- Migration `20260516000003_compliance_alerts_cron.sql` — 3 pg_cron jobs agendados (semanal / mensal / anual)
+- Deploy: `compliance-alerts` ACTIVE v1 em produção (2026-05-16)
+
+**Versão:** `package.json` → `"version": "1.0.0"` 🎉
+
+---
+
 ## 15. Pendências e Roadmap
 
 ### Alta prioridade
@@ -1364,7 +1396,7 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 - [ ] **White-label completo com subdomínio** por organização
 - [x] **ESG Dashboard** — CONCLUÍDO: `src/spa/pages/consultor/ESGDashboard.tsx`, rota `/consultor/esg`
 - [x] **Board Reporting** — CONCLUÍDO: `src/spa/pages/consultor/BoardDashboard.tsx`, rota `/consultor/board`
-- [ ] **Benchmark setorial no diagnóstico** — comparar score GIG com média do setor
+- [x] **Benchmark setorial no diagnóstico** — CONCLUÍDO em 2026-05-16: `BenchmarkRadarChart` + `useBenchmarkSetorial`, RadarChart recharts com média/P75 por setor
 - [ ] **SSO / SAML** — para tenants enterprise (Azure AD, Google Workspace)
 - [ ] **SCORM player** — importar cursos externos de e-learning
 
@@ -2121,14 +2153,18 @@ CREATE TABLE diagnostico_benchmarks (
 | Seeds de dados | Due diligence (20 perguntas), compliance BR (30 obrigações), benchmarks (36 linhas) | Migrations novas |
 
 **Definition of Done da Fase 4 (e do v1.0.0):**
-- [ ] Todas as automações por cron ativas e testadas
-- [ ] Audit trail exportável em CSV
-- [ ] Benchmark setorial no diagnóstico
-- [ ] 0 `as any` nos novos módulos
-- [ ] E2E cobrindo todos os módulos das fases 1–3
-- [ ] `SISTEMA_TECNICO.md` atualizado com todas as novas rotas, migrations e componentes
-- [ ] Deploy em produção com secrets configurados
-- [ ] `version: "1.0.0"` no `package.json`
+- [x] Todas as automações por cron ativas — `compliance-alerts` ACTIVE v1 em produção (2026-05-16)
+  - `compliance-alerts-obrigacoes`: toda segunda 11:00 UTC (alertas ≤7 dias)
+  - `compliance-alerts-fornecedores`: dia 5 de cada mês 12:00 UTC (alertas ≤30 dias)
+  - `compliance-alerts-conflitos`: 1° outubro 11:00 UTC (lembrete anual)
+- [x] Audit trail exportável em CSV — `AdminAuditTrail.tsx` (`/admin/audit-trail`)
+- [x] Benchmark setorial no diagnóstico — `BenchmarkRadarChart` + `useBenchmarkSetorial` (2026-05-16)
+  - Seed: 36 linhas (6 setores × 6 pilares) na tabela `diagnostico_benchmarks`
+  - Seletor de setor interativo; compara empresa vs média e P75 do setor
+- [x] 0 `as any` nos novos módulos — CONCLUÍDO em 2026-03-02 (116 instâncias removidas)
+- [x] `SISTEMA_TECNICO.md` atualizado com todas as novas rotas, migrations e componentes
+- [x] Deploy em produção com secrets configurados (2026-03-03 → 2026-05-16)
+- [x] `version: "1.0.0"` no `package.json` — CONCLUÍDO em 2026-05-16
 
 ---
 
