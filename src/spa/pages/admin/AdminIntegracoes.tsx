@@ -44,6 +44,7 @@ interface IntegrationConfig {
   description: string;
   secretName: string;
   secondarySecretName?: string;
+  tertiarySecretName?: string;
   docsUrl?: string;
   icon: React.ElementType;
   color: string;
@@ -51,6 +52,7 @@ interface IntegrationConfig {
   instructions: string[];
   placeholder?: string;
   secondaryPlaceholder?: string;
+  tertiaryPlaceholder?: string;
   inputType?: "text" | "password" | "url";
   status: "available" | "coming_soon";
 }
@@ -116,31 +118,42 @@ const integrations: IntegrationConfig[] = [
     ]
   },
   {
-    id: "google-drive",
-    name: "Google Drive",
-    description: "Criação automática de pastas por cliente e armazenamento de documentos",
-    secretName: "GOOGLE_SERVICE_ACCOUNT",
-    docsUrl: "https://console.cloud.google.com/apis/credentials",
+    id: "onedrive",
+    name: "Microsoft OneDrive",
+    description: "Criação automática de pastas por cliente e armazenamento de documentos no OneDrive for Business (Microsoft 365)",
+    secretName: "AZURE_CLIENT_ID",
+    secondarySecretName: "AZURE_CLIENT_SECRET",
+    tertiarySecretName: "AZURE_TENANT_ID",
+    docsUrl: "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade",
     icon: HardDrive,
-    color: "text-yellow-500",
-    placeholder: '{"type": "service_account", "project_id": "...", ...}',
-    inputType: "password",
+    color: "text-blue-600",
+    placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    secondaryPlaceholder: "sua_client_secret_value",
+    tertiaryPlaceholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    inputType: "text",
     status: "available",
     instructions: [
-      "Acesse console.cloud.google.com e faça login com sua conta Google",
-      "Clique em 'Selecionar projeto' → 'Novo Projeto' → Nomeie como 'Cavendish-GIG' → Criar",
-      "No menu lateral, vá em 'APIs e Serviços' → 'Biblioteca'",
-      "Pesquise 'Google Drive API' → Clique nela → 'Ativar'",
-      "Vá em 'APIs e Serviços' → 'Credenciais' → 'Criar credenciais' → 'Conta de serviço'",
-      "Preencha: Nome='gig-drive-service', ID será gerado automaticamente → 'Criar e Continuar'",
-      "Em 'Conceder acesso', pule (não é necessário) → 'Concluir'",
-      "Na lista de contas de serviço, clique no email criado (ex: gig-drive-service@...iam.gserviceaccount.com)",
-      "Vá na aba 'Chaves' → 'Adicionar chave' → 'Criar nova chave' → 'JSON' → 'Criar'",
-      "Um arquivo JSON será baixado. Abra-o e copie TODO o conteúdo",
-      "Cole o JSON completo no campo abaixo",
-      "No Google Drive, crie uma pasta raiz (ex: 'Clientes GIG')",
-      "Clique com botão direito na pasta → 'Compartilhar' → Cole o email da conta de serviço → 'Editor' → 'Enviar'",
-      "Copie o ID da pasta da URL (após /folders/) e cole na configuração 'ID da Pasta Raiz' abaixo"
+      "PASSO 1 — Criar o App Registration no Azure:",
+      "Acesse portal.azure.com com a conta admin do Microsoft 365 da Cavendish",
+      "Na barra de pesquisa superior, digite 'App registrations' e clique no resultado",
+      "Clique em '+ New registration' (Nova inscrição)",
+      "Name: 'Sistema GIG' | Supported account types: 'Accounts in this organizational directory only' → Clique em 'Register'",
+      "PASSO 2 — Copiar Client ID e Tenant ID:",
+      "Na página do app criado, copie o 'Application (client) ID' → este é o AZURE_CLIENT_ID",
+      "Copie também o 'Directory (tenant) ID' → este é o AZURE_TENANT_ID",
+      "PASSO 3 — Criar o Client Secret:",
+      "No menu lateral esquerdo, clique em 'Certificates & secrets'",
+      "Clique em '+ New client secret'",
+      "Description: 'GIG-Secret' | Expires: '24 months' → Clique em 'Add'",
+      "ATENÇÃO: Copie imediatamente o valor na coluna 'Value' (não o Secret ID!) — ele some após sair da página",
+      "Este valor copiado é o AZURE_CLIENT_SECRET",
+      "PASSO 4 — Adicionar permissões de API:",
+      "No menu lateral, clique em 'API permissions' → '+ Add a permission'",
+      "Clique em 'Microsoft Graph' → 'Application permissions'",
+      "Pesquise e marque: 'Files.ReadWrite.All' e 'Sites.ReadWrite.All'",
+      "Clique em 'Add permissions'",
+      "Clique em 'Grant admin consent for [sua organização]' → 'Yes' para confirmar",
+      "PASSO 5 — Cole as 3 credenciais nos campos abaixo e salve"
     ]
   },
 ];
@@ -220,7 +233,7 @@ function useAIStats() {
   });
 }
 
-// Google Drive Settings Components
+// OneDrive Settings Components
 function DriveToggle() {
   const queryClient = useQueryClient();
   const { data: enabled, isLoading } = useQuery({
@@ -229,7 +242,7 @@ function DriveToggle() {
       const { data } = await sb
         .from("system_settings")
         .select("value")
-        .eq("key", "google_drive_enabled")
+        .eq("key", "onedrive_enabled")
         .single();
       return data?.value === "true";
     }
@@ -239,7 +252,7 @@ function DriveToggle() {
     mutationFn: async (value: boolean) => {
       const { error } = await sb
         .from("system_settings")
-        .upsert({ key: "google_drive_enabled", value: String(value) }, { onConflict: "key" });
+        .upsert({ key: "onedrive_enabled", value: String(value) }, { onConflict: "key" });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -262,41 +275,41 @@ function DriveFolderInput() {
   const queryClient = useQueryClient();
   const [localValue, setLocalValue] = useState("");
 
-  const { data: folderId, isLoading } = useQuery({
+  const { data: folderPath, isLoading } = useQuery({
     queryKey: ["drive-folder-id"],
     queryFn: async () => {
       const { data } = await sb
         .from("system_settings")
         .select("value")
-        .eq("key", "google_drive_base_folder_id")
+        .eq("key", "onedrive_base_folder_path")
         .single();
       return data?.value || "";
     }
   });
 
   useEffect(() => {
-    if (folderId !== undefined) setLocalValue(folderId);
-  }, [folderId]);
+    if (folderPath !== undefined) setLocalValue(folderPath);
+  }, [folderPath]);
 
   const mutation = useMutation({
     mutationFn: async (value: string) => {
       const { error } = await sb
         .from("system_settings")
-        .upsert({ key: "google_drive_base_folder_id", value }, { onConflict: "key" });
+        .upsert({ key: "onedrive_base_folder_path", value }, { onConflict: "key" });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["drive-folder-id"] });
-      toast.success("ID da pasta salvo com sucesso");
+      toast.success("Caminho da pasta salvo com sucesso");
     },
-    onError: () => toast.error("Erro ao salvar ID da pasta")
+    onError: () => toast.error("Erro ao salvar caminho da pasta")
   });
 
   return (
     <div className="flex gap-2">
       <Input
-        id="drive-folder-id"
-        placeholder="1a2B3c4D5e6F7g8H9i0J..."
+        id="drive-folder-path"
+        placeholder="Clientes GIG"
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
         disabled={isLoading}
@@ -304,7 +317,7 @@ function DriveFolderInput() {
       />
       <Button
         onClick={() => mutation.mutate(localValue)}
-        disabled={mutation.isPending || localValue === folderId}
+        disabled={mutation.isPending || localValue === folderPath}
         size="sm"
       >
         {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
@@ -550,6 +563,7 @@ export default function AdminIntegracoes() {
   const [configuring, setConfiguring] = useState<IntegrationConfig | null>(null);
   const [secretValue, setSecretValue] = useState("");
   const [secondarySecretValue, setSecondarySecretValue] = useState("");
+  const [tertiarySecretValue, setTertiarySecretValue] = useState("");
   const [showSecret, setShowSecret] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -574,6 +588,7 @@ export default function AdminIntegracoes() {
     setConfiguring(integration);
     setSecretValue("");
     setSecondarySecretValue("");
+    setTertiarySecretValue("");
     setShowSecret(false);
   };
 
@@ -587,15 +602,22 @@ export default function AdminIntegracoes() {
       toast.error("Por favor, preencha todos os campos obrigatórios");
       return;
     }
+    if (configuring.tertiarySecretName && !tertiarySecretValue.trim()) {
+      toast.error("Por favor, preencha todos os campos obrigatórios");
+      return;
+    }
 
     setSaving(true);
 
     try {
-      const secrets: Record<string, any> = {
+      const secrets: Record<string, string> = {
         [configuring.secretName]: secretValue.trim(),
       };
       if (configuring.secondarySecretName) {
         secrets[configuring.secondarySecretName] = secondarySecretValue.trim();
+      }
+      if (configuring.tertiarySecretName) {
+        secrets[configuring.tertiarySecretName] = tertiarySecretValue.trim();
       }
 
       await upsertVaultIntegration({
@@ -614,6 +636,7 @@ export default function AdminIntegracoes() {
       setConfiguring(null);
       setSecretValue("");
       setSecondarySecretValue("");
+      setTertiarySecretValue("");
     } catch (error) {
       toast.error("Erro ao salvar configuração", {
         description: "Tente novamente ou entre em contato com o suporte."
@@ -910,30 +933,30 @@ export default function AdminIntegracoes() {
           </CardContent>
         </Card>
 
-        {/* Google Drive Configuration */}
+        {/* OneDrive Configuration */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <HardDrive className="h-5 w-5 text-yellow-500" />
-              Configuração do Google Drive
+              <HardDrive className="h-5 w-5 text-blue-600" />
+              Configuração do OneDrive
             </CardTitle>
             <CardDescription>
-              Configure a pasta raiz onde serão criadas as pastas dos clientes
+              Configure a pasta raiz no OneDrive for Business onde serão criadas as pastas dos clientes
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Integração Ativada</Label>
-                <p className="text-sm text-muted-foreground">Criar pastas automaticamente no Google Drive para cada cliente</p>
+                <p className="text-sm text-muted-foreground">Criar pastas automaticamente no OneDrive para cada cliente novo</p>
               </div>
               <DriveToggle />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="drive-folder-id">ID da Pasta Raiz</Label>
+              <Label htmlFor="drive-folder-path">Nome da Pasta Raiz</Label>
               <p className="text-xs text-muted-foreground">
-                Cole o ID da pasta do Google Drive onde as pastas dos clientes serão criadas.
-                O ID pode ser encontrado na URL: drive.google.com/drive/folders/<strong>[ID_AQUI]</strong>
+                Nome da pasta no OneDrive for Business onde as subpastas dos clientes serão criadas.
+                Exemplo: <strong>Clientes GIG</strong>. A pasta deve existir no OneDrive da conta de serviço.
               </p>
               <DriveFolderInput />
             </div>
@@ -988,12 +1011,17 @@ export default function AdminIntegracoes() {
             <div className="space-y-4">
               <Alert>
                 <Info className="h-4 w-4" />
-                <AlertDescription className="text-sm">
-                  <ol className="list-decimal list-inside space-y-1">
-                    {configuring.instructions.map((instruction, idx) => (
-                      <li key={idx}>{instruction}</li>
-                    ))}
-                  </ol>
+                <AlertDescription className="text-sm max-h-56 overflow-y-auto">
+                  <div className="space-y-1">
+                    {configuring.instructions.map((instruction, idx) => {
+                      const isHeader = instruction.startsWith("PASSO") || instruction.startsWith("ATENÇÃO");
+                      return isHeader ? (
+                        <p key={idx} className="font-semibold mt-2 text-foreground">{instruction}</p>
+                      ) : (
+                        <p key={idx} className="ml-2 text-muted-foreground">• {instruction}</p>
+                      );
+                    })}
+                  </div>
                 </AlertDescription>
               </Alert>
 
@@ -1034,6 +1062,18 @@ export default function AdminIntegracoes() {
                   </div>
                 )}
 
+                {configuring.tertiarySecretName && (
+                  <div className="space-y-2">
+                    <Label htmlFor="tertiary-secret-value">{configuring.tertiarySecretName}</Label>
+                    <Input
+                      id="tertiary-secret-value"
+                      type={showSecret ? "text" : "text"}
+                      placeholder={configuring.tertiaryPlaceholder}
+                      value={tertiarySecretValue}
+                      onChange={(e) => setTertiarySecretValue(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}
