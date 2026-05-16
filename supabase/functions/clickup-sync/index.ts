@@ -139,6 +139,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Integration disabled — not in active use
+  return new Response(JSON.stringify({ error: "ClickUp sync desativado" }), {
+    status: 503,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+  }
+
   return new Response(JSON.stringify({ error: "Integration not configured" }), {
     status: 503,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
