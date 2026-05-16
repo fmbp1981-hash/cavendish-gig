@@ -28,9 +28,9 @@ export function DocumentoUploadModal({
   onSubmit,
   isLoading = false,
 }: DocumentoUploadModalProps) {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
   const [descricao, setDescricao] = useState("");
 
   const formatosAceitos = (documento.formatos_aceitos && documento.formatos_aceitos.length > 0)
@@ -43,24 +43,36 @@ export function DocumentoUploadModal({
   const validateFile = useCallback((file: File): string | null => {
     const extension = file.name.split('.').pop()?.toLowerCase();
     if (!extension || !formatosAceitos.includes(extension)) {
-      return `Formato não aceito. Use: ${formatosAceitos.join(', ')}`;
+      return `"${file.name}": formato não aceito. Use: ${formatosAceitos.join(', ')}`;
     }
     if (file.size > tamanhoMaximoBytes) {
-      return `Arquivo muito grande. Máximo: ${tamanhoMaximoMb}MB`;
+      return `"${file.name}": arquivo muito grande. Máximo: ${tamanhoMaximoMb}MB`;
     }
     return null;
-  }, [formatosAceitos, tamanhoMaximoBytes, documento.tamanho_maximo_mb]);
+  }, [formatosAceitos, tamanhoMaximoBytes, tamanhoMaximoMb]);
 
-  const handleFile = useCallback((selectedFile: File) => {
-    const validationError = validateFile(selectedFile);
-    if (validationError) {
-      setError(validationError);
-      setFile(null);
-    } else {
-      setError(null);
-      setFile(selectedFile);
+  const addFiles = useCallback((incoming: File[]) => {
+    const newErrors: string[] = [];
+    const valid: File[] = [];
+
+    for (const f of incoming) {
+      const err = validateFile(f);
+      if (err) {
+        newErrors.push(err);
+      } else {
+        // Avoid duplicates by name+size
+        const isDuplicate = files.some(
+          existing => existing.name === f.name && existing.size === f.size
+        );
+        if (!isDuplicate) valid.push(f);
+      }
     }
-  }, [validateFile]);
+
+    setErrors(newErrors);
+    if (valid.length > 0) {
+      setFiles(prev => [...prev, ...valid]);
+    }
+  }, [validateFile, files]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -76,30 +88,40 @@ export function DocumentoUploadModal({
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      addFiles(Array.from(e.dataTransfer.files));
     }
-  }, [handleFile]);
+  }, [addFiles]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      addFiles(Array.from(e.target.files));
+      // Reset input so same file can be added again after removal
+      e.target.value = '';
     }
-  }, [handleFile]);
+  }, [addFiles]);
+
+  const removeFile = useCallback((index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
   const handleSubmit = async () => {
-    if (!file) return;
-    await onSubmit(file, descricao.trim() || undefined);
-    setFile(null);
+    if (files.length === 0) return;
+    // Upload each file sequentially — each gets its own anexo record
+    for (const file of files) {
+      await onSubmit(file, descricao.trim() || undefined);
+    }
+    setFiles([]);
     setDescricao("");
+    setErrors([]);
     onClose();
   };
 
   const handleClose = () => {
-    setFile(null);
+    setFiles([]);
     setDescricao("");
-    setError(null);
+    setErrors([]);
     onClose();
   };
 
@@ -123,7 +145,7 @@ export function DocumentoUploadModal({
             className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
               dragActive
                 ? "border-primary bg-primary/5"
-                : file
+                : files.length > 0
                 ? "border-secondary bg-secondary/5"
                 : "border-border hover:border-primary/50"
             }`}
@@ -135,50 +157,66 @@ export function DocumentoUploadModal({
             <input
               type="file"
               accept={acceptString}
+              multiple
               onChange={handleChange}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
-            
-            {file ? (
-              <div className="flex items-center justify-center gap-3">
-                <FileText className="w-8 h-8 text-secondary" />
-                <div className="text-left">
-                  <p className="font-medium text-foreground">{file.name}</p>
-                  <p className="text-sm text-muted-foreground">{formatFileSize(file.size)}</p>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFile(null);
-                  }}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-foreground font-medium mb-1">
-                  Arraste um arquivo ou clique para selecionar
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Formatos: {formatosAceitos.join(', ').toUpperCase()}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Tamanho máximo: {tamanhoMaximoMb}MB
-                </p>
-              </>
-            )}
+
+            <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-foreground font-medium mb-1">
+              Arraste arquivos ou clique para selecionar
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Formatos: {formatosAceitos.join(', ').toUpperCase()}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Tamanho máximo por arquivo: {tamanhoMaximoMb}MB
+            </p>
           </div>
 
-          {/* Error */}
-          {error && (
-            <div className="flex items-center gap-2 text-sm text-destructive">
-              <AlertCircle className="w-4 h-4" />
-              {error}
+          {/* Selected Files List */}
+          {files.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-foreground">
+                {files.length} arquivo{files.length > 1 ? 's' : ''} selecionado{files.length > 1 ? 's' : ''}:
+              </p>
+              <ul className="space-y-2">
+                {files.map((file, index) => (
+                  <li
+                    key={`${file.name}-${file.size}-${index}`}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="w-4 h-4 text-secondary shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 h-7 w-7"
+                      onClick={() => removeFile(index)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Errors */}
+          {errors.length > 0 && (
+            <div className="space-y-1">
+              {errors.map((err, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm text-destructive">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {err}
+                </div>
+              ))}
             </div>
           )}
 
@@ -201,8 +239,12 @@ export function DocumentoUploadModal({
           <Button variant="outline" onClick={handleClose} disabled={isLoading}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} disabled={!file || isLoading}>
-            {isLoading ? "Enviando..." : "Enviar"}
+          <Button onClick={handleSubmit} disabled={files.length === 0 || isLoading}>
+            {isLoading
+              ? "Enviando..."
+              : files.length > 1
+              ? `Enviar ${files.length} arquivo(s)`
+              : "Enviar"}
           </Button>
         </DialogFooter>
       </DialogContent>

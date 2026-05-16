@@ -139,6 +139,20 @@ export function useUploadDocumento() {
 
       // Atualizar ou criar status do documento requerido, se fornecido
       if (documentoRequeridoId) {
+        // Insert into junction table (allows multiple files per required doc)
+        // The trigger recalc_status_on_anexo_change will keep documentos_requeridos_status in sync.
+        const { error: anexoError } = await sb
+          .from('documentos_requeridos_anexos' as 'documentos_requeridos_status')
+          .insert({
+            documento_requerido_id: documentoRequeridoId,
+            documento_id: documento.id,
+            status: 'enviado',
+            ordem: 0,
+          } as never);
+
+        if (anexoError) throw anexoError;
+
+        // Belt-and-suspenders: also upsert cache table directly in case trigger is delayed
         const { error: statusError } = await sb
           .from('documentos_requeridos_status')
           .upsert({
@@ -149,7 +163,10 @@ export function useUploadDocumento() {
             onConflict: 'documento_requerido_id'
           });
 
-        if (statusError) throw statusError;
+        if (statusError) {
+          console.warn('Aviso ao atualizar cache de status:', statusError);
+          // Non-blocking — junction table insert is the source of truth
+        }
       }
 
       // Notificar consultores em background
