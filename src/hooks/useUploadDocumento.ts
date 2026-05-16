@@ -134,8 +134,8 @@ export function useUploadDocumento() {
       if (docError) throw docError;
       if (!documento) throw new Error('Falha ao criar documento');
 
-      // Upload para Google Drive em background (não bloqueia o fluxo principal)
-      uploadToGoogleDriveBackground(file, organizacaoId, documento.id);
+      // Upload para OneDrive em background (não bloqueia o fluxo principal)
+      uploadToOneDriveBackground(file, organizacaoId, documento.id);
 
       // Atualizar ou criar status do documento requerido, se fornecido
       if (documentoRequeridoId) {
@@ -176,21 +176,19 @@ export function useUploadDocumento() {
   });
 }
 
-async function uploadToGoogleDriveBackground(file: File, organizacaoId: string, documentoId: string) {
+async function uploadToOneDriveBackground(file: File, organizacaoId: string, documentoId: string) {
   try {
-    // Check if Drive is enabled
     const { data: settings } = await sb
       .from('system_settings')
       .select('value')
-      .eq('key', 'google_drive_enabled')
+      .eq('key', 'onedrive_enabled')
       .single();
 
     if (settings?.value !== 'true') {
-      console.log('Google Drive integration is disabled, skipping Drive upload');
+      console.log('OneDrive integration is disabled, skipping Drive upload');
       return;
     }
 
-    // Get the organization's Drive folder structure
     const { data: org } = await sb
       .from('organizacoes')
       .select('drive_folder_id')
@@ -198,12 +196,11 @@ async function uploadToGoogleDriveBackground(file: File, organizacaoId: string, 
       .single();
 
     if (!org?.drive_folder_id) {
-      console.warn('Organization does not have a Google Drive folder configured');
+      console.warn('Organization does not have an OneDrive folder configured');
       return;
     }
 
-    // Get list of subfolders to find the "01 - Documentos Recebidos" folder
-    const { data: listResult, error: listError } = await supabase.functions.invoke('google-drive', {
+    const { data: listResult, error: listError } = await supabase.functions.invoke('onedrive', {
       body: {
         action: 'listFolders',
         parentFolderId: org.drive_folder_id,
@@ -211,7 +208,7 @@ async function uploadToGoogleDriveBackground(file: File, organizacaoId: string, 
     });
 
     if (listError) {
-      console.error('Error listing Drive folders:', listError);
+      console.error('Error listing OneDrive folders:', listError);
       return;
     }
 
@@ -220,16 +217,15 @@ async function uploadToGoogleDriveBackground(file: File, organizacaoId: string, 
     );
 
     if (!targetFolderObj) {
-      console.warn('Target folder "01 - Documentos Recebidos" not found in organization Drive');
+      console.warn('Target folder "01 - Documentos Recebidos" not found in organization OneDrive');
       return;
     }
 
-    // Convert file to base64
     const reader = new FileReader();
     const base64Promise = new Promise<string>((resolve, reject) => {
       reader.onload = () => {
         const result = reader.result as string;
-        const base64 = result.split(',')[1]; // Remove data:mime;base64, prefix
+        const base64 = result.split(',')[1];
         resolve(base64);
       };
       reader.onerror = reject;
@@ -237,8 +233,7 @@ async function uploadToGoogleDriveBackground(file: File, organizacaoId: string, 
     reader.readAsDataURL(file);
     const fileData = await base64Promise;
 
-    // Upload file to Drive
-    const { data, error } = await supabase.functions.invoke('google-drive', {
+    const { data, error } = await supabase.functions.invoke('onedrive', {
       body: {
         action: 'uploadFile',
         fileName: file.name,
@@ -249,11 +244,10 @@ async function uploadToGoogleDriveBackground(file: File, organizacaoId: string, 
     });
 
     if (error) {
-      console.error('Error uploading to Google Drive:', error);
+      console.error('Error uploading to OneDrive:', error);
     } else {
-      console.log('File successfully uploaded to Google Drive');
+      console.log('File successfully uploaded to OneDrive');
 
-      // Update documento with drive_file_id
       if (data?.success && data?.data?.id) {
         await sb
           .from('documentos')
@@ -264,6 +258,6 @@ async function uploadToGoogleDriveBackground(file: File, organizacaoId: string, 
       }
     }
   } catch (error) {
-    console.error('Error in Google Drive upload background task:', error);
+    console.error('Error in OneDrive upload background task:', error);
   }
 }

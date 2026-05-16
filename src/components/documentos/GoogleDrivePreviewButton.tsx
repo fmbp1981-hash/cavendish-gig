@@ -23,7 +23,7 @@ export function GoogleDrivePreviewButton({
 
   const handlePreview = () => {
     if (!driveFileId) {
-      toast.error('Documento não disponível no Google Drive');
+      toast.error('Documento não disponível no OneDrive');
       return;
     }
 
@@ -43,7 +43,7 @@ export function GoogleDrivePreviewButton({
         className={className}
       >
         <Eye className="h-4 w-4 mr-2" />
-        Ver no Drive
+        Ver no OneDrive
       </Button>
 
       <GoogleDriveViewer

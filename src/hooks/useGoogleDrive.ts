@@ -6,7 +6,7 @@ const sb = supabase;
 interface DriveFolder {
     id: string;
     name: string;
-    webViewLink: string;
+    webUrl: string;
 }
 
 interface CreateFolderResult {
@@ -16,12 +16,12 @@ interface CreateFolderResult {
 
 export function useGoogleDriveSettings() {
     return useQuery({
-        queryKey: ['google-drive-settings'],
+        queryKey: ['onedrive-settings'],
         queryFn: async () => {
             const { data, error } = await supabase
                 .from('system_settings')
                 .select('key, value')
-                .in('key', ['google_drive_enabled', 'google_drive_base_folder_id']);
+                .in('key', ['onedrive_enabled', 'onedrive_base_folder_path']);
 
             if (error) throw error;
 
@@ -32,8 +32,8 @@ export function useGoogleDriveSettings() {
             });
 
             return {
-                enabled: settings['google_drive_enabled'] === 'true',
-                baseFolderId: settings['google_drive_base_folder_id'] || null,
+                enabled: settings['onedrive_enabled'] === 'true',
+                baseFolderId: settings['onedrive_base_folder_path'] || null,
             };
         },
     });
@@ -55,7 +55,7 @@ export function useUpdateDriveSettings() {
                     supabase
                         .from('system_settings')
                         .upsert({
-                            key: 'google_drive_enabled',
+                            key: 'onedrive_enabled',
                             value: String(enabled)
                         }, { onConflict: 'key' })
                 );
@@ -66,7 +66,7 @@ export function useUpdateDriveSettings() {
                     supabase
                         .from('system_settings')
                         .upsert({
-                            key: 'google_drive_base_folder_id',
+                            key: 'onedrive_base_folder_path',
                             value: baseFolderId
                         }, { onConflict: 'key' })
                 );
@@ -86,11 +86,10 @@ export function useCreateClientDriveFolder() {
             clientName: string;
             organizacaoId: string;
         }): Promise<CreateFolderResult | null> => {
-            // First check if Drive is enabled and get base folder
             const { data: settings } = await supabase
                 .from('system_settings')
                 .select('key, value')
-                .in('key', ['google_drive_enabled', 'google_drive_base_folder_id']);
+                .in('key', ['onedrive_enabled', 'onedrive_base_folder_path']);
 
             const settingsMap: Record<string, string | null> = {};
             const rows = (settings ?? []) as unknown as Array<{ key: string; value: string | null }>;
@@ -98,20 +97,16 @@ export function useCreateClientDriveFolder() {
                 settingsMap[row.key] = row.value;
             });
 
-            if (settingsMap['google_drive_enabled'] !== 'true') {
-                console.log('Google Drive integration is disabled');
+            if (settingsMap['onedrive_enabled'] !== 'true') {
+                console.log('OneDrive integration is disabled');
                 return null;
             }
 
-            const baseFolderId = settingsMap['google_drive_base_folder_id'];
-
-            // Call the edge function to create folder structure
-            const { data, error } = await supabase.functions.invoke('google-drive', {
+            const { data, error } = await supabase.functions.invoke('onedrive', {
                 body: {
                     action: 'createClientStructure',
                     clientName,
                     organizacaoId,
-                    parentFolderId: baseFolderId,
                 },
             });
 
@@ -135,21 +130,19 @@ export function useUploadToDrive() {
         }: {
             organizacaoId: string;
             file: File;
-            targetFolder?: string; // subfolder name like "01 - Documentos Recebidos"
+            targetFolder?: string;
         }) => {
-            // Check if Drive is enabled
             const { data: settings } = await sb
                 .from('system_settings')
                 .select('value')
-                .eq('key', 'google_drive_enabled')
+                .eq('key', 'onedrive_enabled')
                 .single();
 
             if (settings?.value !== 'true') {
-                console.log('Google Drive integration is disabled, skipping upload');
-                return { success: false, message: 'Google Drive integration is disabled' };
+                console.log('OneDrive integration is disabled, skipping upload');
+                return { success: false, message: 'OneDrive integration is disabled' };
             }
 
-            // Get the organization's Drive folder structure
             const { data: org } = await sb
                 .from('organizacoes')
                 .select('drive_folder_id')
@@ -157,11 +150,10 @@ export function useUploadToDrive() {
                 .single();
 
             if (!org?.drive_folder_id) {
-                throw new Error('Organization does not have a Google Drive folder configured');
+                throw new Error('Organization does not have an OneDrive folder configured');
             }
 
-            // Get list of subfolders to find the target folder ID
-            const { data: listResult, error: listError } = await supabase.functions.invoke('google-drive', {
+            const { data: listResult, error: listError } = await supabase.functions.invoke('onedrive', {
                 body: {
                     action: 'listFolders',
                     parentFolderId: org.drive_folder_id,
@@ -175,15 +167,14 @@ export function useUploadToDrive() {
             );
 
             if (!targetFolderObj) {
-                throw new Error(`Target folder "${targetFolder}" not found in organization Drive`);
+                throw new Error(`Target folder "${targetFolder}" not found in organization OneDrive`);
             }
 
-            // Convert file to base64
             const reader = new FileReader();
             const base64Promise = new Promise<string>((resolve, reject) => {
                 reader.onload = () => {
                     const result = reader.result as string;
-                    const base64 = result.split(',')[1]; // Remove data:mime;base64, prefix
+                    const base64 = result.split(',')[1];
                     resolve(base64);
                 };
                 reader.onerror = reject;
@@ -191,8 +182,7 @@ export function useUploadToDrive() {
             reader.readAsDataURL(file);
             const fileData = await base64Promise;
 
-            // Upload file to Drive
-            const { data, error } = await supabase.functions.invoke('google-drive', {
+            const { data, error } = await supabase.functions.invoke('onedrive', {
                 body: {
                     action: 'uploadFile',
                     fileName: file.name,
@@ -218,9 +208,9 @@ export function useShareDriveFolder() {
         }: {
             folderId: string;
             email: string;
-            role?: 'reader' | 'writer' | 'commenter';
+            role?: 'reader' | 'writer';
         }) => {
-            const { data, error } = await supabase.functions.invoke('google-drive', {
+            const { data, error } = await supabase.functions.invoke('onedrive', {
                 body: {
                     action: 'shareFolder',
                     folderId,
