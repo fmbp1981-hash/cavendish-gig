@@ -1,6 +1,10 @@
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { ClienteLayout } from "@/components/layout/ClienteLayout";
 import { useClienteProjeto, useDocumentosRequeridosProjeto } from "@/hooks/useClienteProjeto";
+import { useProximaReuniao } from "@/hooks/useReunioes";
 import { ProgressoDocumentos } from "@/components/documentos/ProgressoDocumentos";
 import { WorkflowProgress } from "@/components/cliente/WorkflowProgress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +19,11 @@ import {
   Clock,
   AlertCircle,
   Building2,
+  CalendarCheck2,
+  Calendar,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import type { FaseProjeto } from "@/types/database";
 
 const faseLabels: Record<FaseProjeto, string> = {
@@ -31,11 +39,28 @@ const faseColors: Record<FaseProjeto, string> = {
 };
 
 export default function MeuProjeto() {
+  const { user } = useAuth();
   const { data: projeto, isLoading: projetoLoading } = useClienteProjeto();
   const { data: documentos = [], isLoading: docsLoading } = useDocumentosRequeridosProjeto(
     projeto?.id,
     projeto?.organizacao_id
   );
+
+  const { data: organizacaoId } = useQuery({
+    queryKey: ["minha-organizacao", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("organization_members")
+        .select("organizacao_id")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.organizacao_id ?? null;
+    },
+  });
+
+  const { data: proximaReuniao } = useProximaReuniao(organizacaoId ?? null);
 
   const total = documentos.filter((d: any) => d.obrigatorio).length;
   const aprovados = documentos.filter((d: any) => d.obrigatorio && d.status?.status === "aprovado").length;
@@ -102,6 +127,55 @@ export default function MeuProjeto() {
         <div className="mb-8" data-tour="progresso-projeto">
           <WorkflowProgress currentPhase={projeto.fase_atual as FaseProjeto} />
         </div>
+
+        {/* Próxima Reunião */}
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CalendarCheck2 className="w-5 h-5 text-primary" />
+                Próxima Reunião
+              </CardTitle>
+              <Link to="/meu-projeto/agenda">
+                <Button variant="ghost" size="sm" className="gap-1 text-xs">
+                  Ver agenda completa
+                  <ArrowRight className="w-3 h-3" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {proximaReuniao ? (
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Calendar className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground truncate">{proximaReuniao.titulo}</p>
+                  <p className="text-sm text-muted-foreground capitalize mt-0.5">
+                    {format(new Date(proximaReuniao.data_inicio), "EEEE, d 'de' MMMM — HH:mm", {
+                      locale: ptBR,
+                    })}
+                  </p>
+                </div>
+                <Link to="/meu-projeto/agenda">
+                  <Button size="sm" variant="outline" className="shrink-0">
+                    Detalhes
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Nenhuma reunião agendada</p>
+                <Link to="/meu-projeto/agenda">
+                  <Button size="sm" variant="outline">
+                    Ver agenda
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Progress Card */}
         <Card className="mb-8" data-tour="documentos-necessarios">

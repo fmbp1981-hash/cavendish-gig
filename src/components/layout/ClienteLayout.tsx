@@ -16,10 +16,12 @@ import {
   ShieldCheck,
   Users2,
   Handshake,
+  CalendarCheck2,
 } from "lucide-react";
 
 const menuItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Meu Projeto",            href: "/meu-projeto",                        dataTour: "dashboard" },
+  { icon: CalendarCheck2,  label: "Minha Agenda",           href: "/meu-projeto/agenda" },
   { icon: ClipboardCheck,  label: "Diagnóstico",            href: "/meu-projeto/diagnostico",            dataTour: "menu-diagnosticos" },
   { icon: GraduationCap,   label: "Treinamentos",           href: "/meu-projeto/treinamentos",           dataTour: "menu-treinamentos" },
   { icon: ScrollText,      label: "Código de Ética",        href: "/meu-projeto/codigo-etica",           dataTour: "menu-codigo-etica-cliente" },

@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   User,
   Handshake,
+  Library,
 } from "lucide-react";
 import {
   DropdownMenuItem,
@@ -31,6 +32,7 @@ const navItems: NavItem[] = [
   { icon: FileText,        label: "Documentos",       href: "/admin/documentos",            dataTour: "admin-nav-documentos" },
   { icon: Database,        label: "Catálogo",         href: "/admin/catalogo",              dataTour: "admin-nav-catalogo" },
   { icon: FileText,        label: "Templates",        href: "/admin/templates",             dataTour: "admin-nav-templates" },
+  { icon: Library,         label: "Biblioteca",       href: "/admin/biblioteca",            dataTour: "admin-nav-biblioteca" },
   { icon: TrendingUp,      label: "Relatórios",       href: "/admin/relatorios/historico",  dataTour: "admin-nav-relatorios" },
   { icon: Plug,            label: "Integrações",      href: "/admin/integracoes",           dataTour: "admin-nav-integracoes" },
   { icon: Sparkles,        label: "Branding",         href: "/admin/branding",              dataTour: "admin-nav-branding" },

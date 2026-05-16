@@ -21,6 +21,7 @@ import {
   PresentationIcon,
   User,
   Handshake,
+  Library,
 } from "lucide-react";
 import {
   DropdownMenuItem,
@@ -43,6 +44,7 @@ const navItems: NavItem[] = [
   { icon: AlertTriangle,   label: "Denúncias",            href: "/consultor/denuncias",          dataTour: "menu-denuncias" },
   { icon: Sparkles,        label: "IA: Código de Ética",  href: "/consultor/codigo-etica",       dataTour: "menu-codigo-etica" },
   { icon: FileText,        label: "IA: Atas",             href: "/consultor/atas",               dataTour: "menu-atas" },
+  { icon: Library,         label: "Biblioteca",           href: "/consultor/biblioteca",         dataTour: "menu-biblioteca" },
 ];
 
 interface ConsultorLayoutProps {

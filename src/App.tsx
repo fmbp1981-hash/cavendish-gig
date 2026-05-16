@@ -41,6 +41,7 @@ import ESGDashboard from "./spa/pages/consultor/ESGDashboard";
 import BoardDashboard from "./spa/pages/consultor/BoardDashboard";
 
 // Cliente Pages
+import MinhaAgenda from "./spa/pages/cliente/MinhaAgenda";
 import RepositorioDocumentos from "./spa/pages/cliente/RepositorioDocumentos";
 import ClienteCodigoEtica from "./spa/pages/cliente/CodigoEtica";
 import ClienteConfiguracoes from "./spa/pages/cliente/ClienteConfiguracoes";
@@ -70,6 +71,8 @@ import AdminBranding from "./spa/pages/admin/Branding";
 import AdminLogs from "./spa/pages/admin/AdminLogs";
 import AdminDocumentos from "./spa/pages/admin/AdminDocumentos";
 import AdminConsultores from "./spa/pages/admin/AdminConsultores";
+import AdminBiblioteca from "./spa/pages/admin/AdminBiblioteca";
+import ConsultorBiblioteca from "./spa/pages/consultor/ConsultorBiblioteca";
 import Help from "./spa/pages/Help";
 import { installGlobalErrorHandlers } from "./utils/errorLogger";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -263,6 +266,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/consultor/biblioteca"
+                element={
+                  <ProtectedRoute requiredRoles={["consultor", "admin"]}>
+                    <ConsultorBiblioteca />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/admin"
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
@@ -374,6 +385,15 @@ const App = () => (
                 }
               />
 
+              <Route
+                path="/admin/biblioteca"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminBiblioteca />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Parceiro routes */}
               <Route
                 path="/parceiro"
@@ -438,6 +458,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <MeuProjeto />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/meu-projeto/agenda"
+                element={
+                  <ProtectedRoute requiredRoles={["cliente", "admin", "consultor"]}>
+                    <MinhaAgenda />
                   </ProtectedRoute>
                 }
               />
