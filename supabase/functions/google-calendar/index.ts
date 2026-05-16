@@ -211,6 +211,43 @@ async function deleteCalendarEvent(
   }
 }
 
+async function scheduleFirefliesBot(
+  apiKey: string,
+  meetingUrl: string,
+  title: string,
+  startTime: string | undefined,
+  reqId: string,
+): Promise<void> {
+  const query = `
+    mutation ScheduleBot($input: ScheduleBotInput!) {
+      scheduleBot(input: $input) {
+        success
+        message
+      }
+    }
+  `;
+  const variables = {
+    input: {
+      meeting_url: meetingUrl,
+      title: title || "Reunião",
+      ...(startTime ? { start_time: startTime } : {}),
+    },
+  };
+  const resp = await fetch("https://api.fireflies.ai/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  const json = await resp.json();
+  if (json.errors?.length) {
+    throw new Error(json.errors[0].message);
+  }
+  console.log(`[google-calendar][${reqId}] Fireflies bot scheduled: ${JSON.stringify(json.data?.scheduleBot)}`);
+}
+
 const handler = async (req: Request): Promise<Response> => {
   const reqId = crypto.randomUUID().slice(0, 8);
   console.log(`[google-calendar][${reqId}] invoked method=${req.method}`);
@@ -267,11 +304,33 @@ const handler = async (req: Request): Promise<Response> => {
     let result;
 
     switch (action) {
-      case "create":
+      case "create": {
         if (!event) throw new Error("Event data is required for create action");
         result = await createCalendarEvent(accessToken, event, calendarId);
         console.log(`[google-calendar][${reqId}] event created id=${result.id}`);
+
+        // Schedule Fireflies bot if integration is configured
+        const meetLink = result.hangoutLink || result.conferenceData?.entryPoints?.[0]?.uri;
+        if (meetLink) {
+          try {
+            let firefliesIntegration = null;
+            try {
+              firefliesIntegration = await loadIntegration(service, "fireflies", "system", null);
+            } catch {
+              // ignore
+            }
+            const firefliesKey = (firefliesIntegration?.secrets as any)?.FIREFLIES_API_KEY || Deno.env.get("FIREFLIES_API_KEY") || "";
+            if (firefliesKey && firefliesIntegration?.enabled !== false) {
+              await scheduleFirefliesBot(firefliesKey, meetLink, result.summary, result.start?.dateTime, reqId);
+            } else {
+              console.log(`[google-calendar][${reqId}] Fireflies not configured — skipping bot scheduling`);
+            }
+          } catch (ffErr: any) {
+            console.warn(`[google-calendar][${reqId}] Fireflies bot scheduling failed (non-fatal): ${ffErr.message}`);
+          }
+        }
         break;
+      }
 
       case "list": {
         const now = new Date().toISOString();

@@ -55,8 +55,8 @@ const handler = async (req: Request): Promise<Response> => {
     const url = new URL(req.url);
     const organizacaoId = url.searchParams.get("organizacao_id") || null;
 
-    const webhookData: FirefliesWebhook = await req.json();
-    console.log("Received transcription webhook");
+    const webhookData: FirefliesWebhook & { video_url?: string; meeting_url?: string } = await req.json();
+    console.log("Received transcription webhook", { meetingId: webhookData.meetingId, title: webhookData.title });
 
     // Generate meeting minutes using AI
     const aiPrompt = `Você é um especialista em Governança Corporativa. Baseado na transcrição abaixo, gere uma ata de reunião profissional.
@@ -159,6 +159,19 @@ Formato: Markdown profissional`;
         .from("documentos")
         .getPublicUrl(storagePath);
 
+      // Tenta vincular à reunião pelo link do Google Meet
+      const meetingVideoUrl = webhookData.video_url || webhookData.meeting_url || null;
+      let reuniaoId: string | null = null;
+      if (meetingVideoUrl) {
+        const { data: reuniaoMatch } = await supabase
+          .from("reunioes")
+          .select("id")
+          .eq("organizacao_id", organizacaoId)
+          .eq("link_video", meetingVideoUrl)
+          .maybeSingle();
+        reuniaoId = reuniaoMatch?.id || null;
+      }
+
       // Insere o registro na tabela documentos
       await supabase.from("documentos").insert({
         nome: nomeAta,
@@ -173,8 +186,18 @@ Formato: Markdown profissional`;
           duration_minutes: webhookData.duration,
           attendees: webhookData.attendees || [],
           source: "fireflies",
+          reuniao_id: reuniaoId,
         },
       });
+
+      // Atualiza status da reunião para "realizada"
+      if (reuniaoId) {
+        await supabase
+          .from("reunioes")
+          .update({ status: "realizada" })
+          .eq("id", reuniaoId);
+        console.log(`Reunião ${reuniaoId} marcada como realizada e ata vinculada`);
+      }
 
       console.log(`Ata salva no repositório de documentos: ${nomeAta}`);
     }
