@@ -26,6 +26,7 @@ interface UploadParams {
   projetoId: string;
   organizacaoId: string;
   nomeDocumento: string;
+  descricao?: string;
 }
 
 async function buscarEmailsConsultores(): Promise<string[]> {
@@ -90,7 +91,8 @@ export function useUploadDocumento() {
       documentoRequeridoId,
       projetoId,
       organizacaoId,
-      nomeDocumento
+      nomeDocumento,
+      descricao,
     }: UploadParams): Promise<Documento> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
@@ -119,6 +121,7 @@ export function useUploadDocumento() {
           organizacao_id: organizacaoId,
           projeto_id: projetoId,
           nome: nomeDocumento,
+          descricao: descricao?.trim() || null,
           url: urlData.publicUrl,
           storage_path: fileName,
           tipo: file.type,

@@ -945,6 +945,7 @@ export type Database = {
           fase: Database["public"]["Enums"]["fase_projeto"]
           formatos_aceitos: string[] | null
           id: string
+          is_complementar: boolean
           nome: string
           obrigatorio: boolean
           ordem: number | null
@@ -959,6 +960,7 @@ export type Database = {
           fase: Database["public"]["Enums"]["fase_projeto"]
           formatos_aceitos?: string[] | null
           id?: string
+          is_complementar?: boolean
           nome: string
           obrigatorio?: boolean
           ordem?: number | null
@@ -973,6 +975,7 @@ export type Database = {
           fase?: Database["public"]["Enums"]["fase_projeto"]
           formatos_aceitos?: string[] | null
           id?: string
+          is_complementar?: boolean
           nome?: string
           obrigatorio?: boolean
           ordem?: number | null
@@ -1050,44 +1053,56 @@ export type Database = {
       }
       documentos_requeridos: {
         Row: {
-          catalogo_id: string
+          ativo: boolean | null
+          catalogo_id: string | null
           created_at: string
           criterios_aceitacao: string | null
           descricao: string | null
           fase: Database["public"]["Enums"]["fase_projeto"]
           formatos_aceitos: string[] | null
           id: string
+          is_complementar: boolean
           nome: string
           obrigatorio: boolean
+          ordem: number | null
           projeto_id: string
+          solicitado_por: string | null
           tamanho_maximo_mb: number | null
           template_url: string | null
         }
         Insert: {
-          catalogo_id: string
+          ativo?: boolean | null
+          catalogo_id?: string | null
           created_at?: string
           criterios_aceitacao?: string | null
           descricao?: string | null
           fase: Database["public"]["Enums"]["fase_projeto"]
           formatos_aceitos?: string[] | null
           id?: string
+          is_complementar?: boolean
           nome: string
           obrigatorio?: boolean
+          ordem?: number | null
           projeto_id: string
+          solicitado_por?: string | null
           tamanho_maximo_mb?: number | null
           template_url?: string | null
         }
         Update: {
-          catalogo_id?: string
+          ativo?: boolean | null
+          catalogo_id?: string | null
           created_at?: string
           criterios_aceitacao?: string | null
           descricao?: string | null
           fase?: Database["public"]["Enums"]["fase_projeto"]
           formatos_aceitos?: string[] | null
           id?: string
+          is_complementar?: boolean
           nome?: string
           obrigatorio?: boolean
+          ordem?: number | null
           projeto_id?: string
+          solicitado_por?: string | null
           tamanho_maximo_mb?: number | null
           template_url?: string | null
         }

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { FileText, Upload } from "lucide-react";
+import { FileText, Upload, Star } from "lucide-react";
 import { ClienteLayout } from "@/components/layout/ClienteLayout";
 import { ProgressoDocumentos } from "@/components/documentos/ProgressoDocumentos";
 import { DocumentoRequeridoCard } from "@/components/documentos/DocumentoRequeridoCard";
@@ -11,6 +11,12 @@ import { GoogleDrivePreviewButton } from "@/components/documentos/GoogleDrivePre
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 import { useClienteProjeto, useDocumentosRequeridosProjeto, type DocumentoArquivoProjeto } from "@/hooks/useClienteProjeto";
@@ -42,9 +48,12 @@ export default function DocumentosNecessarios() {
   const uploadMutation = useUploadDocumento();
   const deleteMutation = useDeleteDocumento();
 
-  const documentosFiltrados = filtroFase === "todas"
-    ? documentos
-    : documentos.filter((d: DocumentoComStatus) => d.fase === filtroFase);
+  const documentosObrigatorios = documentos.filter((d: DocumentoComStatus) => !d.is_complementar);
+  const documentosComplementares = documentos.filter((d: DocumentoComStatus) => d.is_complementar);
+
+  const documentosFiltrados = (filtroFase === "todas"
+    ? documentosObrigatorios
+    : documentosObrigatorios.filter((d: DocumentoComStatus) => d.fase === filtroFase));
 
   const documentosPorFase = documentosFiltrados.reduce((acc: Record<FaseProjeto, DocumentoComStatus[]>, doc: DocumentoComStatus) => {
     const fase = doc.fase as FaseProjeto;
@@ -53,16 +62,16 @@ export default function DocumentosNecessarios() {
     return acc;
   }, {} as Record<FaseProjeto, DocumentoComStatus[]>);
 
-  const total = documentos.filter((d: DocumentoComStatus) => d.obrigatorio).length;
-  const aprovados = documentos.filter((d: DocumentoComStatus) => d.obrigatorio && d.status?.status === "aprovado").length;
-  const enviados = documentos.filter((d: DocumentoComStatus) =>
+  const total = documentosObrigatorios.filter((d: DocumentoComStatus) => d.obrigatorio).length;
+  const aprovados = documentosObrigatorios.filter((d: DocumentoComStatus) => d.obrigatorio && d.status?.status === "aprovado").length;
+  const enviados = documentosObrigatorios.filter((d: DocumentoComStatus) =>
     d.obrigatorio && d.status && ["enviado", "em_analise", "aprovado"].includes(d.status.status)
   ).length;
-  const pendentes = documentos.filter((d: DocumentoComStatus) =>
+  const pendentes = documentosObrigatorios.filter((d: DocumentoComStatus) =>
     d.obrigatorio && (!d.status || d.status.status === "pendente" || d.status.status === "rejeitado")
   ).length;
 
-  const handleUpload = async (file: File) => {
+  const handleUpload = async (file: File, descricao?: string) => {
     if (!uploadModalDoc || !projeto) return;
 
     try {
@@ -70,6 +79,7 @@ export default function DocumentosNecessarios() {
         // Upload avulso / checklist sugerido
         await uploadMutation.mutateAsync({
           file,
+          descricao,
           documentoRequeridoId: undefined,
           projetoId: projeto.id,
           organizacaoId: projeto.organizacao_id,
@@ -78,6 +88,7 @@ export default function DocumentosNecessarios() {
       } else {
         await uploadMutation.mutateAsync({
           file,
+          descricao,
           documentoRequeridoId: uploadModalDoc.id,
           projetoId: projeto.id,
           organizacaoId: projeto.organizacao_id,
@@ -209,11 +220,6 @@ export default function DocumentosNecessarios() {
           <ProgressoDocumentos total={total} enviados={enviados} aprovados={aprovados} pendentes={pendentes} />
         </div>
 
-        {/* Filter */}
-        <div className="mb-6">
-          <FiltroFaseDocumentos faseAtual={filtroFase} onChange={setFiltroFase} />
-        </div>
-
         {/* Documents by Phase */}
         {documentos.length === 0 ? (
           <div className="space-y-6">
@@ -273,46 +279,126 @@ export default function DocumentosNecessarios() {
             </div>
           </div>
         ) : (
-          <div className="space-y-8">
-            {(Object.keys(documentosPorFase) as FaseProjeto[]).map((fase) => (
-              <div key={fase}>
-                <h2 className="text-lg font-semibold text-foreground mb-4">{faseLabels[fase]}</h2>
-                <div className="space-y-3">
-                  {documentosPorFase[fase].map((doc: DocumentoComStatus) => (
-                    <div key={doc.id} className="space-y-3">
-                      <DocumentoRequeridoCard
-                        documento={doc}
-                        status={doc.status}
-                        onUpload={() => setUploadModalDoc(doc)}
-                        onView={() => handleOpenDocument(doc)}
-                        onDownloadTemplate={() => doc.template_url && window.open(doc.template_url, "_blank")}
-                        onViewRejeicao={() => doc.status && setRejeicaoModalDoc(doc)}
-                        onDelete={doc.status?.documento_id ? () => deleteMutation.mutate({
-                          documentoId: doc.status!.documento_id!,
-                          storagePath: doc.status!.documentos?.storage_path ?? null,
-                          documentoRequeridoId: doc.id,
-                        }) : undefined}
-                      />
-
-                      {doc.status?.documentos && (
-                        <div className="flex flex-wrap items-center gap-2 pl-4">
-                          <span className="text-xs text-muted-foreground">
-                            Arquivo enviado: {doc.status.documentos.nome}
-                          </span>
-                          {doc.status.documentos.drive_file_id && (
-                            <GoogleDrivePreviewButton
-                              driveFileId={doc.status.documentos.drive_file_id}
-                              fileName={doc.status.documentos.nome}
-                            />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+          <Accordion type="multiple" defaultValue={["obrigatorios"]} className="space-y-4">
+            {/* Obrigatórios */}
+            <AccordionItem value="obrigatorios" className="border rounded-lg px-4">
+              <AccordionTrigger className="hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary" />
+                  <span className="font-semibold">Documentos Obrigatórios</span>
+                  <span className="text-xs text-muted-foreground font-normal ml-1">
+                    ({documentosObrigatorios.length})
+                  </span>
                 </div>
-              </div>
-            ))}
-          </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="pb-2">
+                  {/* Filter only visible inside obrigatorios */}
+                  <div className="mb-4">
+                    <FiltroFaseDocumentos faseAtual={filtroFase} onChange={setFiltroFase} />
+                  </div>
+                  <div className="space-y-8">
+                    {(Object.keys(documentosPorFase) as FaseProjeto[]).map((fase) => (
+                      <div key={fase}>
+                        <h2 className="text-base font-semibold text-foreground mb-3">{faseLabels[fase]}</h2>
+                        <div className="space-y-3">
+                          {documentosPorFase[fase].map((doc: DocumentoComStatus) => (
+                            <div key={doc.id} className="space-y-3">
+                              <DocumentoRequeridoCard
+                                documento={doc}
+                                status={doc.status}
+                                onUpload={() => setUploadModalDoc(doc)}
+                                onView={() => handleOpenDocument(doc)}
+                                onDownloadTemplate={() => doc.template_url && window.open(doc.template_url, "_blank")}
+                                onViewRejeicao={() => doc.status && setRejeicaoModalDoc(doc)}
+                                onDelete={doc.status?.documento_id ? () => deleteMutation.mutate({
+                                  documentoId: doc.status!.documento_id!,
+                                  storagePath: doc.status!.documentos?.storage_path ?? null,
+                                  documentoRequeridoId: doc.id,
+                                }) : undefined}
+                              />
+                              {doc.status?.documentos && (
+                                <div className="flex flex-wrap items-center gap-2 pl-4">
+                                  <span className="text-xs text-muted-foreground">
+                                    Arquivo enviado: {doc.status.documentos.nome}
+                                  </span>
+                                  {doc.status.documentos.descricao && (
+                                    <span className="text-xs text-muted-foreground italic">
+                                      — {doc.status.documentos.descricao}
+                                    </span>
+                                  )}
+                                  {doc.status.documentos.drive_file_id && (
+                                    <GoogleDrivePreviewButton
+                                      driveFileId={doc.status.documentos.drive_file_id}
+                                      fileName={doc.status.documentos.nome}
+                                    />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Complementares */}
+            {documentosComplementares.length > 0 && (
+              <AccordionItem value="complementares" className="border rounded-lg px-4">
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
+                    <span className="font-semibold">Documentos Complementares</span>
+                    <span className="text-xs text-muted-foreground font-normal ml-1">
+                      ({documentosComplementares.length}) — opcionais, não bloqueiam a fase
+                    </span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-3 pb-2">
+                    {documentosComplementares.map((doc: DocumentoComStatus) => (
+                      <div key={doc.id} className="space-y-3">
+                        <DocumentoRequeridoCard
+                          documento={doc}
+                          status={doc.status}
+                          onUpload={() => setUploadModalDoc(doc)}
+                          onView={() => handleOpenDocument(doc)}
+                          onDownloadTemplate={() => doc.template_url && window.open(doc.template_url, "_blank")}
+                          onViewRejeicao={() => doc.status && setRejeicaoModalDoc(doc)}
+                          onDelete={doc.status?.documento_id ? () => deleteMutation.mutate({
+                            documentoId: doc.status!.documento_id!,
+                            storagePath: doc.status!.documentos?.storage_path ?? null,
+                            documentoRequeridoId: doc.id,
+                          }) : undefined}
+                        />
+                        {doc.status?.documentos && (
+                          <div className="flex flex-wrap items-center gap-2 pl-4">
+                            <span className="text-xs text-muted-foreground">
+                              Arquivo enviado: {doc.status.documentos.nome}
+                            </span>
+                            {doc.status.documentos.descricao && (
+                              <span className="text-xs text-muted-foreground italic">
+                                — {doc.status.documentos.descricao}
+                              </span>
+                            )}
+                            {doc.status.documentos.drive_file_id && (
+                              <GoogleDrivePreviewButton
+                                driveFileId={doc.status.documentos.drive_file_id}
+                                fileName={doc.status.documentos.nome}
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+          </Accordion>
         )}
 
         {/* Modals */}

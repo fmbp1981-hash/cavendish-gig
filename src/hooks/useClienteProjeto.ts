@@ -10,6 +10,7 @@ interface ProjetoComOrganizacao extends Projeto {
 export interface DocumentoArquivoProjeto {
   id: string;
   nome: string;
+  descricao: string | null;
   url: string | null;
   storage_path: string | null;
   drive_file_id: string | null;
@@ -97,7 +98,7 @@ export function useDocumentosRequeridosProjeto(projetoId: string | undefined, or
       if (uploadedDocIds.length > 0) {
         const { data: uploadedDocs } = await supabase
           .from("documentos")
-          .select("id, nome, url, storage_path, drive_file_id, tipo, tamanho_bytes, created_at")
+          .select("id, nome, descricao, url, storage_path, drive_file_id, tipo, tamanho_bytes, created_at")
           .in("id", uploadedDocIds);
         docsMap = new Map((uploadedDocs || []).map((d: any) => [d.id, d]));
       }

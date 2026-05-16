@@ -15,14 +15,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useDocumentoCatalogo } from "@/hooks/useAdminData";
-import { 
-  Search, 
+import { useToggleCatalogoComplementar } from "@/hooks/useDocumentosComplementares";
+import {
+  Search,
   FileText,
   CheckCircle2,
-  Circle
+  Circle,
+  Star,
+  StarOff
 } from "lucide-react";
 
 type FaseProjeto = "diagnostico" | "implementacao" | "recorrencia";
+type TabValue = FaseProjeto | "all" | "complementar";
 
 const faseLabels: Record<FaseProjeto, string> = {
   diagnostico: "Diagnóstico",
@@ -38,15 +42,22 @@ const faseBadgeColors: Record<FaseProjeto, string> = {
 
 export default function AdminCatalogo() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFase, setSelectedFase] = useState<FaseProjeto | "all">("all");
-  
+  const [selectedTab, setSelectedTab] = useState<TabValue>("all");
+
   const { data: catalogo, isLoading } = useDocumentoCatalogo();
+  const toggleComplementar = useToggleCatalogoComplementar();
 
   const filteredDocs = catalogo?.filter(doc => {
     const matchesSearch = doc.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.descricao?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFase = selectedFase === "all" || doc.fase === selectedFase;
+    const matchesFase = selectedTab === "all" || doc.fase === selectedTab;
     return matchesSearch && matchesFase;
+  });
+
+  const complementarDocs = catalogo?.filter(doc => {
+    const matchesSearch = doc.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.descricao?.toLowerCase().includes(searchTerm.toLowerCase());
+    return doc.is_complementar && matchesSearch;
   });
 
   const getDocsCount = (fase: FaseProjeto) => {
@@ -108,25 +119,132 @@ export default function AdminCatalogo() {
             </div>
           </CardHeader>
           <CardContent>
-            <Tabs value={selectedFase} onValueChange={(v) => setSelectedFase(v as FaseProjeto | "all")}>
+            <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as TabValue)}>
               <TabsList className="mb-4">
                 <TabsTrigger value="all">Todos</TabsTrigger>
                 <TabsTrigger value="diagnostico">Diagnóstico</TabsTrigger>
                 <TabsTrigger value="implementacao">Implementação</TabsTrigger>
                 <TabsTrigger value="recorrencia">Recorrência</TabsTrigger>
+                <TabsTrigger value="complementar">Complementares</TabsTrigger>
               </TabsList>
 
-              <TabsContent value={selectedFase}>
+              {/* Tabs de fase (all, diagnostico, implementacao, recorrencia) */}
+              {(["all", "diagnostico", "implementacao", "recorrencia"] as TabValue[]).map((tab) => (
+                <TabsContent key={tab} value={tab}>
+                  {isLoading ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Skeleton key={i} className="h-16 w-full" />
+                      ))}
+                    </div>
+                  ) : filteredDocs?.length === 0 ? (
+                    <div className="text-center py-12">
+                      <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">Nenhum documento encontrado</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Documento</TableHead>
+                          <TableHead>Fase</TableHead>
+                          <TableHead>Obrigatório</TableHead>
+                          <TableHead>Formatos</TableHead>
+                          <TableHead>Tamanho Max</TableHead>
+                          <TableHead>Complementar</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredDocs?.map((doc) => (
+                          <TableRow key={doc.id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-muted-foreground" />
+                                  {doc.nome}
+                                </div>
+                                {doc.descricao && (
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {doc.descricao}
+                                  </p>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={faseBadgeColors[doc.fase as FaseProjeto]}>
+                                {faseLabels[doc.fase as FaseProjeto]}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {doc.obrigatorio ? (
+                                <div className="flex items-center gap-1 text-green-600">
+                                  <CheckCircle2 className="h-4 w-4" />
+                                  <span className="text-sm">Sim</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  <Circle className="h-4 w-4" />
+                                  <span className="text-sm">Não</span>
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {doc.formatos_aceitos?.map((formato) => (
+                                  <Badge key={formato} variant="outline" className="text-xs">
+                                    {formato}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm text-muted-foreground">
+                                {doc.tamanho_maximo_mb} MB
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={toggleComplementar.isPending}
+                                onClick={() =>
+                                  toggleComplementar.mutate({
+                                    id: doc.id,
+                                    is_complementar: !doc.is_complementar,
+                                  })
+                                }
+                                title={doc.is_complementar ? "Remover de complementares" : "Marcar como complementar"}
+                              >
+                                {doc.is_complementar ? (
+                                  <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                                ) : (
+                                  <StarOff className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </TabsContent>
+              ))}
+
+              {/* Tab Complementares */}
+              <TabsContent value="complementar">
                 {isLoading ? (
                   <div className="space-y-3">
                     {[1, 2, 3, 4, 5].map((i) => (
                       <Skeleton key={i} className="h-16 w-full" />
                     ))}
                   </div>
-                ) : filteredDocs?.length === 0 ? (
+                ) : complementarDocs?.length === 0 ? (
                   <div className="text-center py-12">
-                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">Nenhum documento encontrado</p>
+                    <Star className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">Nenhum documento marcado como complementar</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Use o ícone ☆ nas outras abas para marcar documentos como complementares
+                    </p>
                   </div>
                 ) : (
                   <Table>
@@ -134,18 +252,18 @@ export default function AdminCatalogo() {
                       <TableRow>
                         <TableHead>Documento</TableHead>
                         <TableHead>Fase</TableHead>
-                        <TableHead>Obrigatório</TableHead>
                         <TableHead>Formatos</TableHead>
                         <TableHead>Tamanho Max</TableHead>
+                        <TableHead>Ação</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredDocs?.map((doc) => (
+                      {complementarDocs?.map((doc) => (
                         <TableRow key={doc.id}>
                           <TableCell>
                             <div>
                               <div className="font-medium flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
                                 {doc.nome}
                               </div>
                               {doc.descricao && (
@@ -161,19 +279,6 @@ export default function AdminCatalogo() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {doc.obrigatorio ? (
-                              <div className="flex items-center gap-1 text-green-600">
-                                <CheckCircle2 className="h-4 w-4" />
-                                <span className="text-sm">Sim</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1 text-muted-foreground">
-                                <Circle className="h-4 w-4" />
-                                <span className="text-sm">Não</span>
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell>
                             <div className="flex flex-wrap gap-1">
                               {doc.formatos_aceitos?.map((formato) => (
                                 <Badge key={formato} variant="outline" className="text-xs">
@@ -186,6 +291,19 @@ export default function AdminCatalogo() {
                             <span className="text-sm text-muted-foreground">
                               {doc.tamanho_maximo_mb} MB
                             </span>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={toggleComplementar.isPending}
+                              onClick={() =>
+                                toggleComplementar.mutate({ id: doc.id, is_complementar: false })
+                              }
+                              title="Remover de complementares"
+                            >
+                              <StarOff className="h-4 w-4 text-muted-foreground" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}

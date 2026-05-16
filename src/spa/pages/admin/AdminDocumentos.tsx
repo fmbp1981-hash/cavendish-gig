@@ -232,6 +232,7 @@ export default function AdminDocumentos() {
                   url: selectedDoc.documentos.url,
                   drive_file_id: selectedDoc.documentos.drive_file_id,
                   storage_path: selectedDoc.documentos.storage_path,
+                  descricao: selectedDoc.documentos.descricao ?? null,
                 }
               : undefined
           }

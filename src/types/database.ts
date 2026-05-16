@@ -156,44 +156,56 @@ export interface Database {
       documentos_requeridos: {
         Row: {
           id: string
+          projeto_id: string
+          catalogo_id: string | null
           nome: string
           descricao: string | null
+          criterios_aceitacao: string | null
           fase: FaseProjeto
-          tipo_projeto: TipoProjeto | null
           obrigatorio: boolean
-          ordem: number
+          is_complementar: boolean
+          ordem: number | null
           template_url: string | null
-          formatos_aceitos: string
-          tamanho_maximo_mb: number
-          ativo: boolean
+          formatos_aceitos: string[] | null
+          tamanho_maximo_mb: number | null
+          ativo: boolean | null
+          solicitado_por: string | null
           created_at: string
         }
         Insert: {
           id?: string
+          projeto_id: string
+          catalogo_id?: string | null
           nome: string
           descricao?: string | null
+          criterios_aceitacao?: string | null
           fase: FaseProjeto
-          tipo_projeto?: TipoProjeto | null
           obrigatorio?: boolean
-          ordem?: number
+          is_complementar?: boolean
+          ordem?: number | null
           template_url?: string | null
-          formatos_aceitos?: string
-          tamanho_maximo_mb?: number
-          ativo?: boolean
+          formatos_aceitos?: string[] | null
+          tamanho_maximo_mb?: number | null
+          ativo?: boolean | null
+          solicitado_por?: string | null
           created_at?: string
         }
         Update: {
           id?: string
+          projeto_id?: string
+          catalogo_id?: string | null
           nome?: string
           descricao?: string | null
+          criterios_aceitacao?: string | null
           fase?: FaseProjeto
-          tipo_projeto?: TipoProjeto | null
           obrigatorio?: boolean
-          ordem?: number
+          is_complementar?: boolean
+          ordem?: number | null
           template_url?: string | null
-          formatos_aceitos?: string
-          tamanho_maximo_mb?: number
-          ativo?: boolean
+          formatos_aceitos?: string[] | null
+          tamanho_maximo_mb?: number | null
+          ativo?: boolean | null
+          solicitado_por?: string | null
           created_at?: string
         }
       }

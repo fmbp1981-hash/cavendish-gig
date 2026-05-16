@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ConsultorLayout } from "@/components/layout/ConsultorLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +22,16 @@ import {
   Loader2,
   Mail,
   User,
+  Star,
+  Plus,
+  Trash2,
 } from "lucide-react";
+import {
+  useProjetoPorOrganizacao,
+  useDocumentosComplementaresProjeto,
+  useRemoverDocComplementar,
+} from "@/hooks/useDocumentosComplementares";
+import { SolicitarDocComplementarDialog } from "@/components/documentos/SolicitarDocComplementarDialog";
 
 export default function ConsultorClienteDetalhe() {
   const { id: organizacaoId } = useParams<{ id: string }>();
@@ -31,6 +40,13 @@ export default function ConsultorClienteDetalhe() {
     nome: string;
     conteudo: string;
   } | null>(null);
+  const [dialogComplementarAberto, setDialogComplementarAberto] = useState(false);
+
+  const { data: projeto } = useProjetoPorOrganizacao(organizacaoId);
+  const projetoId = projeto?.id;
+  const { data: docsComplementares, isLoading: loadingComplementares } =
+    useDocumentosComplementaresProjeto(projetoId);
+  const removerComplementar = useRemoverDocComplementar();
 
   // Busca dados da organização
   const { data: org, isLoading: loadingOrg } = useQuery({
@@ -188,6 +204,14 @@ export default function ConsultorClienteDetalhe() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="complementares">
+              Complementares
+              {docsComplementares && docsComplementares.length > 0 && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {docsComplementares.length}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="perfil" className="mt-4">
@@ -298,6 +322,75 @@ export default function ConsultorClienteDetalhe() {
             )}
           </TabsContent>
 
+          {/* Aba Documentos Complementares */}
+          <TabsContent value="complementares" className="mt-4">
+            <div className="flex justify-end mb-3">
+              <Button
+                size="sm"
+                disabled={!projetoId}
+                onClick={() => setDialogComplementarAberto(true)}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Solicitar Documento
+              </Button>
+            </div>
+            {loadingComplementares ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              </div>
+            ) : docsComplementares && docsComplementares.length > 0 ? (
+              <div className="grid gap-3">
+                {docsComplementares.map((doc) => (
+                  <Card key={doc.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="flex items-center justify-between py-4 px-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                          <Star className="w-4 h-4 text-amber-600 fill-amber-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {doc.nome}
+                          </p>
+                          {doc.descricao && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {doc.descricao}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Solicitado em {formatDate(doc.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={removerComplementar.isPending}
+                        onClick={() =>
+                          removerComplementar.mutate({ id: doc.id, projetoId: projetoId! })
+                        }
+                        title="Remover solicitação"
+                      >
+                        <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Star className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum documento complementar solicitado.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Use o botão acima para solicitar documentos adicionais ao cliente.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
           {/* Aba Documentos */}
           <TabsContent value="documentos" className="mt-4">
             {loadingDocs ? (
@@ -342,6 +435,16 @@ export default function ConsultorClienteDetalhe() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Dialog solicitar documento complementar */}
+      {projetoId && organizacaoId && (
+        <SolicitarDocComplementarDialog
+          open={dialogComplementarAberto}
+          onClose={() => setDialogComplementarAberto(false)}
+          projetoId={projetoId}
+          organizacaoId={organizacaoId}
+        />
+      )}
 
       {/* Modal de visualização da ata */}
       <Dialog open={!!ataAberta} onOpenChange={() => setAtaAberta(null)}>

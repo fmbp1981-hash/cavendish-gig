@@ -41,6 +41,7 @@ interface DocumentoArquivoInfo {
   url?: string | null;
   drive_file_id?: string | null;
   storage_path?: string | null;
+  descricao?: string | null;
 }
 
 interface DocumentoAnaliseModalProps {

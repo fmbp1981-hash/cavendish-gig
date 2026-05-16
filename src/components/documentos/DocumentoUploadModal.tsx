@@ -1,5 +1,7 @@
 import { useState, useCallback } from "react";
 import { Upload, X, FileText, AlertCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +17,7 @@ interface DocumentoUploadModalProps {
   documento: DocumentoRequerido;
   open: boolean;
   onClose: () => void;
-  onSubmit: (file: File) => Promise<void>;
+  onSubmit: (file: File, descricao?: string) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -29,6 +31,7 @@ export function DocumentoUploadModal({
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [descricao, setDescricao] = useState("");
 
   const formatosAceitos = Array.isArray(documento.formatos_aceitos)
     ? documento.formatos_aceitos.map(f => f.trim()).filter(Boolean)
@@ -87,13 +90,15 @@ export function DocumentoUploadModal({
 
   const handleSubmit = async () => {
     if (!file) return;
-    await onSubmit(file);
+    await onSubmit(file, descricao.trim() || undefined);
     setFile(null);
+    setDescricao("");
     onClose();
   };
 
   const handleClose = () => {
     setFile(null);
+    setDescricao("");
     setError(null);
     onClose();
   };
@@ -176,6 +181,20 @@ export function DocumentoUploadModal({
               {error}
             </div>
           )}
+
+          {/* Resumo / Observações */}
+          <div className="space-y-1.5">
+            <Label htmlFor="resumo-upload">Resumo / Observações <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+            <Textarea
+              id="resumo-upload"
+              placeholder="Breve descrição do documento..."
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              maxLength={500}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground text-right">{descricao.length}/500</p>
+          </div>
         </div>
 
         <DialogFooter>
