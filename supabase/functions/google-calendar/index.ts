@@ -212,7 +212,8 @@ async function deleteCalendarEvent(
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  console.log("google-calendar function called");
+  const reqId = crypto.randomUUID().slice(0, 8);
+  console.log(`[google-calendar][${reqId}] invoked method=${req.method}`);
 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -220,9 +221,17 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const service = createServiceClient();
-    const integration = await loadIntegration(service, "google-calendar", "system", null);
+
+    // Load integration record (may be null if never configured)
+    let integration = null;
+    try {
+      integration = await loadIntegration(service, "google-calendar", "system", null);
+    } catch (integErr: any) {
+      console.warn(`[google-calendar][${reqId}] loadIntegration failed: ${integErr.message}`);
+    }
 
     if (integration && !integration.enabled) {
+      console.warn(`[google-calendar][${reqId}] integration disabled`);
       return new Response(
         JSON.stringify({ error: "Google Calendar integration disabled" }),
         { status: 503, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -233,7 +242,7 @@ const handler = async (req: Request): Promise<Response> => {
     const serviceAccountJson = secrets?.GOOGLE_SERVICE_ACCOUNT || Deno.env.get("GOOGLE_SERVICE_ACCOUNT") || "";
 
     if (!serviceAccountJson) {
-      console.error("GOOGLE_SERVICE_ACCOUNT not configured");
+      console.error(`[google-calendar][${reqId}] GOOGLE_SERVICE_ACCOUNT not set — integration_row_found=${!!integration}`);
       return new Response(
         JSON.stringify({ error: "Google Calendar integration not configured" }),
         { status: 503, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -241,9 +250,19 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const { action, event, eventId, calendarId }: CalendarRequest = await req.json();
-    console.log(`Action: ${action}`);
+    console.log(`[google-calendar][${reqId}] action=${action} calendarId=${calendarId ?? "primary"}`);
 
-    const accessToken = await getAccessToken(serviceAccountJson);
+    let accessToken: string;
+    try {
+      accessToken = await getAccessToken(serviceAccountJson);
+      console.log(`[google-calendar][${reqId}] access token obtained`);
+    } catch (tokenErr: any) {
+      console.error(`[google-calendar][${reqId}] getAccessToken failed: ${tokenErr.message}`);
+      return new Response(
+        JSON.stringify({ error: `Failed to authenticate with Google: ${tokenErr.message}` }),
+        { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     let result;
 
@@ -251,14 +270,14 @@ const handler = async (req: Request): Promise<Response> => {
       case "create":
         if (!event) throw new Error("Event data is required for create action");
         result = await createCalendarEvent(accessToken, event, calendarId);
-        console.log("Event created:", result.id);
+        console.log(`[google-calendar][${reqId}] event created id=${result.id}`);
         break;
 
       case "list": {
         const now = new Date().toISOString();
         const oneMonthFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         result = await listCalendarEvents(accessToken, calendarId, now, oneMonthFromNow);
-        console.log("Events listed:", result.items?.length);
+        console.log(`[google-calendar][${reqId}] events listed count=${result.items?.length}`);
         break;
       }
 
@@ -266,7 +285,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (!eventId) throw new Error("Event ID is required for delete action");
         await deleteCalendarEvent(accessToken, eventId, calendarId);
         result = { success: true, message: "Event deleted" };
-        console.log("Event deleted:", eventId);
+        console.log(`[google-calendar][${reqId}] event deleted id=${eventId}`);
         break;
 
       default:
@@ -278,7 +297,7 @@ const handler = async (req: Request): Promise<Response> => {
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
-    console.error("Error in google-calendar function:", error);
+    console.error(`[google-calendar][${reqId}] unhandled error: ${error.message}`, error.stack ?? "");
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }

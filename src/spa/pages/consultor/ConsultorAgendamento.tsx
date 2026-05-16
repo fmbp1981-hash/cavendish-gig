@@ -4,13 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Calendar, Clock, Users, X, Plus, Loader2, Video, MapPin } from "lucide-react";
+import { Calendar, Clock, Users, X, Plus, Loader2, Video, AlertCircle, CheckCircle2 } from "lucide-react";
 import { agendarReuniaoKickoff, agendarReuniaoAcompanhamento } from "@/hooks/useGoogleCalendar";
 import { useOrganizacoes } from "@/hooks/useConsultorData";
+import { useInsertReuniao, useAtualizarReuniaoGoogleId } from "@/hooks/useReunioes";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -22,9 +23,39 @@ const fases = [
   { value: "recorrencia", label: "Recorrência" },
 ];
 
+function parseGoogleError(errorMsg: string): string {
+  if (!errorMsg) return "Verifique as configurações da integração com Google Calendar.";
+  const msg = errorMsg.toLowerCase();
+
+  if (msg.includes("not configured") || msg.includes("not_configured") || msg.includes("google calendar integration not configured")) {
+    return "Integração com Google Calendar não configurada. Peça ao administrador para configurar a conta de serviço em Integrações.";
+  }
+  if (msg.includes("disabled")) {
+    return "Integração com Google Calendar está desativada. Ative-a em Configurações > Integrações.";
+  }
+  if (msg.includes("invalid_grant") || msg.includes("invalid grant")) {
+    return "Credencial Google expirada ou inválida. O administrador precisa reconfigurar a conta de serviço.";
+  }
+  if (msg.includes("permission") || msg.includes("forbidden") || msg.includes("403")) {
+    return "Sem permissão para criar eventos. Verifique se a conta de serviço tem Domain-wide Delegation no Google Workspace.";
+  }
+  if (msg.includes("unauthorized") || msg.includes("401")) {
+    return "Token de autorização inválido. Verifique a chave da conta de serviço Google.";
+  }
+  if (msg.includes("rate limit") || msg.includes("429") || msg.includes("quota")) {
+    return "Limite de chamadas à API Google excedido. Tente novamente em alguns minutos.";
+  }
+  if (msg.includes("network") || msg.includes("fetch") || msg.includes("timeout")) {
+    return "Erro de conexão com o Google. Verifique a conectividade e tente novamente.";
+  }
+  return errorMsg;
+}
+
 export default function ConsultorAgendamento() {
   const { data: organizacoes, isLoading: isLoadingOrgs } = useOrganizacoes();
-  
+  const insertReuniao = useInsertReuniao();
+  const atualizarGoogleId = useAtualizarReuniaoGoogleId();
+
   const [tipoReuniao, setTipoReuniao] = useState<TipoReuniao>("kickoff");
   const [organizacaoId, setOrganizacaoId] = useState("");
   const [data, setData] = useState("");
@@ -34,23 +65,21 @@ export default function ConsultorAgendamento() {
   const [participantes, setParticipantes] = useState<string[]>([]);
   const [novoParticipante, setNovoParticipante] = useState("");
   const [isAgendando, setIsAgendando] = useState(false);
+  const [googleWarning, setGoogleWarning] = useState<string | null>(null);
 
   const organizacaoSelecionada = organizacoes?.find(org => org.id === organizacaoId);
 
   const adicionarParticipante = () => {
     const email = novoParticipante.trim().toLowerCase();
     if (!email) return;
-    
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       toast.error("Email inválido");
       return;
     }
-    
     if (participantes.includes(email)) {
       toast.error("Este email já foi adicionado");
       return;
     }
-    
     setParticipantes([...participantes, email]);
     setNovoParticipante("");
   };
@@ -60,73 +89,92 @@ export default function ConsultorAgendamento() {
   };
 
   const handleAgendar = async () => {
-    if (!organizacaoId) {
-      toast.error("Selecione uma organização");
-      return;
-    }
-    
-    if (!data) {
-      toast.error("Selecione uma data");
-      return;
-    }
-    
-    if (participantes.length === 0) {
-      toast.error("Adicione pelo menos um participante");
-      return;
-    }
+    if (!organizacaoId) { toast.error("Selecione uma organização"); return; }
+    if (!data) { toast.error("Selecione uma data"); return; }
+    if (participantes.length === 0) { toast.error("Adicione pelo menos um participante"); return; }
 
     setIsAgendando(true);
+    setGoogleWarning(null);
 
     try {
       const dataHora = new Date(`${data}T${hora}:00`);
       const duracaoMinutos = parseInt(duracao);
+      const dataFim = new Date(dataHora.getTime() + duracaoMinutos * 60000);
+      const faseLabel = fases.find(f => f.value === fase)?.label || fase;
+      const titulo = tipoReuniao === "kickoff"
+        ? `Reunião de Kickoff — ${organizacaoSelecionada?.nome}`
+        : `Acompanhamento ${faseLabel} — ${organizacaoSelecionada?.nome}`;
 
-      let resultado;
-      
-      if (tipoReuniao === "kickoff") {
-        resultado = await agendarReuniaoKickoff(
-          organizacaoSelecionada?.nome || "Organização",
-          dataHora,
-          participantes,
-          duracaoMinutos
-        );
-      } else {
-        resultado = await agendarReuniaoAcompanhamento(
-          organizacaoSelecionada?.nome || "Organização",
-          dataHora,
-          participantes,
-          fases.find(f => f.value === fase)?.label || fase,
-          duracaoMinutos
-        );
-      }
-
-      if (resultado.success) {
-        toast.success("Reunião agendada com sucesso!", {
-          description: "Os participantes receberão o convite por email com o link do Google Meet."
-        });
-        
-        // Reset form
-        setOrganizacaoId("");
-        setData("");
-        setHora("10:00");
-        setDuracao("60");
-        setFase("diagnostico");
-        setParticipantes([]);
-      } else {
-        toast.error("Erro ao agendar reunião", {
-          description: resultado.error || "Verifique se a integração com Google Calendar está configurada."
-        });
-      }
-    } catch (error: any) {
-      toast.error("Erro ao agendar reunião", {
-        description: error.message
+      // 1. Persistir localmente primeiro
+      const reuniao = await insertReuniao.mutateAsync({
+        organizacao_id: organizacaoId,
+        tipo: tipoReuniao,
+        titulo,
+        data_inicio: dataHora.toISOString(),
+        data_fim: dataFim.toISOString(),
+        fase: tipoReuniao === "acompanhamento" ? fase : null,
+        participantes: participantes.map(email => ({ email })),
+        status: "agendada",
       });
+
+      // 2. Tentar Google Calendar em background (não bloqueia o fluxo)
+      try {
+        let googleResult;
+        if (tipoReuniao === "kickoff") {
+          googleResult = await agendarReuniaoKickoff(
+            organizacaoSelecionada?.nome || "Organização",
+            dataHora,
+            participantes,
+            duracaoMinutos
+          );
+        } else {
+          googleResult = await agendarReuniaoAcompanhamento(
+            organizacaoSelecionada?.nome || "Organização",
+            dataHora,
+            participantes,
+            faseLabel,
+            duracaoMinutos
+          );
+        }
+
+        if (googleResult.success && googleResult.data?.id) {
+          // Atualizar reunião com ID e link do Google
+          await atualizarGoogleId.mutateAsync({
+            id: reuniao.id,
+            googleEventId: googleResult.data.id,
+            linkVideo: googleResult.data.hangoutLink || googleResult.data.conferenceData?.entryPoints?.[0]?.uri,
+          });
+          toast.success("Reunião agendada!", {
+            description: "Evento criado no Google Calendar. Os participantes receberão o convite por email.",
+          });
+        } else {
+          setGoogleWarning(parseGoogleError(googleResult.error || ""));
+          toast.success("Reunião salva no sistema!", {
+            description: "A sincronização com Google Calendar falhou, mas a reunião está registrada.",
+          });
+        }
+      } catch (googleErr: any) {
+        setGoogleWarning(parseGoogleError(googleErr.message || ""));
+        toast.success("Reunião salva no sistema!", {
+          description: "Não foi possível sincronizar com Google Calendar. A reunião está registrada localmente.",
+        });
+      }
+
+      // Reset form
+      setOrganizacaoId("");
+      setData("");
+      setHora("10:00");
+      setDuracao("60");
+      setFase("diagnostico");
+      setParticipantes([]);
+    } catch (err: any) {
+      toast.error("Erro ao salvar reunião", { description: err.message });
     } finally {
       setIsAgendando(false);
     }
   };
 
-  const dataFormatada = data 
+  const dataFormatada = data
     ? format(new Date(data + "T12:00:00"), "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })
     : null;
 
@@ -140,6 +188,19 @@ export default function ConsultorAgendamento() {
           </p>
         </div>
 
+        {googleWarning && (
+          <Alert variant="destructive" className="border-amber-500 bg-amber-50 text-amber-900">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="space-y-1">
+              <p className="font-medium">Google Calendar não sincronizado</p>
+              <p className="text-sm">{googleWarning}</p>
+              <p className="text-xs text-amber-700 mt-1">
+                A reunião foi salva no sistema e aparecerá na agenda do cliente.
+              </p>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Formulário */}
           <Card>
@@ -149,7 +210,7 @@ export default function ConsultorAgendamento() {
                 Nova Reunião
               </CardTitle>
               <CardDescription>
-                Preencha os dados para agendar a reunião no Google Calendar
+                Preencha os dados para agendar a reunião
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -285,8 +346,8 @@ export default function ConsultorAgendamento() {
               </div>
 
               {/* Botão Agendar */}
-              <Button 
-                className="w-full" 
+              <Button
+                className="w-full"
                 onClick={handleAgendar}
                 disabled={isAgendando || !organizacaoId || !data || participantes.length === 0}
               >
@@ -313,74 +374,78 @@ export default function ConsultorAgendamento() {
                 Prévia do Evento
               </CardTitle>
               <CardDescription>
-                Como o evento aparecerá no Google Calendar
+                Como o evento aparecerá no sistema
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {organizacaoSelecionada ? (
-                <>
-                  <div className="bg-card rounded-lg p-4 border space-y-4">
-                    <h3 className="font-semibold text-lg text-foreground">
-                      {tipoReuniao === "kickoff" 
-                        ? `Reunião de Kickoff - ${organizacaoSelecionada.nome}`
-                        : `Acompanhamento ${fases.find(f => f.value === fase)?.label} - ${organizacaoSelecionada.nome}`
-                      }
-                    </h3>
-                    
-                    {dataFormatada && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span className="capitalize">{dataFormatada}</span>
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span>{hora} - {parseInt(duracao)} minutos</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Video className="h-4 w-4" />
-                      <span>Google Meet (link gerado automaticamente)</span>
-                    </div>
-                    
-                    {participantes.length > 0 && (
-                      <div className="flex items-start gap-2 text-muted-foreground">
-                        <Users className="h-4 w-4 mt-0.5" />
-                        <div className="flex-1">
-                          <span className="block mb-1">Participantes:</span>
-                          <ul className="text-sm space-y-0.5">
-                            {participantes.map(email => (
-                              <li key={email}>{email}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="pt-2 border-t">
-                      <p className="text-sm text-muted-foreground">
-                        {tipoReuniao === "kickoff" ? (
-                          <>
-                            <strong>Agenda:</strong><br />
-                            1. Apresentação da equipe<br />
-                            2. Alinhamento de expectativas<br />
-                            3. Cronograma do projeto<br />
-                            4. Próximos passos
-                          </>
-                        ) : (
-                          <>
-                            <strong>Pauta:</strong><br />
-                            1. Status das entregas<br />
-                            2. Documentos pendentes<br />
-                            3. Próximos passos<br />
-                            4. Dúvidas e suporte
-                          </>
-                        )}
-                      </p>
+                <div className="bg-card rounded-lg p-4 border space-y-4">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Sempre salvo no sistema</p>
+                      <h3 className="font-semibold text-base text-foreground">
+                        {tipoReuniao === "kickoff"
+                          ? `Reunião de Kickoff — ${organizacaoSelecionada.nome}`
+                          : `Acompanhamento ${fases.find(f => f.value === fase)?.label} — ${organizacaoSelecionada.nome}`
+                        }
+                      </h3>
                     </div>
                   </div>
-                </>
+
+                  {dataFormatada && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      <span className="capitalize">{dataFormatada}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>{hora} — {parseInt(duracao)} minutos</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Video className="h-4 w-4" />
+                    <span>Google Meet (se integração configurada)</span>
+                  </div>
+
+                  {participantes.length > 0 && (
+                    <div className="flex items-start gap-2 text-muted-foreground">
+                      <Users className="h-4 w-4 mt-0.5" />
+                      <div className="flex-1">
+                        <span className="block mb-1">Participantes:</span>
+                        <ul className="text-sm space-y-0.5">
+                          {participantes.map(email => (
+                            <li key={email}>{email}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-2 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      {tipoReuniao === "kickoff" ? (
+                        <>
+                          <strong>Agenda:</strong><br />
+                          1. Apresentação da equipe<br />
+                          2. Alinhamento de expectativas<br />
+                          3. Cronograma do projeto<br />
+                          4. Próximos passos
+                        </>
+                      ) : (
+                        <>
+                          <strong>Pauta:</strong><br />
+                          1. Status das entregas<br />
+                          2. Documentos pendentes<br />
+                          3. Próximos passos<br />
+                          4. Dúvidas e suporte
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
