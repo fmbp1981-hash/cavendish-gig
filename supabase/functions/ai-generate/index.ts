@@ -13,7 +13,7 @@ interface AIRequest {
 }
 
 interface AIProviderConfig {
-  provider: "gemini" | "openai" | "claude" | "lovable";
+  provider: "gemini" | "openai" | "claude";
   apiKey: string;
   model: string;
   baseUrl: string;
@@ -158,8 +158,8 @@ async function callAI(
     const tokens = data.usageMetadata?.totalTokenCount || 0;
     return { text, tokens };
 
-  } else if (config.provider === "openai" || config.provider === "lovable") {
-    // OpenAI-compatible API (includes Lovable Gateway)
+  } else if (config.provider === "openai") {
+    // OpenAI API
     const messages = conversationMessages && conversationMessages.length > 0
       ? [
           { role: "system", content: systemPrompt },
@@ -540,79 +540,34 @@ Responda de forma clara, profissional e objetiva.`;
 
     const startTime = Date.now();
 
-    // Note: Streaming is disabled for multi-provider support. Enable only for Lovable gateway.
-    if (stream && aiConfig.provider === "lovable") {
-      // Streaming response (only supported with Lovable gateway)
-      const response = await fetch(`${aiConfig.baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${aiConfig.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: aiConfig.model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-          ],
-          stream: true,
-        }),
-      });
+    const result = await callAI(aiConfig, systemPrompt, userPrompt, chatHistory);
+    const durationMs = Date.now() - startTime;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("AI Gateway error:", response.status, errorText);
+    await supabaseService.from("ai_generations").insert({
+      tipo,
+      input_data,
+      output_text: result.text,
+      user_id: user.id,
+      projeto_id: projeto_id || null,
+      organizacao_id: organizacao_id || null,
+      tokens_used: result.tokens,
+      duracao_ms: durationMs,
+      status: "completed",
+      provider: aiConfig.provider,
+      model: aiConfig.model,
+    });
 
-        if (response.status === 429) {
-          return new Response(
-            JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }),
-            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        if (response.status === 402) {
-          return new Response(
-            JSON.stringify({ error: "Créditos de IA esgotados. Adicione créditos na configuração do workspace." }),
-            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        throw new Error(`AI Gateway error: ${response.status}`);
-      }
-
-      return new Response(response.body, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-      });
-    } else {
-      // Non-streaming response using multi-provider callAI
-      const result = await callAI(aiConfig, systemPrompt, userPrompt, chatHistory);
-      const durationMs = Date.now() - startTime;
-
-      // Save to history
-      await supabaseService.from("ai_generations").insert({
-        tipo,
-        input_data,
-        output_text: result.text,
-        user_id: user.id,
-        projeto_id: projeto_id || null,
-        organizacao_id: organizacao_id || null,
+    return new Response(
+      JSON.stringify({
+        success: true,
+        output: result.text,
         tokens_used: result.tokens,
-        duracao_ms: durationMs,
-        status: "completed",
+        duration_ms: durationMs,
         provider: aiConfig.provider,
-        model: aiConfig.model,
-      });
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          output: result.text,
-          tokens_used: result.tokens,
-          duration_ms: durationMs,
-          provider: aiConfig.provider,
-          model: aiConfig.model
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+        model: aiConfig.model
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (error) {
     console.error("Erro na função ai-generate:", error);
     await logEdgeFunctionError("ai-generate", error);

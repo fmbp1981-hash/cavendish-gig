@@ -21,7 +21,7 @@ O Sistema Cavendish GIG é uma plataforma SaaS/white-label para entrega contínu
 - **Storage**: Supabase Storage + Google Drive
 
 ### Integrações Principais
-- **IA**: Lovable AI (integrado nativamente)
+- **IA**: OpenAI GPT-4o-mini (via OPENAI_API_KEY)
 - **Email**: Resend (transacional)
 - **SMS/WhatsApp**: Twilio
 - **Calendar**: Google Calendar API
@@ -44,8 +44,8 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[SUPABASE_ANON_KEY]
 Configure as seguintes secrets no Supabase:
 
 ```bash
-# 1. Lovable AI (já configurado automaticamente)
-LOVABLE_API_KEY=[configurado_automaticamente]
+# 1. OpenAI
+OPENAI_API_KEY=sk-xxxxxxxxxxxx
 
 # 2. Resend (Email Transacional)
 RESEND_API_KEY=re_xxxxxxxxxxxx
@@ -217,7 +217,6 @@ supabase db push --linked
 ### Frontend (Vercel/Netlify)
 
 1. **Conecte o repositório GitHub**
-   - No Lovable: Settings → GitHub → Connect
    - Importe o repositório no Vercel
 
 2. **Configure as variáveis de ambiente**:
@@ -280,7 +279,7 @@ Acesse o sistema como Admin e vá em **Admin → Integrações**:
    - Inserir ID da pasta raiz
 
 2. **Verificar status das integrações**:
-   - Lovable AI: ✅ Configurado (nativo)
+   - OpenAI: Configurar OPENAI_API_KEY no Supabase secrets
    - Resend: Verificar se está configurado
    - Twilio: Verificar se está configurado
    - Google Calendar: Usar mesma Service Account do Drive
@@ -319,7 +318,7 @@ VALUES ('[USER_ID]', 'admin');
 - [x] **Integração com Fireflies.ai**
   - Ingestão de transcrição via webhook
   - Pipeline assíncrono para geração de atas
-  - Processamento via IA (Lovable AI)
+  - Processamento via OpenAI GPT-4o-mini
 - [x] **Sistema de tarefas interno**
   - CRUD completo
   - Atribuição de responsáveis
@@ -438,7 +437,7 @@ VALUES ('[USER_ID]', 'admin');
 Para questões sobre o sistema:
 - **GitHub Issues**: https://github.com/anthropics/claude-code/issues
 - **Documentação Supabase**: https://supabase.com/docs
-- **Documentação Lovable**: https://docs.lovable.dev
+- **Documentação OpenAI**: https://platform.openai.com/docs
 
 ---
 

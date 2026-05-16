@@ -383,7 +383,7 @@ Localizadas em `supabase/functions/`. Todas em TypeScript/Deno.
 - **`ai-generate`:** Timeout de 25s adicionado via `AbortController`; validação de schema (`VALID_TIPOS`, tipo de `input_data`) adicionada ✅
 - **CORS em todas as 4 functions acima:** Migrado de `"*"` hardcoded para `buildCorsHeaders()` com `ALLOWED_ORIGIN` env var ✅
 - **`send-email` e `send-monthly-reports`:** Domínio de email `from` pode estar hardcoded. Externalizar para secret `RESEND_FROM_EMAIL`.
-- **`ai-generate` e `process-transcription`:** Dependem de `LOVABLE_API_KEY` (plataforma Lovable) ou `OPENAI_API_KEY`. No deploy pós-Lovable, usar `OPENAI_API_KEY` diretamente.
+- **`ai-generate` e `process-transcription`:** Dependem de `OPENAI_API_KEY`. Configurar como secret no Supabase.
 - **`integrations`:** Precisa de `INTEGRATIONS_ENCRYPTION_KEY` para criptografar/descriptografar credenciais do vault.
 
 ### Deploy das Edge Functions
@@ -443,7 +443,7 @@ supabase secrets set --project-ref fenfgjqlsqzvxloeavdc \
 - Fluxo: reunião gravada → Fireflies transcreve → webhook → IA gera ata
 
 ### OpenAI GPT-4
-- Secret: (gerenciado pelo Supabase/Lovable nativamente)
+- Secret: `OPENAI_API_KEY` (configurar no Supabase secrets)
 
 ---
 
@@ -1410,7 +1410,7 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 ### Simplificar / Remover
 - [ ] **Desativar edge functions ClickUp/Trello sync** — deployadas mas sem uso real (reduz custo compute)
 - [ ] **Remover Kanban visual complexo** — simplificar para lista de tarefas com status
-- [ ] **Limpar referências Lovable AI** — variáveis e comentários residuais no código
+- [x] **Limpar referências Lovable AI** — CONCLUÍDO em 2026-05-16: removido LOVABLE_API_KEY, Lovable Gateway URL e provider "lovable" de ai-generate e process-transcription; substituído por OPENAI_API_KEY diretamente
 
 ---
 
@@ -1565,7 +1565,7 @@ Ou via CLI: `npm run admin:promote` (promove `fmbp1981@gmail.com`)
 | **Kanban complexo** | PMEs preferem lista simples | Simplificar para lista de tarefas com status; remover board visual |
 | **Geração de contrato via IA** | Diferencial, mas periférico | Manter como template editável, não como geração IA autônoma (risco jurídico) |
 | **`plano_config` table** | Existe mas sem UI | Definir planos reais ou remover |
-| **Lovable AI Gateway** | Removido do código | Limpar referências residuais em comentários e variáveis |
+| **OpenAI API** | Integrado via OPENAI_API_KEY | Configurar secret no Supabase |
 | **`integration_sync` table** | Sync de dados externos sem uso real | Manter schema, mas não implementar UI ainda |
 | **ClickUp/Trello sync edge functions** | Deployadas mas sem cliente usando | Desativar para reduzir custos de compute; reativar sob demanda |
 
