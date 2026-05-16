@@ -198,16 +198,20 @@ export default function DocumentosNecessarios() {
           </div>
           <Button onClick={() => setUploadModalDoc({
             id: "",
+            projeto_id: projeto?.id ?? "",
+            catalogo_id: null,
             nome: "Documento Avulso",
             descricao: "Envie qualquer documento livremente para o projeto.",
             fase: "diagnostico",
-            tipo_projeto: null,
             obrigatorio: false,
+            is_complementar: false,
             ordem: 0,
             template_url: null,
-            formatos_aceitos: "pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,zip",
+            criterios_aceitacao: null,
+            formatos_aceitos: ['pdf','doc','docx','xls','xlsx','ppt','pptx','jpg','jpeg','png','zip'],
             tamanho_maximo_mb: 25,
             ativo: true,
+            solicitado_por: null,
             created_at: new Date().toISOString()
           })}>
             <Upload className="w-4 h-4 mr-2" />
@@ -246,31 +250,39 @@ export default function DocumentosNecessarios() {
                   key={`sugerido-${index}`}
                   documento={{
                     id: "",
+                    projeto_id: projeto?.id ?? "",
+                    catalogo_id: null,
                     nome: item.nome,
                     descricao: "Documento sugerido para acelerar o diagnóstico do projeto.",
                     fase: "diagnostico",
-                    tipo_projeto: null,
                     obrigatorio: item.obrigatorio,
+                    is_complementar: false,
                     ordem: index,
                     template_url: null,
-                    formatos_aceitos: "pdf,jpg,png,doc,docx",
+                    criterios_aceitacao: null,
+                    formatos_aceitos: ['pdf','jpg','png','doc','docx'],
                     tamanho_maximo_mb: 25,
                     ativo: true,
+                    solicitado_por: null,
                     created_at: new Date().toISOString(),
                   }}
                   status={null}
                   onUpload={() => setUploadModalDoc({
                     id: "",
+                    projeto_id: projeto?.id ?? "",
+                    catalogo_id: null,
                     nome: item.nome,
                     descricao: "Documento sugerido para acelerar o diagnóstico do projeto.",
                     fase: "diagnostico",
-                    tipo_projeto: null,
                     obrigatorio: item.obrigatorio,
+                    is_complementar: false,
                     ordem: index,
                     template_url: null,
-                    formatos_aceitos: "pdf,jpg,png,doc,docx",
+                    criterios_aceitacao: null,
+                    formatos_aceitos: ['pdf','jpg','png','doc','docx'],
                     tamanho_maximo_mb: 25,
                     ativo: true,
+                    solicitado_por: null,
                     created_at: new Date().toISOString()
                   })}
                   onView={() => {}}
