@@ -56,7 +56,6 @@ export function useTour() {
 export function TourProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const driverRef = useRef<any>(null);
   const activeTourRef = useRef<TourDefinition | null>(null);
   // Flag para evitar que onDestroyStarted limpe sessão de navegação cross-page

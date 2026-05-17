@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Upload, X, FileText, AlertCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -33,9 +33,12 @@ export function DocumentoUploadModal({
   const [errors, setErrors] = useState<string[]>([]);
   const [descricao, setDescricao] = useState("");
 
-  const formatosAceitos = (documento.formatos_aceitos && documento.formatos_aceitos.length > 0)
-    ? documento.formatos_aceitos.map(f => f.trim()).filter(Boolean)
-    : ['pdf', 'jpg', 'png'];
+  const formatosAceitos = useMemo(
+    () => (documento.formatos_aceitos && documento.formatos_aceitos.length > 0)
+      ? documento.formatos_aceitos.map(f => f.trim()).filter(Boolean)
+      : ['pdf', 'jpg', 'png'],
+    [documento.formatos_aceitos]
+  );
   const acceptString = formatosAceitos.map(f => `.${f}`).join(',');
   const tamanhoMaximoMb = documento.tamanho_maximo_mb ?? 10;
   const tamanhoMaximoBytes = tamanhoMaximoMb * 1024 * 1024;

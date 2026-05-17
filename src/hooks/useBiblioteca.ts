@@ -123,7 +123,6 @@ export function useBibliotecaArquivos(filters?: ArquivosFilters) {
   return useQuery({
     queryKey: ["biblioteca_arquivos", filters],
     queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query: any = supabase
         .from("biblioteca_arquivos" as unknown as "ai_generations")
         .select("*, categoria:biblioteca_categorias(*)");
@@ -180,7 +179,6 @@ export function useUploadBibliotecaArquivo() {
       // 4. Insert record
       const formato = extractFormato(file);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error: insertError } = await (supabase as any)
         .from("biblioteca_arquivos")
         .insert({
@@ -239,7 +237,6 @@ export function useDeleteBibliotecaArquivo() {
       }
 
       // 2. Delete from DB
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("biblioteca_arquivos")
         .delete()
@@ -269,14 +266,12 @@ export function useIncrementDownloadCount() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any).rpc("increment_biblioteca_download", {
         arquivo_id: id,
       });
 
       if (error) {
         // Fallback: manual increment
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: current } = await (supabase as any)
           .from("biblioteca_arquivos")
           .select("download_count")
@@ -285,7 +280,6 @@ export function useIncrementDownloadCount() {
 
         const count = (current as { download_count: number } | null)?.download_count ?? 0;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: updateError } = await (supabase as any)
           .from("biblioteca_arquivos")
           .update({ download_count: count + 1 })
@@ -306,7 +300,6 @@ export function useCreateCategoria() {
 
   return useMutation({
     mutationFn: async (payload: { nome: string; descricao?: string; icone?: string; ordem?: number }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("biblioteca_categorias")
         .insert({
@@ -346,7 +339,6 @@ export function useDeleteCategoria() {
   return useMutation({
     mutationFn: async (id: string) => {
       // Check if there are files in this category
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { count, error: countError } = await (supabase as any)
         .from("biblioteca_arquivos")
         .select("*", { count: "exact", head: true })
@@ -359,7 +351,6 @@ export function useDeleteCategoria() {
         );
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("biblioteca_categorias")
         .delete()

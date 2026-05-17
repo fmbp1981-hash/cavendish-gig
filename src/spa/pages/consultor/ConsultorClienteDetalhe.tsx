@@ -102,7 +102,6 @@ export default function ConsultorClienteDetalhe() {
   const { data: atas, isLoading: loadingAtas } = useQuery({
     queryKey: ["atas", organizacaoId],
     queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("documentos")
         .select("id, nome, url, created_at")
