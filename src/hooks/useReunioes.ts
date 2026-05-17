@@ -101,6 +101,44 @@ export function useInsertReuniao() {
   });
 }
 
+export function useReunioesByConsultor(userId: string | null) {
+  return useQuery({
+    queryKey: ["reunioes-consultor", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      // Fetch orgs allocated to this consultor
+      const { data: alocacoes, error: alocErr } = await supabase
+        .from("consultor_organizacoes")
+        .select("organizacao_id")
+        .eq("consultor_id", userId!);
+      if (alocErr) throw alocErr;
+
+      const orgIds = (alocacoes ?? []).map((a) => a.organizacao_id as string);
+
+      if (orgIds.length === 0) {
+        // Also fetch meetings created by this consultor directly
+        const { data, error } = await supabase
+          .from("reunioes")
+          .select("*")
+          .eq("criado_por", userId!)
+          .neq("status", "cancelada")
+          .order("data_inicio", { ascending: true });
+        if (error) throw error;
+        return (data ?? []) as unknown as Reuniao[];
+      }
+
+      const { data, error } = await supabase
+        .from("reunioes")
+        .select("*")
+        .in("organizacao_id", orgIds)
+        .neq("status", "cancelada")
+        .order("data_inicio", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as Reuniao[];
+    },
+  });
+}
+
 export function useAtualizarReuniaoGoogleId() {
   return useMutation({
     mutationFn: async ({ id, googleEventId, linkVideo }: { id: string; googleEventId: string; linkVideo?: string }) => {

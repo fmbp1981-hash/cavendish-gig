@@ -5,6 +5,7 @@ import { format, parse, startOfWeek, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useReunioesByConsultor } from "@/hooks/useReunioes";
 import { ConsultorLayout } from "@/components/layout/ConsultorLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -99,6 +100,10 @@ export default function ConsultorAgenda() {
     enabled: !!user,
   });
 
+  // Busca reuniões do banco local (fonte confiável, independente do Google)
+  const { data: reunioesLocais, isLoading: loadingReunioes, refetch: refetchReunioes } =
+    useReunioesByConsultor(user?.id ?? null);
+
   // Busca eventos do Google Calendar via Edge Function
   const { data: eventosGoogle, isLoading: loadingGoogle, refetch: refetchGoogle } = useQuery({
     queryKey: ["agenda-google", user?.id],
@@ -113,8 +118,28 @@ export default function ConsultorAgenda() {
     retry: false,
   });
 
+  // IDs de reuniões que já estão no Google Calendar (para dedup)
+  const googleEventIds = useMemo(
+    () => new Set((reunioesLocais ?? []).map((r) => r.google_event_id).filter(Boolean)),
+    [reunioesLocais]
+  );
+
   const eventos: CalendarEvent[] = useMemo(() => {
     const lista: CalendarEvent[] = [];
+
+    // Reuniões locais (fonte primária — sempre presentes mesmo sem Google)
+    (reunioesLocais ?? []).forEach((r) => {
+      lista.push({
+        id: r.id,
+        title: r.titulo,
+        start: new Date(r.data_inicio),
+        end: new Date(r.data_fim),
+        source: "google",
+        description: r.descricao ?? undefined,
+        organizacao: r.organizacao_id,
+        color: r.google_event_id ? "#1A5B44" : "#7C3AED",
+      });
+    });
 
     // Eventos do Google Calendar
     (eventosGoogle ?? []).forEach((ev) => {
@@ -130,6 +155,8 @@ export default function ConsultorAgenda() {
         : null;
 
       if (!inicio || !fim) return;
+      // Skip if already shown as a local reunião (dedup by google_event_id)
+      if (googleEventIds.has(ev.id)) return;
 
       lista.push({
         id: ev.id,
@@ -157,7 +184,7 @@ export default function ConsultorAgenda() {
     });
 
     return lista;
-  }, [eventosGoogle, tarefas]);
+  }, [reunioesLocais, eventosGoogle, tarefas, googleEventIds]);
 
   const eventStyleGetter = useCallback(
     (event: CalendarEvent) => ({
@@ -181,9 +208,10 @@ export default function ConsultorAgenda() {
   const sincronizar = () => {
     refetchTarefas();
     refetchGoogle();
+    refetchReunioes();
   };
 
-  const loading = loadingTarefas || loadingGoogle;
+  const loading = loadingTarefas || loadingGoogle || loadingReunioes;
 
   return (
     <ConsultorLayout>
@@ -195,7 +223,7 @@ export default function ConsultorAgenda() {
             <div>
               <h1 className="text-xl font-bold text-foreground">Agenda Unificada</h1>
               <p className="text-sm text-muted-foreground">
-                Google Calendar + Tarefas com prazo
+                Reuniões GIG + Google Calendar + Tarefas com prazo
               </p>
             </div>
           </div>
@@ -206,10 +234,14 @@ export default function ConsultorAgenda() {
         </div>
 
         {/* Legenda */}
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-sm bg-[#1A5B44] inline-block" />
-            Reuniões GIG
+            Reuniões GIG (sincronizadas)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-[#7C3AED] inline-block" />
+            Reuniões GIG (só local)
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-sm bg-[#2563EB] inline-block" />
