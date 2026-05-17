@@ -10,9 +10,16 @@ interface CalendarEvent {
   timeZone?: string;
 }
 
+interface GoogleCalendarEvent {
+  id?: string;
+  hangoutLink?: string;
+  conferenceData?: { entryPoints?: { uri: string }[] };
+  [key: string]: unknown;
+}
+
 interface CalendarResponse {
   success: boolean;
-  data?: any;
+  data?: GoogleCalendarEvent | GoogleCalendarEvent[];
   error?: string;
 }
 
@@ -30,9 +37,9 @@ export const criarEventoCalendario = async (
     }
 
     return { success: true, data: data?.data };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error invoking google-calendar function:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 };
 
@@ -48,9 +55,9 @@ export const listarEventosCalendario = async (): Promise<CalendarResponse> => {
     }
 
     return { success: true, data: data?.data };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error invoking google-calendar function:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 };
 
@@ -68,9 +75,9 @@ export const deletarEventoCalendario = async (
     }
 
     return { success: true, data: data?.data };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error invoking google-calendar function:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 };
 

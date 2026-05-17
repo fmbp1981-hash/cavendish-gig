@@ -6,6 +6,7 @@ import { ptBR } from "date-fns/locale";
 import { Calendar, CalendarCheck2, ChevronDown, Clock } from "lucide-react";
 import { ClienteLayout } from "@/components/layout/ClienteLayout";
 import { ReuniaoCard } from "@/components/agenda/ReuniaoCard";
+import { AgendaTimeline } from "@/components/agenda/AgendaTimeline";
 import { useReunioesByOrg, useProximaReuniao } from "@/hooks/useReunioes";
 import type { Reuniao } from "@/hooks/useReunioes";
 import { supabase } from "@/integrations/supabase/client";
@@ -191,13 +192,7 @@ export default function MinhaAgenda() {
                 </CollapsibleTrigger>
               </div>
               <CollapsibleContent>
-                <div className="space-y-3">
-                  {historico.map((reuniao) => (
-                    <div key={reuniao.id} className="opacity-70">
-                      <ReuniaoCard reuniao={reuniao} />
-                    </div>
-                  ))}
-                </div>
+                <AgendaTimeline reunioes={historico} />
               </CollapsibleContent>
             </Collapsible>
           </section>
