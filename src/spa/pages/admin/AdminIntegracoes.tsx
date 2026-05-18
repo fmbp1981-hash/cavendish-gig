@@ -45,6 +45,9 @@ interface IntegrationConfig {
   secretName: string;
   secondarySecretName?: string;
   tertiarySecretName?: string;
+  configFieldName?: string;
+  configFieldLabel?: string;
+  configFieldPlaceholder?: string;
   docsUrl?: string;
   icon: React.ElementType;
   color: string;
@@ -63,6 +66,9 @@ const integrations: IntegrationConfig[] = [
     name: "Resend (Email)",
     description: "Envio de emails transacionais para notificações de documentos aprovados/rejeitados",
     secretName: "RESEND_API_KEY",
+    configFieldName: "from_email",
+    configFieldLabel: "Email Remetente (De:)",
+    configFieldPlaceholder: "Cavendish GIG <noreply@cavendish.com.br>",
     docsUrl: "https://resend.com/api-keys",
     icon: Mail,
     color: "text-blue-500",
@@ -73,7 +79,8 @@ const integrations: IntegrationConfig[] = [
       "Acesse resend.com e crie uma conta gratuita",
       "Valide seu domínio em Settings → Domains",
       "Crie uma API key em Settings → API Keys",
-      "Cole a chave API no campo abaixo"
+      "Cole a chave API no campo abaixo",
+      "Informe o email remetente no campo 'Email Remetente' (deve usar o domínio verificado)"
     ]
   },
   {
@@ -564,6 +571,7 @@ export default function AdminIntegracoes() {
   const [secretValue, setSecretValue] = useState("");
   const [secondarySecretValue, setSecondarySecretValue] = useState("");
   const [tertiarySecretValue, setTertiarySecretValue] = useState("");
+  const [configFieldValue, setConfigFieldValue] = useState("");
   const [showSecret, setShowSecret] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -589,6 +597,11 @@ export default function AdminIntegracoes() {
     setSecretValue("");
     setSecondarySecretValue("");
     setTertiarySecretValue("");
+    setConfigFieldValue(
+      integration.configFieldName
+        ? (getProviderRow(integration.id)?.config?.[integration.configFieldName] as string || "")
+        : ""
+    );
     setShowSecret(false);
   };
 
@@ -620,11 +633,17 @@ export default function AdminIntegracoes() {
         secrets[configuring.tertiarySecretName] = tertiarySecretValue.trim();
       }
 
+      const config: Record<string, string> = {};
+      if (configuring.configFieldName && configFieldValue.trim()) {
+        config[configuring.configFieldName] = configFieldValue.trim();
+      }
+
       await upsertVaultIntegration({
         provider: configuring.id,
         scope: "system",
         secrets,
         enabled: true,
+        ...(Object.keys(config).length > 0 ? { config } : {}),
       });
 
       queryClient.invalidateQueries({ queryKey: ["integrations-vault", "system"] });
@@ -637,6 +656,7 @@ export default function AdminIntegracoes() {
       setSecretValue("");
       setSecondarySecretValue("");
       setTertiarySecretValue("");
+      setConfigFieldValue("");
     } catch (error) {
       toast.error("Erro ao salvar configuração", {
         description: "Tente novamente ou entre em contato com o suporte."
@@ -762,9 +782,19 @@ export default function AdminIntegracoes() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Key className="h-4 w-4" />
-                        <code className="bg-muted px-2 py-1 rounded text-xs">{integration.secretName}</code>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Key className="h-4 w-4" />
+                          <code className="bg-muted px-2 py-1 rounded text-xs">{integration.secretName}</code>
+                        </div>
+                        {integration.configFieldName && configured && (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Mail className="h-3 w-3" />
+                            <span>
+                              {(getProviderRow(integration.id)?.config?.[integration.configFieldName] as string) || "Remetente padrão"}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         {integration.docsUrl && (
@@ -1067,11 +1097,27 @@ export default function AdminIntegracoes() {
                     <Label htmlFor="tertiary-secret-value">{configuring.tertiarySecretName}</Label>
                     <Input
                       id="tertiary-secret-value"
-                      type={showSecret ? "text" : "text"}
+                      type="text"
                       placeholder={configuring.tertiaryPlaceholder}
                       value={tertiarySecretValue}
                       onChange={(e) => setTertiarySecretValue(e.target.value)}
                     />
+                  </div>
+                )}
+
+                {configuring.configFieldName && (
+                  <div className="space-y-2 pt-2 border-t">
+                    <Label htmlFor="config-field-value">{configuring.configFieldLabel}</Label>
+                    <Input
+                      id="config-field-value"
+                      type="text"
+                      placeholder={configuring.configFieldPlaceholder}
+                      value={configFieldValue}
+                      onChange={(e) => setConfigFieldValue(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Formato: <code>Nome &lt;email@dominio.com&gt;</code> — deve usar o domínio verificado no Resend.
+                    </p>
                   </div>
                 )}
               </div>

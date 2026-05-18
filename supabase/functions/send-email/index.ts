@@ -7,7 +7,7 @@ import { logEdgeFunctionError, logToSystem } from "../_shared/logger.ts";
 
 import { buildCorsHeaders } from "../_shared/cors.ts";
 
-const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "Cavendish GIG <noreply@cavendishgig.com.br>";
+const DEFAULT_FROM_EMAIL = "Cavendish GIG <noreply@cavendish.com.br>";
 
 interface EmailRequest {
   type: "documento_aprovado" | "documento_rejeitado" | "documento_enviado" | "lembrete_documentos" | "ata_aprovada";
@@ -281,7 +281,11 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     let resendApiKey = (integration?.secrets as any)?.RESEND_API_KEY || Deno.env.get("RESEND_API_KEY") || null;
-    
+    const fromEmail =
+      (integration?.config as Record<string, string> | null)?.from_email ||
+      Deno.env.get("RESEND_FROM_EMAIL") ||
+      DEFAULT_FROM_EMAIL;
+
     if (!resendApiKey) {
       console.error("RESEND_API_KEY not configured");
       await logToSystem("warning", {
@@ -303,7 +307,7 @@ const handler = async (req: Request): Promise<Response> => {
     const template = getEmailTemplate(type, data);
 
     const emailResponse = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: fromEmail,
       to: [to],
       subject: template.subject,
       html: template.html,

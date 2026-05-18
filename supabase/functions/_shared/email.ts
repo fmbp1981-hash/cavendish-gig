@@ -1,7 +1,6 @@
 import { loadIntegration } from "./integrations.ts";
 
-const FROM_EMAIL =
-  Deno.env.get("RESEND_FROM_EMAIL") || "Cavendish GIG <noreply@cavendish.com.br>";
+const DEFAULT_FROM_EMAIL = "Cavendish GIG <noreply@cavendish.com.br>";
 
 /**
  * Sends an email via Resend API.
@@ -37,13 +36,18 @@ export async function sendEmail(
       return false;
     }
 
+    const fromEmail =
+      (integration?.config as Record<string, string> | null)?.from_email ||
+      Deno.env.get("RESEND_FROM_EMAIL") ||
+      DEFAULT_FROM_EMAIL;
+
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ from: FROM_EMAIL, to: [to], subject, html }),
+      body: JSON.stringify({ from: fromEmail, to: [to], subject, html }),
     });
 
     if (!response.ok) {
