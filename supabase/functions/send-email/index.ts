@@ -313,6 +313,20 @@ const handler = async (req: Request): Promise<Response> => {
       html: template.html,
     });
 
+    if (emailResponse.error) {
+      console.error("Resend API error:", emailResponse.error);
+      await logToSystem("error", {
+        source: "edge_function",
+        functionName: "send-email",
+        message: `Resend recusou o envio: ${emailResponse.error.message}`,
+        details: { resend_error: emailResponse.error, to, type, from: fromEmail },
+      });
+      return new Response(
+        JSON.stringify({ error: emailResponse.error.message }),
+        { status: 422, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ success: true, id: emailResponse.data?.id }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
