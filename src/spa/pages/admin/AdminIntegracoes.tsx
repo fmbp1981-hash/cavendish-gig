@@ -45,9 +45,7 @@ interface IntegrationConfig {
   secretName: string;
   secondarySecretName?: string;
   tertiarySecretName?: string;
-  configFieldName?: string;
-  configFieldLabel?: string;
-  configFieldPlaceholder?: string;
+  configFields?: Array<{ name: string; label: string; placeholder: string }>;
   docsUrl?: string;
   icon: React.ElementType;
   color: string;
@@ -66,9 +64,11 @@ const integrations: IntegrationConfig[] = [
     name: "Resend (Email)",
     description: "Envio de emails transacionais para notificações de documentos aprovados/rejeitados",
     secretName: "RESEND_API_KEY",
-    configFieldName: "from_email",
-    configFieldLabel: "Email Remetente (De:)",
-    configFieldPlaceholder: "Cavendish GIG <noreply@cavendish.com.br>",
+    configFields: [
+      { name: "from_email", label: "Email Remetente (De:)", placeholder: "Cavendish Consultoria <noreply@contato.cavendishconsultoria.com.br>" },
+      { name: "sender_name", label: "Nome do Remetente", placeholder: "Cavendish Consultoria" },
+      { name: "signature_name", label: "Assinatura dos Emails", placeholder: "Equipe Cavendish Consultoria" },
+    ],
     docsUrl: "https://resend.com/api-keys",
     icon: Mail,
     color: "text-blue-500",
@@ -571,7 +571,7 @@ export default function AdminIntegracoes() {
   const [secretValue, setSecretValue] = useState("");
   const [secondarySecretValue, setSecondarySecretValue] = useState("");
   const [tertiarySecretValue, setTertiarySecretValue] = useState("");
-  const [configFieldValue, setConfigFieldValue] = useState("");
+  const [configValues, setConfigValues] = useState<Record<string, string>>({});
   const [showSecret, setShowSecret] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -597,11 +597,14 @@ export default function AdminIntegracoes() {
     setSecretValue("");
     setSecondarySecretValue("");
     setTertiarySecretValue("");
-    setConfigFieldValue(
-      integration.configFieldName
-        ? (getProviderRow(integration.id)?.config?.[integration.configFieldName] as string || "")
-        : ""
-    );
+    const row = getProviderRow(integration.id);
+    const initial: Record<string, string> = {};
+    if (integration.configFields) {
+      for (const field of integration.configFields) {
+        initial[field.name] = (row?.config?.[field.name] as string) || "";
+      }
+    }
+    setConfigValues(initial);
     setShowSecret(false);
   };
 
@@ -634,8 +637,11 @@ export default function AdminIntegracoes() {
       }
 
       const config: Record<string, string> = {};
-      if (configuring.configFieldName && configFieldValue.trim()) {
-        config[configuring.configFieldName] = configFieldValue.trim();
+      if (configuring.configFields) {
+        for (const field of configuring.configFields) {
+          const val = configValues[field.name]?.trim();
+          if (val) config[field.name] = val;
+        }
       }
 
       await upsertVaultIntegration({
@@ -656,7 +662,7 @@ export default function AdminIntegracoes() {
       setSecretValue("");
       setSecondarySecretValue("");
       setTertiarySecretValue("");
-      setConfigFieldValue("");
+      setConfigValues({});
     } catch (error) {
       toast.error("Erro ao salvar configuração", {
         description: "Tente novamente ou entre em contato com o suporte."
@@ -787,14 +793,17 @@ export default function AdminIntegracoes() {
                           <Key className="h-4 w-4" />
                           <code className="bg-muted px-2 py-1 rounded text-xs">{integration.secretName}</code>
                         </div>
-                        {integration.configFieldName && configured && (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Mail className="h-3 w-3" />
-                            <span>
-                              {(getProviderRow(integration.id)?.config?.[integration.configFieldName] as string) || "Remetente padrão"}
-                            </span>
-                          </div>
-                        )}
+                        {integration.configFields && configured && (() => {
+                          const row = getProviderRow(integration.id);
+                          return integration.configFields
+                            .filter(f => row?.config?.[f.name])
+                            .map(f => (
+                              <div key={f.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <span className="font-medium">{f.label}:</span>
+                                <span className="truncate max-w-[260px]">{row?.config?.[f.name] as string}</span>
+                              </div>
+                            ));
+                        })()}
                       </div>
                       <div className="flex items-center gap-2">
                         {integration.docsUrl && (
@@ -1105,18 +1114,23 @@ export default function AdminIntegracoes() {
                   </div>
                 )}
 
-                {configuring.configFieldName && (
-                  <div className="space-y-2 pt-2 border-t">
-                    <Label htmlFor="config-field-value">{configuring.configFieldLabel}</Label>
-                    <Input
-                      id="config-field-value"
-                      type="text"
-                      placeholder={configuring.configFieldPlaceholder}
-                      value={configFieldValue}
-                      onChange={(e) => setConfigFieldValue(e.target.value)}
-                    />
+                {configuring.configFields && configuring.configFields.length > 0 && (
+                  <div className="space-y-3 pt-2 border-t">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Configurações de Email</p>
+                    {configuring.configFields.map((field) => (
+                      <div key={field.name} className="space-y-1.5">
+                        <Label htmlFor={`config-${field.name}`}>{field.label}</Label>
+                        <Input
+                          id={`config-${field.name}`}
+                          type="text"
+                          placeholder={field.placeholder}
+                          value={configValues[field.name] || ""}
+                          onChange={(e) => setConfigValues(prev => ({ ...prev, [field.name]: e.target.value }))}
+                        />
+                      </div>
+                    ))}
                     <p className="text-xs text-muted-foreground">
-                      Formato: <code>Nome &lt;email@dominio.com&gt;</code> — deve usar o domínio verificado no Resend.
+                      Email remetente: formato <code>Nome &lt;email@dominio.com&gt;</code> — deve usar o domínio verificado no Resend.
                     </p>
                   </div>
                 )}

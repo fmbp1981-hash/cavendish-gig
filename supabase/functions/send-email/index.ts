@@ -24,7 +24,12 @@ interface EmailRequest {
   };
 }
 
-const getEmailTemplate = (type: string, data: EmailRequest["data"]) => {
+const getEmailTemplate = (
+  type: string,
+  data: EmailRequest["data"],
+  senderName: string,
+  signatureName: string,
+) => {
   const templates: Record<string, { subject: string; html: string }> = {
     documento_aprovado: {
       subject: `✅ Documento aprovado: ${data.documentoNome}`,
@@ -56,7 +61,7 @@ const getEmailTemplate = (type: string, data: EmailRequest["data"]) => {
                 <strong>Próximos passos:</strong><br>
                 Continue enviando os documentos pendentes para avançar no projeto.
               </div>
-              <p>Atenciosamente,<br><strong>Equipe Cavendish GIG</strong></p>
+              <p>Atenciosamente,<br><strong>${signatureName}</strong></p>
             </div>
             <div class="footer">
               Este é um email automático. Por favor, não responda diretamente.
@@ -99,7 +104,7 @@ const getEmailTemplate = (type: string, data: EmailRequest["data"]) => {
               </div>
               ` : ''}
               <p>Por favor, faça as correções necessárias e envie o documento novamente.</p>
-              <p>Atenciosamente,<br><strong>Equipe Cavendish GIG</strong></p>
+              <p>Atenciosamente,<br><strong>${signatureName}</strong></p>
             </div>
             <div class="footer">
               Este é um email automático. Por favor, não responda diretamente.
@@ -140,7 +145,7 @@ const getEmailTemplate = (type: string, data: EmailRequest["data"]) => {
                 <strong>Organização:</strong> ${data.organizacaoNome}
               </div>
               <p>Acesse o sistema para analisar e aprovar/rejeitar o documento.</p>
-              <p>Atenciosamente,<br><strong>Sistema Cavendish GIG</strong></p>
+              <p>Atenciosamente,<br><strong>${signatureName}</strong></p>
             </div>
             <div class="footer">
               Este é um email automático. Por favor, não responda diretamente.
@@ -182,7 +187,7 @@ const getEmailTemplate = (type: string, data: EmailRequest["data"]) => {
               </div>
               ${data.ataUrl ? `<a href="${data.ataUrl}" class="btn">Visualizar Ata</a>` : ''}
             </div>
-            <div class="footer">Cavendish GIG · Sistema de Governança Integrada</div>
+            <div class="footer">${senderName} · Sistema de Governança Integrada</div>
           </div>
         </body>
         </html>
@@ -217,7 +222,7 @@ const getEmailTemplate = (type: string, data: EmailRequest["data"]) => {
               <div class="counter">${data.pendingCount}</div>
               <p style="text-align: center;">documentos aguardando</p>
               <p>Acesse o sistema para visualizar e enviar os documentos necessários para avançar no projeto.</p>
-              <p>Atenciosamente,<br><strong>Equipe Cavendish GIG</strong></p>
+              <p>Atenciosamente,<br><strong>${signatureName}</strong></p>
             </div>
             <div class="footer">
               Este é um email automático. Por favor, não responda diretamente.
@@ -280,11 +285,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    const integrationConfig = (integration?.config ?? {}) as Record<string, string>;
     let resendApiKey = (integration?.secrets as any)?.RESEND_API_KEY || Deno.env.get("RESEND_API_KEY") || null;
-    const fromEmail =
-      (integration?.config as Record<string, string> | null)?.from_email ||
-      Deno.env.get("RESEND_FROM_EMAIL") ||
-      DEFAULT_FROM_EMAIL;
+    const fromEmail = integrationConfig.from_email || Deno.env.get("RESEND_FROM_EMAIL") || DEFAULT_FROM_EMAIL;
+    const senderName = integrationConfig.sender_name || "Cavendish GIG";
+    const signatureName = integrationConfig.signature_name || "Equipe Cavendish GIG";
 
     if (!resendApiKey) {
       console.error("RESEND_API_KEY not configured");
@@ -303,8 +308,18 @@ const handler = async (req: Request): Promise<Response> => {
     const resend = new Resend(resendApiKey);
     const { type, to, data }: EmailRequest = await req.json();
 
+    // Lookup recipient name from profiles when not provided by the caller
+    let resolvedUserName = data.userName;
+    if (!resolvedUserName) {
+      const { data: profile } = await service
+        .from("profiles")
+        .select("nome")
+        .eq("email", to)
+        .maybeSingle();
+      if (profile?.nome) resolvedUserName = profile.nome;
+    }
 
-    const template = getEmailTemplate(type, data);
+    const template = getEmailTemplate(type, { ...data, userName: resolvedUserName }, senderName, signatureName);
 
     const emailResponse = await resend.emails.send({
       from: fromEmail,
