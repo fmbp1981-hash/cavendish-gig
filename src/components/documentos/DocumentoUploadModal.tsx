@@ -111,9 +111,14 @@ export function DocumentoUploadModal({
 
   const handleSubmit = async () => {
     if (files.length === 0) return;
+    if (!descricao.trim()) {
+      setErrors(["O campo Resumo / Observações é obrigatório."]);
+      return;
+    }
+    setErrors([]);
     // Upload each file sequentially — each gets its own anexo record
     for (const file of files) {
-      await onSubmit(file, descricao.trim() || undefined);
+      await onSubmit(file, descricao.trim());
     }
     setFiles([]);
     setDescricao("");
@@ -225,7 +230,7 @@ export function DocumentoUploadModal({
 
           {/* Resumo / Observações */}
           <div className="space-y-1.5">
-            <Label htmlFor="resumo-upload">Resumo / Observações <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+            <Label htmlFor="resumo-upload">Resumo / Observações <span className="text-destructive">*</span></Label>
             <Textarea
               id="resumo-upload"
               placeholder="Breve descrição do documento..."

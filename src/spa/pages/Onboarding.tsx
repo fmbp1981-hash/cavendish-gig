@@ -67,6 +67,19 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
+      // Guard: prevent duplicate onboarding if user already belongs to an org
+      const { data: existingMember, error: memberErr } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (memberErr) throw memberErr;
+      if (existingMember) {
+        toast.error("Você já possui uma organização cadastrada. Recarregue a página.");
+        setLoading(false);
+        return;
+      }
+
       const { data: result, error } = await supabase.rpc("create_client_onboarding", {
         p_nome_organizacao: data.nomeOrganizacao,
         p_cnpj: data.cnpj.replace(/\D/g, ""),

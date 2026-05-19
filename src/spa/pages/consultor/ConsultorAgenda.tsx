@@ -136,7 +136,7 @@ export default function ConsultorAgenda() {
         end: new Date(r.data_fim),
         source: "google",
         description: r.descricao ?? undefined,
-        organizacao: r.organizacao_id,
+        organizacao: r.organizacoes?.nome ?? r.organizacao_id,
         color: r.google_event_id ? "#1A5B44" : "#7C3AED",
       });
     });

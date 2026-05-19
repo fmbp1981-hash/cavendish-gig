@@ -7,6 +7,7 @@ export type StatusReuniao = "agendada" | "realizada" | "cancelada" | "reagendada
 export interface Reuniao {
   id: string;
   organizacao_id: string;
+  organizacoes?: { nome: string } | null;
   projeto_id: string | null;
   tipo: TipoReuniao;
   titulo: string;
@@ -119,7 +120,7 @@ export function useReunioesByConsultor(userId: string | null) {
         // Also fetch meetings created by this consultor directly
         const { data, error } = await supabase
           .from("reunioes")
-          .select("*")
+          .select("*, organizacoes(nome)")
           .eq("criado_por", userId!)
           .neq("status", "cancelada")
           .order("data_inicio", { ascending: true });
@@ -129,7 +130,7 @@ export function useReunioesByConsultor(userId: string | null) {
 
       const { data, error } = await supabase
         .from("reunioes")
-        .select("*")
+        .select("*, organizacoes(nome)")
         .in("organizacao_id", orgIds)
         .neq("status", "cancelada")
         .order("data_inicio", { ascending: true });
