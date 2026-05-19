@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -27,6 +27,31 @@ export function PDFViewer({ url, fileName = 'Documento', open, onOpenChange }: P
   const [scale, setScale] = useState<number>(1.0);
   const [loading, setLoading] = useState<boolean>(true);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+
+  // Pre-fetch PDF in main thread to avoid CORS issues inside the PDF.js worker
+  useEffect(() => {
+    if (!open || !url) return;
+    setLoading(true);
+    setPdfError(null);
+    setPdfData(null);
+    setNumPages(0);
+    setPageNumber(1);
+
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.arrayBuffer();
+      })
+      .then(buffer => {
+        setPdfData(buffer);
+      })
+      .catch(err => {
+        console.error('Error fetching PDF:', err);
+        setLoading(false);
+        setPdfError('Não foi possível carregar o documento. Tente baixar o arquivo.');
+      });
+  }, [url, open]);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
@@ -40,21 +65,10 @@ export function PDFViewer({ url, fileName = 'Documento', open, onOpenChange }: P
     setPdfError('Não foi possível carregar o documento. Tente baixar o arquivo.');
   }
 
-  const goToPrevPage = () => {
-    setPageNumber((prev) => Math.max(prev - 1, 1));
-  };
-
-  const goToNextPage = () => {
-    setPageNumber((prev) => Math.min(prev + 1, numPages));
-  };
-
-  const zoomIn = () => {
-    setScale((prev) => Math.min(prev + 0.2, 3.0));
-  };
-
-  const zoomOut = () => {
-    setScale((prev) => Math.max(prev - 0.2, 0.5));
-  };
+  const goToPrevPage = () => setPageNumber((prev) => Math.max(prev - 1, 1));
+  const goToNextPage = () => setPageNumber((prev) => Math.min(prev + 1, numPages));
+  const zoomIn = () => setScale((prev) => Math.min(prev + 0.2, 3.0));
+  const zoomOut = () => setScale((prev) => Math.max(prev - 0.2, 0.5));
 
   const handleDownload = () => {
     const link = document.createElement('a');
@@ -75,23 +89,13 @@ export function PDFViewer({ url, fileName = 'Documento', open, onOpenChange }: P
         {/* Toolbar */}
         <div className="flex items-center justify-between px-6 py-3 border-b bg-muted/30">
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToPrevPage}
-              disabled={pageNumber <= 1}
-            >
+            <Button variant="outline" size="sm" onClick={goToPrevPage} disabled={pageNumber <= 1}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm text-muted-foreground min-w-[100px] text-center">
               Página {pageNumber} de {numPages || '...'}
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToNextPage}
-              disabled={pageNumber >= numPages}
-            >
+            <Button variant="outline" size="sm" onClick={goToNextPage} disabled={pageNumber >= numPages}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -132,22 +136,22 @@ export function PDFViewer({ url, fileName = 'Documento', open, onOpenChange }: P
             </div>
           )}
 
-          {!pdfError && (
-          <Document
-            file={url}
-            onLoadSuccess={onDocumentLoadSuccess}
-            onLoadError={onDocumentLoadError}
-            loading={null}
-            className="shadow-lg"
-          >
-            <Page
-              pageNumber={pageNumber}
-              scale={scale}
-              renderTextLayer={true}
-              renderAnnotationLayer={true}
-              className="bg-white"
-            />
-          </Document>
+          {pdfData && !pdfError && (
+            <Document
+              file={pdfData}
+              onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={onDocumentLoadError}
+              loading={null}
+              className="shadow-lg"
+            >
+              <Page
+                pageNumber={pageNumber}
+                scale={scale}
+                renderTextLayer={true}
+                renderAnnotationLayer={true}
+                className="bg-white"
+              />
+            </Document>
           )}
         </div>
       </DialogContent>
