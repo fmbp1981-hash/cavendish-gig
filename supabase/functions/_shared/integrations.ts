@@ -23,7 +23,7 @@ export async function loadIntegration(
   if (scope === "organization") q = q.eq("organizacao_id", organizacaoId);
   else q = q.is("organizacao_id", null);
 
-  const { data, error } = await q.maybeSingle();
+  const { data, error } = await q.limit(1).maybeSingle();
   if (error) throw error;
   if (!data) return null;
 

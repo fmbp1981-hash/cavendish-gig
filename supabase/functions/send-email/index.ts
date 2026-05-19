@@ -311,12 +311,12 @@ const handler = async (req: Request): Promise<Response> => {
     // Lookup recipient name from profiles when not provided by the caller
     let resolvedUserName = data.userName;
     if (!resolvedUserName) {
-      const { data: profile } = await service
+      const { data: profiles } = await service
         .from("profiles")
         .select("nome")
         .eq("email", to)
-        .maybeSingle();
-      if (profile?.nome) resolvedUserName = profile.nome;
+        .limit(1);
+      if (profiles?.[0]?.nome) resolvedUserName = profiles[0].nome;
     }
 
     const template = getEmailTemplate(type, { ...data, userName: resolvedUserName }, senderName, signatureName);
