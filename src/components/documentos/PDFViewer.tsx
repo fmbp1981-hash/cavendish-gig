@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,10 +9,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-// Configure worker only on client side
-if (typeof window !== 'undefined') {
-  pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-}
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 interface PDFViewerProps {
   url: string;
@@ -26,15 +26,18 @@ export function PDFViewer({ url, fileName = 'Documento', open, onOpenChange }: P
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
   const [loading, setLoading] = useState<boolean>(true);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
     setLoading(false);
+    setPdfError(null);
   }
 
   function onDocumentLoadError(error: Error) {
     console.error('Error loading PDF:', error);
     setLoading(false);
+    setPdfError('Não foi possível carregar o documento. Tente baixar o arquivo.');
   }
 
   const goToPrevPage = () => {
@@ -119,6 +122,17 @@ export function PDFViewer({ url, fileName = 'Documento', open, onOpenChange }: P
             </div>
           )}
 
+          {pdfError && (
+            <div className="flex flex-col items-center justify-center gap-3 text-center text-muted-foreground mt-16">
+              <p className="text-sm">{pdfError}</p>
+              <Button variant="outline" size="sm" onClick={handleDownload}>
+                <Download className="h-4 w-4 mr-2" />
+                Baixar documento
+              </Button>
+            </div>
+          )}
+
+          {!pdfError && (
           <Document
             file={url}
             onLoadSuccess={onDocumentLoadSuccess}
@@ -134,6 +148,7 @@ export function PDFViewer({ url, fileName = 'Documento', open, onOpenChange }: P
               className="bg-white"
             />
           </Document>
+          )}
         </div>
       </DialogContent>
     </Dialog>
