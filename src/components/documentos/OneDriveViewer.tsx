@@ -5,19 +5,19 @@ import { X, ExternalLink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 
-interface GoogleDriveViewerProps {
+interface OneDriveViewerProps {
   fileId: string | null;
   fileName?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function GoogleDriveViewer({
+export function OneDriveViewer({
   fileId,
   fileName = 'Documento',
   open,
   onOpenChange
-}: GoogleDriveViewerProps) {
+}: OneDriveViewerProps) {
   const [embedLink, setEmbedLink] = useState<string | null>(null);
   const [viewLink, setViewLink] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

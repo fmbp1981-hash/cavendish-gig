@@ -7,7 +7,7 @@ import { DocumentoRequeridoCard } from "@/components/documentos/DocumentoRequeri
 import { DocumentoUploadModal } from "@/components/documentos/DocumentoUploadModal";
 import { DocumentoRejeicaoModal } from "@/components/documentos/DocumentoRejeicaoModal";
 import { FiltroFaseDocumentos } from "@/components/documentos/FiltroFaseDocumentos";
-import { GoogleDrivePreviewButton } from "@/components/documentos/GoogleDrivePreviewButton";
+import { OneDrivePreviewButton } from "@/components/documentos/OneDrivePreviewButton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -340,7 +340,7 @@ export default function DocumentosNecessarios() {
                                     </span>
                                   )}
                                   {doc.status.documentos.drive_file_id && (
-                                    <GoogleDrivePreviewButton
+                                    <OneDrivePreviewButton
                                       driveFileId={doc.status.documentos.drive_file_id}
                                       fileName={doc.status.documentos.nome}
                                     />
@@ -397,7 +397,7 @@ export default function DocumentosNecessarios() {
                               </span>
                             )}
                             {doc.status.documentos.drive_file_id && (
-                              <GoogleDrivePreviewButton
+                              <OneDrivePreviewButton
                                 driveFileId={doc.status.documentos.drive_file_id}
                                 fileName={doc.status.documentos.nome}
                               />

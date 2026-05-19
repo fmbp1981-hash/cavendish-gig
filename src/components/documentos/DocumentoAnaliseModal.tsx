@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentoPreviewButton } from "@/components/documentos/DocumentoPreviewButton";
-import { GoogleDrivePreviewButton } from "@/components/documentos/GoogleDrivePreviewButton";
+import { OneDrivePreviewButton } from "@/components/documentos/OneDrivePreviewButton";
 import { DocumentoHistorico } from "@/components/documentos/DocumentoHistorico";
 import { useAIGenerate } from "@/hooks/useAIGenerate";
 import { supabase } from "@/integrations/supabase/client";
@@ -270,7 +270,7 @@ export function DocumentoAnaliseModal({
                     />
                   )}
                   {(documentoArquivo?.drive_file_id || null) && (
-                    <GoogleDrivePreviewButton
+                    <OneDrivePreviewButton
                       driveFileId={documentoArquivo?.drive_file_id ?? null}
                       fileName={documentoArquivo?.nome ?? documento.nome}
                     />

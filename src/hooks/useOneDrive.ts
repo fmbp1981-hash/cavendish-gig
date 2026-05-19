@@ -14,7 +14,7 @@ interface CreateFolderResult {
     subfolders: Record<string, DriveFolder>;
 }
 
-export function useGoogleDriveSettings() {
+export function useOneDriveSettings() {
     return useQuery({
         queryKey: ['onedrive-settings'],
         queryFn: async () => {

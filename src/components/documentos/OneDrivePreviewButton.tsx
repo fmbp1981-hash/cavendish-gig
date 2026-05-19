@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
-import { GoogleDriveViewer } from './GoogleDriveViewer';
+import { OneDriveViewer } from './OneDriveViewer';
 import { toast } from 'sonner';
 
-interface GoogleDrivePreviewButtonProps {
+interface OneDrivePreviewButtonProps {
   driveFileId: string | null;
   fileName: string;
   className?: string;
@@ -12,13 +12,13 @@ interface GoogleDrivePreviewButtonProps {
   size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 
-export function GoogleDrivePreviewButton({
+export function OneDrivePreviewButton({
   driveFileId,
   fileName,
   className,
   variant = 'outline',
   size = 'sm'
-}: GoogleDrivePreviewButtonProps) {
+}: OneDrivePreviewButtonProps) {
   const [open, setOpen] = useState(false);
 
   const handlePreview = () => {
@@ -46,7 +46,7 @@ export function GoogleDrivePreviewButton({
         Ver no OneDrive
       </Button>
 
-      <GoogleDriveViewer
+      <OneDriveViewer
         fileId={driveFileId}
         fileName={fileName}
         open={open}

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { notificarNovoDocumento } from './emailNotifications';
-import { useUploadToDrive } from './useGoogleDrive';
+import { useUploadToDrive } from './useOneDrive';
 
 const sb = supabase;
 

@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { Building2, FileText, CheckCircle2, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
-import { useCreateClientDriveFolder, useUploadToDrive } from "@/hooks/useGoogleDrive";
+import { useCreateClientDriveFolder, useUploadToDrive } from "@/hooks/useOneDrive";
 import { useAIGenerate } from "@/hooks/useAIGenerate";
 import { generatePDFFromHTML } from "@/utils/pdfExport";
 

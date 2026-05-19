@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { DocumentoPreviewButton } from "@/components/documentos/DocumentoPreviewButton";
-import { GoogleDrivePreviewButton } from "@/components/documentos/GoogleDrivePreviewButton";
+import { OneDrivePreviewButton } from "@/components/documentos/OneDrivePreviewButton";
 import { DocumentoHistorico } from "@/components/documentos/DocumentoHistorico";
 import { useClienteProjeto } from "@/hooks/useClienteProjeto";
 import { useUploadDocumento } from "@/hooks/useUploadDocumento";
@@ -449,7 +449,7 @@ export default function RepositorioDocumentos() {
                                 />
                               )}
                               {doc.documentos?.drive_file_id && (
-                                <GoogleDrivePreviewButton
+                                <OneDrivePreviewButton
                                   driveFileId={doc.documentos.drive_file_id}
                                   fileName={doc.documentos.nome}
                                 />
