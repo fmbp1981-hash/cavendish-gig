@@ -30,6 +30,8 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  LogIn,
+  Wifi,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +47,7 @@ interface IntegrationConfig {
   secretName: string;
   secondarySecretName?: string;
   tertiarySecretName?: string;
+  quaternarySecretName?: string;
   configFields?: Array<{ name: string; label: string; placeholder: string }>;
   docsUrl?: string;
   icon: React.ElementType;
@@ -54,6 +57,7 @@ interface IntegrationConfig {
   placeholder?: string;
   secondaryPlaceholder?: string;
   tertiaryPlaceholder?: string;
+  quaternaryPlaceholder?: string;
   inputType?: "text" | "password" | "url";
   status: "available" | "coming_soon";
 }
@@ -127,40 +131,41 @@ const integrations: IntegrationConfig[] = [
   {
     id: "onedrive",
     name: "Microsoft OneDrive",
-    description: "Criação automática de pastas por cliente e armazenamento de documentos no OneDrive for Business (Microsoft 365)",
+    description: "Criação automática de pastas por cliente e armazenamento de documentos no OneDrive Personal (Microsoft 365)",
     secretName: "AZURE_CLIENT_ID",
     secondarySecretName: "AZURE_CLIENT_SECRET",
-    tertiarySecretName: "AZURE_TENANT_ID",
     docsUrl: "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade",
     icon: HardDrive,
     color: "text-blue-600",
     placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
     secondaryPlaceholder: "sua_client_secret_value",
-    tertiaryPlaceholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
     inputType: "text",
     status: "available",
     instructions: [
-      "PASSO 1 — Criar o App Registration no Azure:",
-      "Acesse portal.azure.com com a conta admin do Microsoft 365 da Cavendish",
-      "Na barra de pesquisa superior, digite 'App registrations' e clique no resultado",
-      "Clique em '+ New registration' (Nova inscrição)",
-      "Name: 'Sistema GIG' | Supported account types: 'Accounts in this organizational directory only' → Clique em 'Register'",
-      "PASSO 2 — Copiar Client ID e Tenant ID:",
+      "PASSO 1 — Criar o App Registration no Azure (conta pessoal Microsoft):",
+      "Acesse portal.azure.com e faça login com a conta Microsoft pessoal que tem o OneDrive",
+      "Na barra de pesquisa, digite 'App registrations' e clique no resultado",
+      "Clique em '+ New registration'",
+      "Name: 'Sistema GIG' | Supported account types: 'Personal Microsoft accounts only' → Clique em 'Register'",
+      "PASSO 2 — Copiar o Client ID:",
       "Na página do app criado, copie o 'Application (client) ID' → este é o AZURE_CLIENT_ID",
-      "Copie também o 'Directory (tenant) ID' → este é o AZURE_TENANT_ID",
       "PASSO 3 — Criar o Client Secret:",
-      "No menu lateral esquerdo, clique em 'Certificates & secrets'",
-      "Clique em '+ New client secret'",
+      "No menu lateral, clique em 'Certificates & secrets' → '+ New client secret'",
       "Description: 'GIG-Secret' | Expires: '24 months' → Clique em 'Add'",
-      "ATENÇÃO: Copie imediatamente o valor na coluna 'Value' (não o Secret ID!) — ele some após sair da página",
-      "Este valor copiado é o AZURE_CLIENT_SECRET",
-      "PASSO 4 — Adicionar permissões de API:",
+      "ATENÇÃO: Copie imediatamente o valor na coluna 'Value' (ele some após sair da página)",
+      "Este valor é o AZURE_CLIENT_SECRET",
+      "PASSO 4 — Adicionar permissões delegadas:",
       "No menu lateral, clique em 'API permissions' → '+ Add a permission'",
-      "Clique em 'Microsoft Graph' → 'Application permissions'",
-      "Pesquise e marque: 'Files.ReadWrite.All' e 'Sites.ReadWrite.All'",
+      "Clique em 'Microsoft Graph' → 'Delegated permissions'",
+      "Pesquise e marque: 'Files.ReadWrite' e 'offline_access'",
       "Clique em 'Add permissions'",
-      "Clique em 'Grant admin consent for [sua organização]' → 'Yes' para confirmar",
-      "PASSO 5 — Cole as 3 credenciais nos campos abaixo e salve"
+      "PASSO 5 — Configurar a Redirect URI:",
+      "No menu lateral, clique em 'Authentication' → '+ Add a platform' → 'Web'",
+      "Em Redirect URIs, adicione a URL do sistema terminando em /admin/integracoes",
+      "Exemplo: https://seu-dominio.com/admin/integracoes",
+      "Marque 'ID tokens' e 'Access tokens' → Clique em 'Save'",
+      "PASSO 6 — Cole as 2 credenciais abaixo e salve",
+      "PASSO 7 — Após salvar, clique em 'Conectar com Microsoft' para autorizar o acesso ao OneDrive"
     ]
   },
 ];
@@ -571,9 +576,11 @@ export default function AdminIntegracoes() {
   const [secretValue, setSecretValue] = useState("");
   const [secondarySecretValue, setSecondarySecretValue] = useState("");
   const [tertiarySecretValue, setTertiarySecretValue] = useState("");
+  const [quaternarySecretValue, setQuaternarySecretValue] = useState("");
   const [configValues, setConfigValues] = useState<Record<string, string>>({});
   const [showSecret, setShowSecret] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [oneDriveConnecting, setOneDriveConnecting] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -586,6 +593,65 @@ export default function AdminIntegracoes() {
 
   const { data: aiStats, isLoading: statsLoading } = useAIStats();
 
+  // Detect OAuth callback from Microsoft after OneDrive authorization
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    // Only handle if there's a saved OneDrive OAuth state (avoids conflicts with other OAuth flows)
+    if (!code || !state || !sessionStorage.getItem("onedrive_oauth_state")) return;
+
+    const savedState = sessionStorage.getItem("onedrive_oauth_state");
+    if (state !== savedState) {
+      toast.error("Erro de segurança OAuth", { description: "State inválido. Tente novamente." });
+      window.history.replaceState({}, "", window.location.pathname);
+      return;
+    }
+
+    sessionStorage.removeItem("onedrive_oauth_state");
+    const redirectUri = `${window.location.origin}${window.location.pathname}`;
+    window.history.replaceState({}, "", window.location.pathname);
+
+    setOneDriveConnecting(true);
+    supabase.functions.invoke("onedrive-auth", {
+      body: { action: "callback", code, redirect_uri: redirectUri },
+    }).then(({ error }) => {
+      setOneDriveConnecting(false);
+      if (error) {
+        toast.error("Erro ao conectar OneDrive", { description: error.message });
+      } else {
+        toast.success("OneDrive conectado com sucesso!", {
+          description: "O sistema está autorizado a acessar seu OneDrive."
+        });
+        queryClient.invalidateQueries({ queryKey: ["integrations-vault", "system"] });
+      }
+    });
+  }, []);
+
+  const handleOneDriveConnect = async () => {
+    setOneDriveConnecting(true);
+    try {
+      const state = crypto.randomUUID();
+      sessionStorage.setItem("onedrive_oauth_state", state);
+      const redirectUri = `${window.location.origin}${window.location.pathname}`;
+
+      const { data, error } = await supabase.functions.invoke("onedrive-auth", {
+        body: { action: "init", state, redirect_uri: redirectUri },
+      });
+
+      if (error || !data?.authUrl) {
+        toast.error("Erro ao iniciar autorização", { description: error?.message || "Tente novamente." });
+        setOneDriveConnecting(false);
+        return;
+      }
+
+      window.location.href = data.authUrl;
+    } catch {
+      toast.error("Erro inesperado ao conectar OneDrive");
+      setOneDriveConnecting(false);
+    }
+  };
+
   const handleConfigure = (integration: IntegrationConfig) => {
     if (integration.status === "coming_soon") {
       toast.info("Em breve", {
@@ -597,6 +663,7 @@ export default function AdminIntegracoes() {
     setSecretValue("");
     setSecondarySecretValue("");
     setTertiarySecretValue("");
+    setQuaternarySecretValue("");
     const row = getProviderRow(integration.id);
     const initial: Record<string, string> = {};
     if (integration.configFields) {
@@ -622,6 +689,10 @@ export default function AdminIntegracoes() {
       toast.error("Por favor, preencha todos os campos obrigatórios");
       return;
     }
+    if (configuring.quaternarySecretName && !quaternarySecretValue.trim()) {
+      toast.error("Por favor, preencha todos os campos obrigatórios");
+      return;
+    }
 
     setSaving(true);
 
@@ -634,6 +705,9 @@ export default function AdminIntegracoes() {
       }
       if (configuring.tertiarySecretName) {
         secrets[configuring.tertiarySecretName] = tertiarySecretValue.trim();
+      }
+      if (configuring.quaternarySecretName) {
+        secrets[configuring.quaternarySecretName] = quaternarySecretValue.trim();
       }
 
       const config: Record<string, string> = {};
@@ -814,6 +888,29 @@ export default function AdminIntegracoes() {
                             </a>
                           </Button>
                         )}
+                        {integration.id === "onedrive" && configured && (() => {
+                          const row = getProviderRow("onedrive");
+                          const authorized = !!row?.config?.oauth_authorized;
+                          return authorized ? (
+                            <Badge className="bg-green-700 hover:bg-green-700 text-white">
+                              <Wifi className="h-3 w-3 mr-1" />
+                              OneDrive Conectado
+                            </Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              className="bg-blue-600 hover:bg-blue-700"
+                              onClick={handleOneDriveConnect}
+                              disabled={oneDriveConnecting}
+                            >
+                              {oneDriveConnecting
+                                ? <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                : <LogIn className="h-4 w-4 mr-1" />}
+                              Conectar com Microsoft
+                            </Button>
+                          );
+                        })()}
                         {!integration.alwaysConfigured && (
                           <Button
                             size="sm"
@@ -1110,6 +1207,19 @@ export default function AdminIntegracoes() {
                       placeholder={configuring.tertiaryPlaceholder}
                       value={tertiarySecretValue}
                       onChange={(e) => setTertiarySecretValue(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {configuring.quaternarySecretName && (
+                  <div className="space-y-2">
+                    <Label htmlFor="quaternary-secret-value">{configuring.quaternarySecretName}</Label>
+                    <Input
+                      id="quaternary-secret-value"
+                      type="text"
+                      placeholder={configuring.quaternaryPlaceholder}
+                      value={quaternarySecretValue}
+                      onChange={(e) => setQuaternarySecretValue(e.target.value)}
                     />
                   </div>
                 )}

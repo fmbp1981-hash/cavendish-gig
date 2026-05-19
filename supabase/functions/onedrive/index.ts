@@ -36,25 +36,26 @@ interface DriveItem {
 interface AzureConfig {
   clientId: string;
   clientSecret: string;
-  tenantId: string;
+  refreshToken: string;
 }
 
 async function getMicrosoftToken(cfg: AzureConfig): Promise<string> {
   const body = new URLSearchParams({
-    grant_type: "client_credentials",
+    grant_type: "refresh_token",
     client_id: cfg.clientId,
     client_secret: cfg.clientSecret,
-    scope: "https://graph.microsoft.com/.default",
+    refresh_token: cfg.refreshToken,
+    scope: "Files.ReadWrite offline_access",
   });
 
   const res = await fetch(
-    `https://login.microsoftonline.com/${cfg.tenantId}/oauth2/v2.0/token`,
+    "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
     { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body }
   );
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Failed to obtain Microsoft token: ${err}`);
+    throw new Error(`Failed to refresh Microsoft token: ${err}`);
   }
 
   const data = await res.json();
@@ -73,9 +74,9 @@ async function graphFetch(token: string, path: string, init: RequestInit = {}): 
   });
 }
 
-async function getSharePointDriveId(token: string): Promise<string> {
-  const res = await graphFetch(token, "/sites/root/drive");
-  if (!res.ok) throw new Error(`Failed to get SharePoint drive: ${await res.text()}`);
+async function getUserDriveId(token: string): Promise<string> {
+  const res = await graphFetch(token, "/me/drive");
+  if (!res.ok) throw new Error(`Failed to get user OneDrive: ${await res.text()}`);
   const data = await res.json();
   return data.id as string;
 }
@@ -295,18 +296,21 @@ const handler = async (req: Request): Promise<Response> => {
     const secrets = integration.secrets as Record<string, string> | null;
     const clientId = secrets?.AZURE_CLIENT_ID || Deno.env.get("AZURE_CLIENT_ID") || "";
     const clientSecret = secrets?.AZURE_CLIENT_SECRET || Deno.env.get("AZURE_CLIENT_SECRET") || "";
-    const tenantId = secrets?.AZURE_TENANT_ID || Deno.env.get("AZURE_TENANT_ID") || "";
+    const refreshToken = secrets?.AZURE_REFRESH_TOKEN || Deno.env.get("AZURE_REFRESH_TOKEN") || "";
 
-    if (!clientId || !clientSecret || !tenantId) {
+    if (!clientId || !clientSecret || !refreshToken) {
       return new Response(
-        JSON.stringify({ error: "OneDrive credentials not configured (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)" }),
+        JSON.stringify({
+          error:
+            "OneDrive não autorizado. Configure AZURE_CLIENT_ID e AZURE_CLIENT_SECRET, depois clique em 'Conectar com Microsoft' em Integrações.",
+        }),
         { status: 503, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const azureConfig: AzureConfig = { clientId, clientSecret, tenantId };
+    const azureConfig: AzureConfig = { clientId, clientSecret, refreshToken };
     const accessToken = await getMicrosoftToken(azureConfig);
-    const driveId = await getSharePointDriveId(accessToken);
+    const driveId = await getUserDriveId(accessToken);
 
     // Load base folder path from system settings
     const { data: baseFolderSetting } = await service
