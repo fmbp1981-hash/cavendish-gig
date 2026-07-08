@@ -7,13 +7,14 @@ import { logEdgeFunctionError } from "../_shared/logger.ts";
 
 // Webhook inbound de mensagens WhatsApp — recebe de QUALQUER um dos dois provedores configurados
 // (Evolution API ou WhatsApp Cloud API oficial da Meta), normaliza pro mesmo formato interno,
-// resolve o lead por telefone e grava a conversa. `verify_jwt = false` (ver config.toml): quem
-// chama aqui é o provedor externo, não um usuário logado do GIG — a autenticidade é validada por
-// mecanismo específico de cada provider (ver validarOrigemMeta/validarOrigemEvolution).
+// resolve o lead por telefone, grava a conversa e aciona o agente de IA (prospeccao-agent) quando
+// o lead não está em modo_humano. `verify_jwt = false` (ver config.toml): quem chama aqui é o
+// provedor externo, não um usuário logado do GIG — a autenticidade é validada por mecanismo
+// específico de cada provider (ver validarOrigemMeta/header x-webhook-secret).
 //
-// Disparo do agente de IA (prospeccao-agent) fica marcado como TODO explícito abaixo — implementado
-// junto com a issue do orquestrador, para não misturar duas responsabilidades grandes no mesmo
-// commit.
+// A chamada ao prospeccao-agent usa o mesmo `cron_secret` de system_settings já usado por
+// compliance-alerts/reuniao-lembrete como segredo compartilhado entre Edge Functions internas —
+// não é uma chamada de usuário, então não tem JWT de sessão.
 
 interface MensagemNormalizada {
   telefone: string;
@@ -68,6 +69,28 @@ function extrairMensagensEvolution(payload: any): MensagemNormalizada[] {
   const telefone = normalizePhone(remoteJid.split("@")[0]);
   if (!telefone) return [];
   return [{ telefone, texto, provider: "evolution-api", externalId: data.key?.id ?? null }];
+}
+
+/** Dispara o agente de IA e aguarda a conclusão — Edge Functions não garantem execução em
+ * background após a resposta ser enviada, então awaitar aqui (em vez de "fire-and-forget") é o
+ * que garante que o agente realmente rode até o fim antes do webhook responder. Falha aqui só é
+ * logada, nunca propagada pro caller do webhook (provedor de WhatsApp sempre recebe 200). */
+async function acionarAgente(service: any, leadId: string): Promise<void> {
+  try {
+    const { data: cronSecret } = await service.from("system_settings").select("value").eq("key", "cron_secret").maybeSingle();
+    if (!cronSecret?.value) {
+      console.warn("[whatsapp-webhook] cron_secret não configurado — não é possível acionar o agente automaticamente");
+      return;
+    }
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    await fetch(`${supabaseUrl}/functions/v1/prospeccao-agent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-internal-secret": cronSecret.value },
+      body: JSON.stringify({ leadId }),
+    });
+  } catch (err) {
+    console.error("[whatsapp-webhook] erro ao acionar prospeccao-agent:", err);
+  }
 }
 
 serve(async (req) => {
@@ -137,9 +160,9 @@ serve(async (req) => {
       });
       await service.from("prospeccao_leads").update({ ultimo_contato_em: new Date().toISOString() }).eq("id", lead.id);
 
-      // TODO(Fase 4b — orquestrador do agente): se !lead.modo_humano, invocar prospeccao-agent
-      // aqui para gerar e enviar a resposta automática. Implementado junto com
-      // supabase/functions/prospeccao-agent/index.ts.
+      if (!lead.modo_humano) {
+        await acionarAgente(service, lead.id);
+      }
     }
 
     return new Response(JSON.stringify({ success: true, processadas: mensagens.length }), {
