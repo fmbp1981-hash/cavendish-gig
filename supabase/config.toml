@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.generate-monthly-report]
 verify_jwt = true
+
+[functions.prospeccao-search]
+verify_jwt = true
