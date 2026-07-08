@@ -1,5 +1,12 @@
 # Fase 4 — WhatsApp + Agente de IA conversacional
 
+> ✅ **Concluído**, com uma expansão de escopo pedida pelo usuário: transporte WhatsApp
+> dual-provider (Evolution API **e** WhatsApp Cloud API oficial da Meta, selecionável no vault),
+> não só Evolution API como especificado originalmente abaixo. Nenhum dos dois provedores tem
+> credenciais configuradas ainda — a estrutura está pronta para recebê-las. Function-calling do
+> agente só implementado para Gemini (único provider testável hoje); OpenAI/Claude transferem
+> para humano em vez de tentar function-calling não implementado.
+
 Substitui o stub 503 de `send-whatsapp`, cria o webhook inbound e o orquestrador de IA com
 function-calling que qualifica leads via conversa e transfere para o representante humano.
 

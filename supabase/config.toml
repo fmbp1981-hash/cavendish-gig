@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.prospeccao-agent]
 verify_jwt = false
+
+[functions.prospeccao-followup-cron]
+verify_jwt = false
+
+[functions.prospeccao-campaign-dispatch]
+verify_jwt = true

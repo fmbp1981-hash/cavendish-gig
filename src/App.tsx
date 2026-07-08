@@ -75,12 +75,14 @@ import AdminBiblioteca from "./spa/pages/admin/AdminBiblioteca";
 import AdminFinderLeads from "./spa/pages/admin/AdminFinderLeads";
 import AdminFinderFunil from "./spa/pages/admin/AdminFinderFunil";
 import AdminFinderBusca from "./spa/pages/admin/AdminFinderBusca";
+import AdminFinderCampanhas from "./spa/pages/admin/AdminFinderCampanhas";
 import ConsultorBiblioteca from "./spa/pages/consultor/ConsultorBiblioteca";
 
 // Representante Pages (módulo Finder)
 import RepresentanteFinderLeads from "./spa/pages/representante/RepresentanteFinderLeads";
 import RepresentanteFinderFunil from "./spa/pages/representante/RepresentanteFinderFunil";
 import RepresentanteFinderBusca from "./spa/pages/representante/RepresentanteFinderBusca";
+import RepresentanteFinderCampanhas from "./spa/pages/representante/RepresentanteFinderCampanhas";
 import Help from "./spa/pages/Help";
 import { installGlobalErrorHandlers } from "./utils/errorLogger";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -427,6 +429,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/finder/campanhas"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <ErrorBoundary><AdminFinderCampanhas /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Finder (prospecção) — representante */}
               <Route
@@ -450,6 +460,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["representante", "admin"]}>
                     <ErrorBoundary><RepresentanteFinderBusca /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/representante/finder/campanhas"
+                element={
+                  <ProtectedRoute requiredRoles={["representante", "admin"]}>
+                    <ErrorBoundary><RepresentanteFinderCampanhas /></ErrorBoundary>
                   </ProtectedRoute>
                 }
               />

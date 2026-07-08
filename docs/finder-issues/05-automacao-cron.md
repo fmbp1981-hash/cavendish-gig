@@ -1,5 +1,11 @@
 # Fase 5 — Automação (follow-up, score, campanhas)
 
+> ✅ **Concluído.** Regra de `ai_score` definida pelo usuário (ver `docs/FINDER_SPEC.md` §Decisões
+> de produto). `recalculo-score` implementado como função SQL pura (não Edge Function — é uma
+> agregação determinística sobre o próprio banco, sem chamada externa), diferente do desenho
+> original desta issue. `followup-automatico` e `disparo-campanhas` implementados como
+> especificado abaixo.
+
 Depende da Fase 4 (WhatsApp funcional) — follow-up e campanhas disparam mensagens reais.
 
 ## Functional Specification

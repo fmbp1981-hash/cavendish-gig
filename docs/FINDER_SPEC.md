@@ -34,23 +34,14 @@ Sistema GIG.
 | 1 | RBAC `representante` + schema `prospeccao_*` + RLS | ✅ |
 | 2 | Hooks + KanbanBoard genérico + páginas Leads/Funil (admin+representante) | ✅ |
 | 3 | Busca Google Places + enriquecimento via `url_context` (Gemini) + telas de busca | ✅ |
+| 4 | WhatsApp dual-provider (Evolution API + Cloud API oficial, sem credenciais ainda) + `prospeccao-agent` (function-calling, só Gemini) + `ConversaPanel` | ✅ |
+| 5 | Follow-up automático (`pg_cron`), recálculo de `ai_score` (SQL puro), campanhas em massa | ✅ |
 
 ## Fases restantes — behaviors por fase
 
 Cada fase abaixo tem um arquivo de issue em `docs/finder-issues/NN-nome.md` com a especificação
 completa (Functional Spec, Files to Create/Modify, Notes, Tasks). Ordem de execução é sequencial
 — uma fase só começa depois do `/plan` da fase anterior fechado com checklist verde.
-
-### Fase 4 — WhatsApp + Agente de IA conversacional
-- **enviar-mensagem-whatsapp**: substitui o stub 503 de `send-whatsapp` por implementação real via Evolution API
-- **receber-mensagem-whatsapp**: novo webhook `whatsapp-webhook`, resolve lead por telefone
-- **conversar-com-agente**: `prospeccao-agent` orquestra IA com function-calling (ferramentas do blueprint §8.1)
-- **transferir-para-humano**: ferramenta do agente marca `modo_humano = true`, cancela follow-ups
-
-### Fase 5 — Automação (cron)
-- **followup-automatico**: `pg_cron` dispara `prospeccao-followup-cron`
-- **recalculo-score**: `pg_cron` dispara `prospeccao-score-cron`
-- **disparo-campanhas**: `prospeccao-campaign-dispatch` + tela de campanhas em massa
 
 ### Fase 6 — Agendamento de fechamento (Alberto Cavendish)
 - **consultar-disponibilidade**: nova ação `freebusy` na Edge Function `google-calendar`
@@ -82,3 +73,8 @@ habilitado no projeto.
 - Firecrawl descartado; enriquecimento via `url_context` do Gemini (Fase 3, já implementado).
 - Gemini no free tier do Google AI Studio por enquanto (decisão consciente sobre uso de dados pelo Google).
 - `xlsx`(npm)/SheetJS descartado por CVEs — `exceljs` no lugar (Fase 2, já implementado).
+- Regra de `ai_score` (Fase 5, já implementado): +8/etapa avançada (até 40) + 10/resposta do lead
+  (até 30) + 5 cada por email/website/cnpj preenchidos (até 15) − 2/dia de inatividade além de
+  3 dias de folga (até −20). Recalculado 1x/dia via SQL puro, só para leads sem contato nas
+  últimas 24h (não sobrescreve o score que o agente setou numa conversa ativa). Ver
+  `supabase/migrations/20260708140000_finder_score_recalc_cron.sql`.
