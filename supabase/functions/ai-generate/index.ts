@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logEdgeFunctionError } from "../_shared/logger.ts";
 import { buildCorsHeaders } from "../_shared/cors.ts";
-import { importAesGcmKeyFromEnv, decryptJsonAesGcm } from "../_shared/crypto.ts";
+import { getAIConfig, type AIProviderConfig } from "../_shared/ai-provider.ts";
 
 interface AIRequest {
   tipo: "codigo_etica" | "analise_documento" | "gerar_ata" | "chat" | "sumarizar_documento" | "detectar_riscos" | "gerar_contrato" | "transcrever_audio";
@@ -10,88 +10,6 @@ interface AIRequest {
   projeto_id?: string;
   organizacao_id?: string;
   stream?: boolean;
-}
-
-interface AIProviderConfig {
-  provider: "gemini" | "openai" | "claude";
-  apiKey: string;
-  model: string;
-  baseUrl: string;
-}
-
-// Get AI provider configuration
-async function getAIConfig(supabaseService: any): Promise<AIProviderConfig> {
-  // Try to get configured provider from system_settings
-  const { data: settings } = await supabaseService
-    .from("system_settings")
-    .select("key, value")
-    .in("key", ["ai_provider", "ai_configured"]);
-
-  const settingsMap: Record<string, string> = {};
-  (settings || []).forEach((row: any) => {
-    settingsMap[row.key] = row.value;
-  });
-
-  // If custom provider configured, try to load from integrations table
-  if (settingsMap.ai_configured === "true" && settingsMap.ai_provider) {
-    const { data: integrationRow } = await supabaseService
-      .from("integrations")
-      .select("secrets_encrypted, config")
-      .eq("provider", "ai-provider")
-      .eq("scope", "system")
-      .single();
-
-    if (integrationRow?.secrets_encrypted) {
-      try {
-        // Decrypt secrets using the same AES-GCM key used by the integrations edge function
-        const cryptoKey = await importAesGcmKeyFromEnv("INTEGRATIONS_ENCRYPTION_KEY");
-        const secrets = await decryptJsonAesGcm<Record<string, string>>(cryptoKey, integrationRow.secrets_encrypted);
-        const config = integrationRow.config as Record<string, string>;
-
-        const providerName = config?.provider || settingsMap.ai_provider;
-
-        switch (providerName) {
-          case "gemini":
-            return {
-              provider: "gemini",
-              apiKey: secrets.GEMINI_API_KEY || "",
-              model: "gemini-1.5-flash",
-              baseUrl: "https://generativelanguage.googleapis.com/v1beta"
-            };
-          case "openai":
-            return {
-              provider: "openai",
-              apiKey: secrets.OPENAI_API_KEY || "",
-              model: "gpt-4o-mini",
-              baseUrl: "https://api.openai.com/v1"
-            };
-          case "claude":
-            return {
-              provider: "claude",
-              apiKey: secrets.ANTHROPIC_API_KEY || "",
-              model: "claude-3-5-sonnet-20241022",
-              baseUrl: "https://api.anthropic.com/v1"
-            };
-        }
-      } catch (decryptErr) {
-        console.error("Erro ao decriptar credenciais de IA:", decryptErr);
-        // Fall through to env fallback
-      }
-    }
-  }
-
-  // Fallback: OPENAI_API_KEY da env (compatível com OpenAI-compatible APIs)
-  const fallbackKey = Deno.env.get("OPENAI_API_KEY");
-  if (!fallbackKey) {
-    throw new Error("Nenhum provedor de IA configurado. Configure em Admin → Integrações.");
-  }
-
-  return {
-    provider: "openai",
-    apiKey: fallbackKey,
-    model: "gpt-4o-mini",
-    baseUrl: "https://api.openai.com/v1"
-  };
 }
 
 const VALID_TIPOS = ["codigo_etica", "analise_documento", "gerar_ata", "chat", "sumarizar_documento", "detectar_riscos", "gerar_contrato", "transcrever_audio"] as const;

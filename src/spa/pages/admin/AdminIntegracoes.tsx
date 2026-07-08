@@ -169,6 +169,25 @@ const integrations: IntegrationConfig[] = [
       "PASSO 7 — Após salvar, clique em 'Conectar com Microsoft' para autorizar o acesso ao OneDrive"
     ]
   },
+  {
+    id: "google-places",
+    name: "Google Places (Finder)",
+    description: "Busca de leads B2B por termo + localização no módulo Finder de prospecção",
+    secretName: "GOOGLE_PLACES_API_KEY",
+    docsUrl: "https://console.cloud.google.com/google/maps-apis/credentials",
+    icon: Search,
+    color: "text-red-500",
+    placeholder: "AIzaSy...",
+    inputType: "password",
+    status: "available",
+    instructions: [
+      "Acesse console.cloud.google.com e crie (ou reutilize) um projeto",
+      "Ative a API 'Places API' em APIs & Services → Library",
+      "Vá em APIs & Services → Credentials → Create Credentials → API Key",
+      "Restrinja a chave à Places API (recomendado, evita uso indevido)",
+      "Cole a chave no campo abaixo"
+    ]
+  },
 ];
 
 type IntegrationScope = "system" | "organization";

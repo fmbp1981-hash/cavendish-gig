@@ -3,13 +3,19 @@ import { buildCorsHeaders } from "../_shared/cors.ts";
 import { createUserClient, createServiceClient } from "../_shared/supabase.ts";
 import { loadIntegration } from "../_shared/integrations.ts";
 import { logEdgeFunctionError } from "../_shared/logger.ts";
+import { getAIConfig } from "../_shared/ai-provider.ts";
 
 // Busca externa de leads via Google Places (Text Search -> Details, em lotes de 5 — mesmo
-// padrão do módulo Finder de referência, yolo_sdr/src/lib/google-places/client.ts). Sem
-// Firecrawl: o enriquecimento do lead é um resumo curto gerado por IA (via ai-generate, já
-// existente no projeto) a partir de nome+endereço, não scraping do site — o próprio
-// prospect-pulse-54 (origem deste módulo) desativou o Firecrawl em produção por ser o maior
-// gargalo (10s+ por lead). Ver CAVENDISH_PROSPECCAO_BLUEPRINT.md §6.
+// padrão do módulo Finder de referência, yolo_sdr/src/lib/google-places/client.ts).
+//
+// Sem Firecrawl: o prospect-pulse-54 (origem deste módulo) desativou o Firecrawl em produção
+// por ser o maior gargalo (10s+ por lead, síncrono). Em vez de um serviço de scraping
+// separado, o enriquecimento usa a tool nativa `url_context` do Gemini (GA em 2026) — o
+// próprio modelo busca e lê o site na mesma chamada de geração, sem vendor novo, cobrado só
+// como tokens de input extras. Só funciona quando o provider de IA ativo é Gemini (decisão de
+// produto do usuário: manter no free tier do Google AI Studio por enquanto — ver conversa);
+// para outros providers, cai no fallback de resumo só com nome+endereço (mesmo comportamento
+// do módulo Finder original, yolo_sdr). Ver CAVENDISH_PROSPECCAO_BLUEPRINT.md §6.
 
 interface SearchRequest {
   termo: string;
@@ -31,6 +37,16 @@ interface RawPlace {
   formatted_address?: string;
   address_components?: Array<{ long_name: string; short_name: string; types: string[] }>;
   types?: string[];
+  rating?: number;
+  user_ratings_total?: number;
+  business_status?: string;
+}
+
+interface EnriquecimentoIA {
+  resumo: string | null;
+  email: string | null;
+  cnpj: string | null;
+  linkedin: string | null;
 }
 
 const PLACES_BASE = "https://maps.googleapis.com/maps/api/place";
@@ -69,7 +85,7 @@ async function fetchPlaceDetails(placeId: string, apiKey: string): Promise<RawPl
     url.searchParams.set("place_id", placeId);
     url.searchParams.set(
       "fields",
-      "place_id,name,formatted_phone_number,international_phone_number,website,formatted_address,address_components,types",
+      "place_id,name,formatted_phone_number,international_phone_number,website,formatted_address,address_components,types,rating,user_ratings_total,business_status",
     );
     url.searchParams.set("key", apiKey);
     url.searchParams.set("language", "pt-BR");
@@ -83,7 +99,9 @@ async function fetchPlaceDetails(placeId: string, apiKey: string): Promise<RawPl
   }
 }
 
-async function gerarResumoIA(authHeader: string, nome: string, endereco: string | null): Promise<string | null> {
+/** Fallback sem site (ou sem provider Gemini): resumo especulativo só com nome+endereço, via
+ * ai-generate (mesmo comportamento do módulo Finder original, yolo_sdr). */
+async function gerarResumoBasico(authHeader: string, nome: string, endereco: string | null): Promise<string | null> {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
@@ -102,10 +120,79 @@ async function gerarResumoIA(authHeader: string, nome: string, endereco: string 
     });
     if (!res.ok) return null;
     const data = await res.json();
-    return data?.content?.trim?.() || data?.data?.content?.trim?.() || null;
+    return typeof data?.output === "string" ? data.output.trim() : null;
   } catch {
     return null;
   }
+}
+
+/** Enriquecimento com o site real via `url_context` do Gemini — pede resumo do gatilho de
+ * compliance E extração de email/CNPJ/LinkedIn se estiverem visíveis na página (comuns no
+ * rodapé de sites de PME brasileiras). Resposta esperada em JSON estrito; se o modelo não
+ * seguir o formato, cai para o resumo básico sem quebrar a busca. */
+async function enriquecerComGemini(
+  apiKey: string,
+  model: string,
+  baseUrl: string,
+  nome: string,
+  website: string,
+): Promise<EnriquecimentoIA | null> {
+  try {
+    const prompt = `Empresa: ${nome}. Site: ${website}
+Leia o conteúdo do site acima e responda SOMENTE com um JSON válido, sem markdown, no formato:
+{"resumo": "até 2 frases sobre um possível gatilho de compliance/governança para abordar esta empresa (licitação pública, M&A, ISO, crédito/investimento, grupo com filiais, sem programa de compliance formal) baseado no que o site realmente mostra", "email": "email de contato encontrado no site, ou null", "cnpj": "CNPJ encontrado no site (só números), ou null", "linkedin": "URL do LinkedIn da empresa encontrada no site, ou null"}
+Se não conseguir acessar o site, responda com "resumo" baseado só no nome da empresa e os demais campos null.`;
+
+    const res = await fetch(`${baseUrl}/models/${model}:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        tools: [{ url_context: {} }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 500 },
+      }),
+    });
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      resumo: typeof parsed.resumo === "string" ? parsed.resumo.trim() : null,
+      email: typeof parsed.email === "string" ? parsed.email.trim() : null,
+      cnpj: typeof parsed.cnpj === "string" ? parsed.cnpj.replace(/\D/g, "") || null : null,
+      linkedin: typeof parsed.linkedin === "string" ? parsed.linkedin.trim() : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Ponto único de enriquecimento: tenta url_context do Gemini quando há site e o provider
+ * ativo é Gemini; cai para o resumo básico em qualquer outro caso. */
+async function enriquecerLead(
+  authHeader: string,
+  service: any,
+  nome: string,
+  endereco: string | null,
+  website: string | null,
+): Promise<EnriquecimentoIA> {
+  if (website) {
+    try {
+      const aiConfig = await getAIConfig(service);
+      if (aiConfig.provider === "gemini" && aiConfig.apiKey) {
+        const resultado = await enriquecerComGemini(aiConfig.apiKey, aiConfig.model, aiConfig.baseUrl, nome, website);
+        if (resultado) return resultado;
+      }
+    } catch {
+      // Provider de IA não configurado — segue para o fallback básico
+    }
+  }
+  const resumo = await gerarResumoBasico(authHeader, nome, endereco);
+  return { resumo, email: null, cnpj: null, linkedin: null };
 }
 
 serve(async (req) => {
@@ -277,16 +364,33 @@ serve(async (req) => {
         busca_id: busca.id,
         funil_id: funil?.id ?? null,
         funil_etapa_id: primeiraEtapaId,
+        // Places não tem coluna dedicada para link do mapa/rating — vai no catch-all metadata
+        metadata: {
+          google_maps_link: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`,
+          rating: place.rating ?? null,
+          user_ratings_total: place.user_ratings_total ?? null,
+          business_status: place.business_status ?? null,
+        },
       });
     }
 
-    // 7. Resumo IA em paralelo (opcional — se ai-generate/IA não estiver configurado, cada
-    // chamada falha silenciosamente e o lead entra sem ai_resumo)
+    // 7. Enriquecimento em paralelo (opcional). Com site + provider Gemini ativo, lê o
+    // conteúdo real via url_context (resumo fundamentado + tenta extrair email/CNPJ/LinkedIn
+    // do rodapé do site); sem isso, cai no resumo especulativo só com nome+endereço. Falha
+    // silenciosa em qualquer caso — o lead sempre entra, só sem esses campos.
     if (querResumo && candidatos.length > 0) {
-      const resumos = await Promise.all(
-        candidatos.map((c) => gerarResumoIA(authHeader, c.nome as string, c.endereco as string | null)),
+      const enriquecimentos = await Promise.all(
+        candidatos.map((c) =>
+          enriquecerLead(authHeader, service, c.nome as string, c.endereco as string | null, c.website as string | null),
+        ),
       );
-      candidatos.forEach((c, i) => { c.ai_resumo = resumos[i]; });
+      candidatos.forEach((c, i) => {
+        const e = enriquecimentos[i];
+        c.ai_resumo = e.resumo;
+        if (e.email && !c.email) c.email = e.email;
+        if (e.cnpj && !c.cnpj) c.cnpj = e.cnpj;
+        if (e.linkedin && !c.linkedin) c.linkedin = e.linkedin;
+      });
     }
 
     // 8. Insert individual (não em lote) — mesma razão do useImportarArquivo: os índices únicos
