@@ -36,17 +36,13 @@ Sistema GIG.
 | 3 | Busca Google Places + enriquecimento via `url_context` (Gemini) + telas de busca | ✅ |
 | 4 | WhatsApp dual-provider (Evolution API + Cloud API oficial, sem credenciais ainda) + `prospeccao-agent` (function-calling, só Gemini) + `ConversaPanel` | ✅ |
 | 5 | Follow-up automático (`pg_cron`), recálculo de `ai_score` (SQL puro), campanhas em massa | ✅ |
+| 6 | Agendamento automático de fechamento (`freebusy` + evento + `reunioes` + notificação lead/admin) | ✅ |
 
 ## Fases restantes — behaviors por fase
 
 Cada fase abaixo tem um arquivo de issue em `docs/finder-issues/NN-nome.md` com a especificação
 completa (Functional Spec, Files to Create/Modify, Notes, Tasks). Ordem de execução é sequencial
 — uma fase só começa depois do `/plan` da fase anterior fechado com checklist verde.
-
-### Fase 6 — Agendamento de fechamento (Alberto Cavendish)
-- **consultar-disponibilidade**: nova ação `freebusy` na Edge Function `google-calendar`
-- **agendar-reuniao-fechamento**: `prospeccao-agendar-fechamento`, aplica regras de negócio (horário comercial, antecedência, janela de busca — decisões já tomadas em conversa anterior)
-- **notificar-sem-slot**: fallback quando não há horário livre (notifica admin — decisão já tomada)
 
 ### Fase 7 — Conversão lead → organização/parceiro
 - **converter-lead-organizacao**: cria `organizacoes` + `organization_members` (role `cliente`), só depois da reunião confirmada (modelo Gate — decisão já tomada)
@@ -78,3 +74,7 @@ habilitado no projeto.
   3 dias de folga (até −20). Recalculado 1x/dia via SQL puro, só para leads sem contato nas
   últimas 24h (não sobrescreve o score que o agente setou numa conversa ativa). Ver
   `supabase/migrations/20260708140000_finder_score_recalc_cron.sql`.
+- ID do calendário do Alberto (Fase 6, já implementado): não é uma linha em `system_settings` —
+  fica em `integrations.config.alberto_calendar_id` da própria integração `google-calendar`
+  (Admin → Integrações), reaproveitando o vault que já existe em vez de criar uma segunda fonte de
+  configuração. Convenção: esse ID é o email do calendário pessoal do Alberto.

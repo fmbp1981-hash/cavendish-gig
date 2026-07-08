@@ -92,8 +92,11 @@ const integrations: IntegrationConfig[] = [
   {
     id: "google-calendar",
     name: "Google Calendar",
-    description: "Agendamento automático de reuniões de kickoff e acompanhamento com Google Meet",
+    description: "Agendamento automático de reuniões de kickoff, acompanhamento e fechamento comercial (Finder) com Google Meet",
     secretName: "GOOGLE_SERVICE_ACCOUNT",
+    configFields: [
+      { name: "alberto_calendar_id", label: "Calendário do Alberto (Finder — fechamento)", placeholder: "alberto@cavendish.com.br" },
+    ],
     docsUrl: "https://console.cloud.google.com/apis/credentials",
     icon: Calendar,
     color: "text-green-500",
@@ -106,7 +109,8 @@ const integrations: IntegrationConfig[] = [
       "Vá em APIs & Services → Credentials → Create Credentials → Service Account",
       "Crie uma chave JSON para a Service Account",
       "Compartilhe seu calendário com o email da Service Account",
-      "Cole o conteúdo JSON completo no campo abaixo"
+      "Cole o conteúdo JSON completo no campo abaixo",
+      "Peça para o Alberto compartilhar seu Google Calendar pessoal com o email da Service Account (permissão 'Fazer alterações em eventos') e informe o ID do calendário dele (geralmente o próprio email) no campo abaixo — usado pelo Finder para agendar reuniões de fechamento"
     ]
   },
   {

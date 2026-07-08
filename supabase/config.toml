@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.prospeccao-campaign-dispatch]
 verify_jwt = true
+
+[functions.prospeccao-agendar-fechamento]
+verify_jwt = true

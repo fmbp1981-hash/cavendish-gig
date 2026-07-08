@@ -9,6 +9,7 @@ import { Loader2, Trash2 } from "lucide-react";
 import { useUpdateProspeccaoLead, useDeleteProspeccaoLead } from "@/hooks/useProspeccaoLeads";
 import { CategoryBadge } from "./category-badge";
 import { ConversaPanel } from "./conversa-panel";
+import { AgendarFechamentoButton } from "./agendar-fechamento-button";
 import type { ProspeccaoLead, ProspeccaoStatus } from "@/types/prospeccao";
 
 const STATUS_OPTIONS: { value: ProspeccaoStatus; label: string }[] = [
@@ -143,6 +144,8 @@ export function LeadDetailDrawer({ lead, onClose, podeExcluir }: LeadDetailDrawe
           )}
 
           <ConversaPanel lead={lead} />
+
+          <AgendarFechamentoButton lead={lead} />
 
           <div className="flex items-center justify-between pt-2">
             {podeExcluir ? (

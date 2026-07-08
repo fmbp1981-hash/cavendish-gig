@@ -1,5 +1,16 @@
 # Fase 6 — Agendamento de fechamento comercial (Alberto Cavendish)
 
+> ✅ **Concluído**, com dois desvios do desenho original abaixo (ambos reduzem escopo, não
+> aumentam): (1) `alberto_google_calendar_id` não virou uma coluna/linha em `system_settings` —
+> ficou como `config.alberto_calendar_id` na própria integração `google-calendar` já existente no
+> vault, reaproveitando a UI de configuração que já existe em vez de criar uma segunda fonte de
+> configuração; (2) a notificação "sem slot" e o email de confirmação reaproveitam,
+> respectivamente, a tabela `notificacoes` já existente (nenhuma mudança necessária) e uma chamada
+> direta ao Resend dentro da própria `prospeccao-agendar-fechamento` (não o `send-email`, que teria
+> exigido afrouxar sua checagem de role admin/consultor para aceitar uma chamada
+> servidor-a-servidor sem JWT de usuário). Nenhuma migration nova foi necessária — `reunioes`,
+> `prospeccao_leads.reuniao_fechamento_id` e o enum `tipo_reuniao` já tinham tudo desde a Fase 1.
+
 Implementa o requisito mais delicado do módulo — decisões de produto já fechadas em conversa
 anterior (ver `FINDER_MODULE_SPEC.md §3` e `docs/FINDER_SPEC.md`): Opção A de calendário, modelo
 Gate, 09h-18h dias úteis, 30 min, antecedência mínima 24h, janela de busca 5 dias úteis, sem slot
