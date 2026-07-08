@@ -1,0 +1,96 @@
+import { useMemo, useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
+import { useProspeccaoLeads } from "@/hooks/useProspeccaoLeads";
+import { useProspeccaoFunilPadrao, useProspeccaoFunilEtapas, useMoverLeadEtapa } from "@/hooks/useProspeccaoFunis";
+import { useRepresentantes } from "@/hooks/useRepresentantes";
+import { PROSPECCAO_CATEGORIAS } from "@/types/prospeccao";
+import { getCategoriaLabel } from "@/lib/prospeccao/categorias";
+import { KanbanBoard } from "./kanban-board";
+import { LeadCard } from "./lead-card";
+import { LeadDetailDrawer } from "./lead-detail-drawer";
+import type { ProspeccaoCategoria, ProspeccaoLead } from "@/types/prospeccao";
+
+interface FunilViewProps {
+  isAdmin: boolean;
+  currentUserId: string;
+}
+
+export function FunilView({ isAdmin, currentUserId }: FunilViewProps) {
+  const [categoria, setCategoria] = useState<ProspeccaoCategoria>(PROSPECCAO_CATEGORIAS[0]);
+  const [leadSelecionado, setLeadSelecionado] = useState<ProspeccaoLead | null>(null);
+
+  const { data: funil, isLoading: carregandoFunil } = useProspeccaoFunilPadrao(categoria);
+  const { data: etapas, isLoading: carregandoEtapas } = useProspeccaoFunilEtapas(funil?.id);
+  const { data: leads, isLoading: carregandoLeads } = useProspeccaoLeads({
+    categoria,
+    responsavelId: isAdmin ? undefined : currentUserId,
+  });
+  const { data: representantes } = useRepresentantes();
+  const moverLeadEtapa = useMoverLeadEtapa();
+
+  const representanteNomeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of representantes ?? []) map.set(r.id, r.nome || r.email);
+    return map;
+  }, [representantes]);
+
+  const columns = useMemo(() => (etapas ?? []).map((e) => ({ id: e.id, title: e.nome })), [etapas]);
+  const leadsComEtapa = useMemo(() => (leads ?? []).filter((l) => !!l.funil_etapa_id), [leads]);
+
+  const isLoading = carregandoFunil || carregandoEtapas || carregandoLeads;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-2xl font-bold">Funil — Finder</h1>
+          <p className="text-muted-foreground">Acompanhe os leads por etapa do funil comercial</p>
+        </div>
+        <Select value={categoria} onValueChange={(v) => setCategoria(v as ProspeccaoCategoria)}>
+          <SelectTrigger className="w-64">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PROSPECCAO_CATEGORIAS.map((c) => (
+              <SelectItem key={c} value={c}>
+                {getCategoriaLabel(c)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : !funil ? (
+        <p className="text-muted-foreground text-center py-8">
+          Nenhum funil configurado para esta categoria ainda.
+        </p>
+      ) : (
+        <KanbanBoard
+          columns={columns}
+          items={leadsComEtapa}
+          getColumnId={(lead) => lead.funil_etapa_id as string}
+          onMoveItem={(leadId, toColumnId) => {
+            const etapa = (etapas ?? []).find((e) => e.id === toColumnId);
+            const lead = leadsComEtapa.find((l) => l.id === leadId);
+            if (!etapa || !lead) return;
+            moverLeadEtapa.mutate({ leadId, etapa, statusAtual: lead.status });
+          }}
+          renderCard={(lead) => (
+            <LeadCard
+              lead={lead}
+              responsavelNome={isAdmin ? representanteNomeMap.get(lead.responsavel_id) : undefined}
+              onClick={() => setLeadSelecionado(lead)}
+            />
+          )}
+        />
+      )}
+
+      <LeadDetailDrawer lead={leadSelecionado} onClose={() => setLeadSelecionado(null)} podeExcluir={isAdmin} />
+    </div>
+  );
+}

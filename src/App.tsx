@@ -72,7 +72,13 @@ import AdminLogs from "./spa/pages/admin/AdminLogs";
 import AdminDocumentos from "./spa/pages/admin/AdminDocumentos";
 import AdminConsultores from "./spa/pages/admin/AdminConsultores";
 import AdminBiblioteca from "./spa/pages/admin/AdminBiblioteca";
+import AdminFinderLeads from "./spa/pages/admin/AdminFinderLeads";
+import AdminFinderFunil from "./spa/pages/admin/AdminFinderFunil";
 import ConsultorBiblioteca from "./spa/pages/consultor/ConsultorBiblioteca";
+
+// Representante Pages (módulo Finder)
+import RepresentanteFinderLeads from "./spa/pages/representante/RepresentanteFinderLeads";
+import RepresentanteFinderFunil from "./spa/pages/representante/RepresentanteFinderFunil";
 import Help from "./spa/pages/Help";
 import { installGlobalErrorHandlers } from "./utils/errorLogger";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -390,6 +396,42 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
                     <AdminBiblioteca />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Finder (prospecção) — admin */}
+              <Route
+                path="/admin/finder/leads"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <ErrorBoundary><AdminFinderLeads /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/finder/funil"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <ErrorBoundary><AdminFinderFunil /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Finder (prospecção) — representante */}
+              <Route
+                path="/representante/finder/leads"
+                element={
+                  <ProtectedRoute requiredRoles={["representante", "admin"]}>
+                    <ErrorBoundary><RepresentanteFinderLeads /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/representante/finder/funil"
+                element={
+                  <ProtectedRoute requiredRoles={["representante", "admin"]}>
+                    <ErrorBoundary><RepresentanteFinderFunil /></ErrorBoundary>
                   </ProtectedRoute>
                 }
               />

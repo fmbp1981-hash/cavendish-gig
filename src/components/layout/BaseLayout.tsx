@@ -38,7 +38,7 @@ interface BaseLayoutProps {
   navItems: NavItem[];
   homeHref: string;
   headerTitle: ReactNode;
-  userRole: "admin" | "consultor" | "cliente" | "parceiro";
+  userRole: "admin" | "consultor" | "cliente" | "parceiro" | "representante";
   settingsHref: string;
   /** Extra DropdownMenuItems rendered before Settings */
   extraMenuItems?: ReactNode;
