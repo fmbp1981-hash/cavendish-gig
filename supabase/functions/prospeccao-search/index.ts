@@ -4,6 +4,7 @@ import { createUserClient, createServiceClient } from "../_shared/supabase.ts";
 import { loadIntegration } from "../_shared/integrations.ts";
 import { logEdgeFunctionError } from "../_shared/logger.ts";
 import { getAIConfig } from "../_shared/ai-provider.ts";
+import { normalizePhone } from "../_shared/phone.ts";
 
 // Busca externa de leads via Google Places (Text Search -> Details, em lotes de 5 — mesmo
 // padrão do módulo Finder de referência, yolo_sdr/src/lib/google-places/client.ts).
@@ -62,15 +63,6 @@ function translateType(types: string[] | undefined): string | null {
   if (!types) return null;
   for (const t of types) if (TYPE_LABELS[t]) return TYPE_LABELS[t];
   return types[0] ? types[0].replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : null;
-}
-
-function normalizePhone(raw: string | undefined): string | null {
-  if (!raw) return null;
-  const digits = raw.replace(/\D/g, "");
-  if (digits.length < 10) return null;
-  if (digits.startsWith("55") && digits.length >= 12) return digits;
-  if (digits.length === 10 || digits.length === 11) return `55${digits}`;
-  return digits;
 }
 
 function extractAddressPart(place: RawPlace, useShortName: boolean, ...types: string[]): string | null {

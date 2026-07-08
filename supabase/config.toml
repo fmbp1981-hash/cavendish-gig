@@ -32,3 +32,9 @@ verify_jwt = true
 
 [functions.prospeccao-search]
 verify_jwt = true
+
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.prospeccao-agent]
+verify_jwt = true

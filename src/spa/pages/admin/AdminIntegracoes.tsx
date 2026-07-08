@@ -33,6 +33,7 @@ import {
   LogIn,
   Wifi,
   Search,
+  MessageCircle,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -590,6 +591,231 @@ function AIProviderSelector() {
   );
 }
 
+// WhatsApp Provider configurations (módulo Finder) — dois caminhos possíveis, nenhum configurado
+// ainda (sem credenciais). Estrutura pronta pra receber as credenciais quando disponíveis.
+interface WhatsAppFieldDef {
+  name: string;
+  label: string;
+  placeholder: string;
+  secret: boolean;
+}
+
+const whatsappProviders: Array<{
+  id: "evolution-api" | "whatsapp-official";
+  name: string;
+  description: string;
+  color: string;
+  fields: WhatsAppFieldDef[];
+  instructions: string[];
+}> = [
+  {
+    id: "evolution-api",
+    name: "Evolution API",
+    description: "Instância própria/terceirizada — mais rápida de configurar, não é canal oficial da Meta",
+    color: "bg-emerald-500",
+    fields: [
+      { name: "baseUrl", label: "URL Base da Instância", placeholder: "https://sua-evolution.exemplo.com", secret: false },
+      { name: "instanceName", label: "Nome da Instância", placeholder: "cavendish-gig", secret: false },
+      { name: "EVOLUTION_API_KEY", label: "API Key", placeholder: "sua-api-key", secret: true },
+      { name: "EVOLUTION_WEBHOOK_SECRET", label: "Segredo do Webhook (você define)", placeholder: "um-segredo-forte-qualquer", secret: true },
+    ],
+    instructions: [
+      "Suba ou contrate uma instância da Evolution API e crie uma instância do WhatsApp nela",
+      "Copie a URL base e o nome da instância",
+      "Copie a API Key da instância",
+      "Defina um segredo forte para EVOLUTION_WEBHOOK_SECRET (qualquer string) e configure o mesmo valor no painel da Evolution API como header x-webhook-secret ao apontar o webhook para " +
+        "{SUPABASE_URL}/functions/v1/whatsapp-webhook",
+    ],
+  },
+  {
+    id: "whatsapp-official",
+    name: "WhatsApp Cloud API (Meta oficial)",
+    description: "Canal oficial da Meta — exige app verificado no Meta for Developers",
+    color: "bg-blue-500",
+    fields: [
+      { name: "phoneNumberId", label: "Phone Number ID", placeholder: "1234567890", secret: false },
+      { name: "WHATSAPP_ACCESS_TOKEN", label: "Access Token", placeholder: "EAAG...", secret: true },
+      { name: "WHATSAPP_APP_SECRET", label: "App Secret", placeholder: "app secret do Meta for Developers", secret: true },
+      { name: "WHATSAPP_VERIFY_TOKEN", label: "Verify Token (você define)", placeholder: "um-token-qualquer", secret: true },
+    ],
+    instructions: [
+      "Crie um app em developers.facebook.com com o produto WhatsApp",
+      "Configure um número de telefone e copie o Phone Number ID",
+      "Gere um Access Token permanente (System User, recomendado para produção)",
+      "Copie o App Secret em Configurações do App → Básico",
+      "Defina um Verify Token (qualquer string) e configure o webhook em WhatsApp → Configuration apontando para " +
+        "{SUPABASE_URL}/functions/v1/whatsapp-webhook, usando o mesmo Verify Token",
+    ],
+  },
+];
+
+function WhatsAppProviderSelector() {
+  const queryClient = useQueryClient();
+  const [selectedProvider, setSelectedProvider] = useState<string>("");
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [showSecrets, setShowSecrets] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const { data: currentConfig, isLoading } = useQuery({
+    queryKey: ["whatsapp-provider-config"],
+    queryFn: async () => {
+      const { data } = await sb
+        .from("system_settings")
+        .select("key, value")
+        .in("key", ["whatsapp_provider", "whatsapp_configured"]);
+      const settings: Record<string, string> = {};
+      (data || []).forEach((row: any) => { settings[row.key] = row.value; });
+      return settings;
+    },
+  });
+
+  const selectedProviderConfig = whatsappProviders.find((p) => p.id === selectedProvider);
+  const isConfigured = currentConfig?.whatsapp_configured === "true";
+
+  const handleSave = async () => {
+    if (!selectedProviderConfig) {
+      toast.error("Selecione um provedor");
+      return;
+    }
+    const faltando = selectedProviderConfig.fields.filter((f) => !fieldValues[f.name]?.trim());
+    if (faltando.length > 0) {
+      toast.error(`Preencha: ${faltando.map((f) => f.label).join(", ")}`);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const config: Record<string, string> = { provider: selectedProviderConfig.id };
+      const secrets: Record<string, string> = {};
+      for (const field of selectedProviderConfig.fields) {
+        if (field.secret) secrets[field.name] = fieldValues[field.name].trim();
+        else config[field.name] = fieldValues[field.name].trim();
+      }
+
+      await supabase.functions.invoke("integrations", {
+        body: { action: "upsert", provider: "whatsapp-provider", scope: "system", enabled: true, config, secrets },
+      });
+
+      await sb.from("system_settings").upsert(
+        [
+          { key: "whatsapp_provider", value: selectedProviderConfig.id },
+          { key: "whatsapp_configured", value: "true" },
+        ],
+        { onConflict: "key" },
+      );
+
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-provider-config"] });
+      queryClient.invalidateQueries({ queryKey: ["integrations-vault", "system"] });
+      toast.success(`${selectedProviderConfig.name} configurado com sucesso!`);
+      setFieldValues({});
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      toast.error("Erro ao salvar configuração");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <MessageCircle className="h-5 w-5 text-emerald-500" />
+          WhatsApp (Módulo Finder)
+        </CardTitle>
+        <CardDescription>
+          Escolha qual canal de WhatsApp o Finder usa para conversar com os leads
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {isLoading ? null : isConfigured && currentConfig?.whatsapp_provider ? (
+          <Alert className="border-green-500/30 bg-green-500/10">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <AlertDescription className="text-green-700 dark:text-green-300">
+              Canal ativo: <strong>{whatsappProviders.find((p) => p.id === currentConfig.whatsapp_provider)?.name}</strong>.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert className="border-amber-500/30 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-amber-700 dark:text-amber-300">
+              <strong>Nenhum canal configurado ainda.</strong> O envio/recebimento de WhatsApp do Finder fica inativo
+              até um dos dois provedores abaixo ser preenchido.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="grid gap-3 md:grid-cols-2">
+          {whatsappProviders.map((provider) => (
+            <div
+              key={provider.id}
+              onClick={() => { setSelectedProvider(provider.id); setFieldValues({}); }}
+              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                selectedProvider === provider.id ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50"
+              }`}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`w-3 h-3 rounded-full ${provider.color}`} />
+                <span className="font-medium">{provider.name}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{provider.description}</p>
+            </div>
+          ))}
+        </div>
+
+        {selectedProviderConfig && (
+          <div className="space-y-4 pt-4 border-t">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Como configurar o {selectedProviderConfig.name}:</strong>
+                <ol className="list-decimal list-inside mt-2 space-y-1 text-sm">
+                  {selectedProviderConfig.instructions.map((instruction, idx) => (
+                    <li key={idx}>{instruction}</li>
+                  ))}
+                </ol>
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-3">
+              {selectedProviderConfig.fields.map((field) => (
+                <div key={field.name} className="space-y-2">
+                  <Label htmlFor={`wa-${field.name}`}>{field.label}</Label>
+                  <div className="relative">
+                    <Input
+                      id={`wa-${field.name}`}
+                      type={field.secret && !showSecrets ? "password" : "text"}
+                      placeholder={field.placeholder}
+                      value={fieldValues[field.name] || ""}
+                      onChange={(e) => setFieldValues({ ...fieldValues, [field.name]: e.target.value })}
+                      className={field.secret ? "pr-10" : undefined}
+                    />
+                    {field.secret && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => setShowSecrets(!showSecrets)}
+                      >
+                        {showSecrets ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              <Button onClick={handleSave} disabled={saving}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Salvar
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function AdminIntegracoes() {
   const [configuring, setConfiguring] = useState<IntegrationConfig | null>(null);
@@ -822,6 +1048,9 @@ export default function AdminIntegracoes() {
 
         {/* AI Provider Selection */}
         <AIProviderSelector />
+
+        {/* WhatsApp Provider Selection (Finder) */}
+        <WhatsAppProviderSelector />
 
         {/* Available Integrations */}
         <div className="space-y-4">
