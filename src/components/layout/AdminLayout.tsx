@@ -21,6 +21,7 @@ import {
   Library,
   Search,
   Kanban,
+  ClipboardList,
 } from "lucide-react";
 import {
   DropdownMenuItem,
@@ -31,7 +32,8 @@ const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard",       href: "/admin",                       dataTour: "admin-nav-dashboard" },
   { icon: Building2,       label: "Organizações",    href: "/admin/organizacoes",          dataTour: "admin-nav-organizacoes" },
   { icon: Users,           label: "Usuários",         href: "/admin/usuarios",              dataTour: "admin-nav-usuarios" },
-  { icon: Search,          label: "Finder — Leads",   href: "/admin/finder/leads",          dataTour: "admin-nav-finder-leads" },
+  { icon: Search,          label: "Finder — Busca",   href: "/admin/finder/busca",          dataTour: "admin-nav-finder-busca" },
+  { icon: ClipboardList,   label: "Finder — Leads",   href: "/admin/finder/leads",          dataTour: "admin-nav-finder-leads" },
   { icon: Kanban,          label: "Finder — Funil",   href: "/admin/finder/funil",          dataTour: "admin-nav-finder-funil" },
   { icon: FileText,        label: "Documentos",       href: "/admin/documentos",            dataTour: "admin-nav-documentos" },
   { icon: Database,        label: "Catálogo",         href: "/admin/catalogo",              dataTour: "admin-nav-catalogo" },

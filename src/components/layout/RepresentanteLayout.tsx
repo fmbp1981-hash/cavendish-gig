@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { BaseLayout, NavItem } from "./BaseLayout";
 import { Badge } from "@/components/ui/badge";
-import { Users, Kanban, Shield } from "lucide-react";
+import { Users, Kanban, Shield, Search } from "lucide-react";
 import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
-// Menu ainda cobre só as páginas que já existem (Leads, Funil) — Dashboard, Busca e Conversões
+// Menu ainda cobre só as páginas que já existem (Busca, Leads, Funil) — Dashboard e Conversões
 // entram conforme as fases seguintes do módulo Finder forem implementadas
 // (ver FINDER_MODULE_SPEC.md §1.2).
 const navItems: NavItem[] = [
+  { icon: Search, label: "Busca", href: "/representante/finder/busca", dataTour: "representante-nav-busca" },
   { icon: Users, label: "Meus Leads", href: "/representante/finder/leads", dataTour: "representante-nav-leads" },
   { icon: Kanban, label: "Funil", href: "/representante/finder/funil", dataTour: "representante-nav-funil" },
 ];

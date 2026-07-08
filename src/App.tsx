@@ -74,11 +74,13 @@ import AdminConsultores from "./spa/pages/admin/AdminConsultores";
 import AdminBiblioteca from "./spa/pages/admin/AdminBiblioteca";
 import AdminFinderLeads from "./spa/pages/admin/AdminFinderLeads";
 import AdminFinderFunil from "./spa/pages/admin/AdminFinderFunil";
+import AdminFinderBusca from "./spa/pages/admin/AdminFinderBusca";
 import ConsultorBiblioteca from "./spa/pages/consultor/ConsultorBiblioteca";
 
 // Representante Pages (módulo Finder)
 import RepresentanteFinderLeads from "./spa/pages/representante/RepresentanteFinderLeads";
 import RepresentanteFinderFunil from "./spa/pages/representante/RepresentanteFinderFunil";
+import RepresentanteFinderBusca from "./spa/pages/representante/RepresentanteFinderBusca";
 import Help from "./spa/pages/Help";
 import { installGlobalErrorHandlers } from "./utils/errorLogger";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -417,6 +419,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/finder/busca"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <ErrorBoundary><AdminFinderBusca /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Finder (prospecção) — representante */}
               <Route
@@ -432,6 +442,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["representante", "admin"]}>
                     <ErrorBoundary><RepresentanteFinderFunil /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/representante/finder/busca"
+                element={
+                  <ProtectedRoute requiredRoles={["representante", "admin"]}>
+                    <ErrorBoundary><RepresentanteFinderBusca /></ErrorBoundary>
                   </ProtectedRoute>
                 }
               />
