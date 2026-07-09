@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 import { useCreateAgentConfig, useUpdateAgentConfig } from "@/hooks/useProspeccaoAgentConfig";
 import { getCategoriaLabel } from "@/lib/prospeccao/categorias";
+import { KnowledgeBasePanel } from "./knowledge-base-panel";
 import type { ProspeccaoAgentConfig, ProspeccaoAiProvider, ProspeccaoCategoria } from "@/types/prospeccao";
 
 const AI_PROVIDERS: { value: ProspeccaoAiProvider; label: string }[] = [
@@ -28,6 +29,9 @@ const CAMPOS_PADRAO = {
   ai_provider: "gemini" as ProspeccaoAiProvider,
   temperatura: "0.7",
   max_iteracoes: "5",
+  usa_rag: false,
+  rag_top_k: "5",
+  rag_similarity_threshold: "0.75",
   ativo: true,
 };
 
@@ -44,6 +48,9 @@ export function AgentConfigForm({ categoria, config }: AgentConfigFormProps) {
         ai_provider: config.ai_provider,
         temperatura: String(config.temperatura),
         max_iteracoes: String(config.max_iteracoes),
+        usa_rag: config.usa_rag,
+        rag_top_k: String(config.rag_top_k),
+        rag_similarity_threshold: String(config.rag_similarity_threshold),
         ativo: config.ativo,
       });
     } else {
@@ -60,6 +67,9 @@ export function AgentConfigForm({ categoria, config }: AgentConfigFormProps) {
       ai_provider: form.ai_provider,
       temperatura: Number(form.temperatura) || 0,
       max_iteracoes: Number(form.max_iteracoes) || 1,
+      usa_rag: form.usa_rag,
+      rag_top_k: Number(form.rag_top_k) || 5,
+      rag_similarity_threshold: Number(form.rag_similarity_threshold) || 0.75,
       ativo: form.ativo,
     };
     if (config) {
@@ -127,12 +137,49 @@ export function AgentConfigForm({ categoria, config }: AgentConfigFormProps) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between rounded-lg border p-3">
-        <div>
-          <Label>Usar base de conhecimento (RAG)</Label>
-          <p className="text-xs text-muted-foreground">Requer Fase 10 — `pgvector` ainda não habilitado no projeto.</p>
+      <div className="space-y-3 rounded-lg border p-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Usar base de conhecimento (RAG)</Label>
+            <p className="text-xs text-muted-foreground">
+              O agente consulta os conteúdos abaixo antes de responder. Só funciona com Gemini ativo.
+            </p>
+          </div>
+          <Switch checked={form.usa_rag} onCheckedChange={(v) => setForm({ ...form, usa_rag: v })} />
         </div>
-        <Switch checked={false} disabled />
+
+        {form.usa_rag && (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Trechos por consulta (top K)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={form.rag_top_k}
+                  onChange={(e) => setForm({ ...form, rag_top_k: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Similaridade mínima</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={form.rag_similarity_threshold}
+                  onChange={(e) => setForm({ ...form, rag_similarity_threshold: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs text-muted-foreground">Base de conhecimento desta categoria</Label>
+              <KnowledgeBasePanel categoria={categoria} />
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex items-center justify-between rounded-lg border p-3">

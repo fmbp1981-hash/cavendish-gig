@@ -150,6 +150,17 @@ export interface ProspeccaoAgentConfig {
   updated_at: string;
 }
 
+/** Chunk da base de conhecimento do RAG (Fase 10, opcional) — `embedding` não é exposto aqui
+ * (vive só no banco como `vector(768)`, nunca precisa trafegar até o client). */
+export interface ProspeccaoAgentKnowledge {
+  id: string;
+  categoria: ProspeccaoCategoria;
+  titulo: string;
+  conteudo: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type ProspeccaoFollowupStatus =
   | "pendente"
   | "processando"

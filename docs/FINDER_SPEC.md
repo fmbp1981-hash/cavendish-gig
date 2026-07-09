@@ -1,4 +1,4 @@
-# Módulo Finder — SPEC (Fases 4-9, ✅ core completo)
+# Módulo Finder — SPEC (Fases 4-10, ✅ completo)
 
 > Adaptado da disciplina Epic-Workflow (`/spec → /break → /plan → /execute`) para a arquitetura
 > real deste repositório. **Nota de adaptação:** o template original da skill assume Next.js App
@@ -40,17 +40,11 @@ Sistema GIG.
 | 7 | Conversão lead → organização/parceiro (`prospeccao-converter-lead` + pré-registro vinculado a organização) | ✅ |
 | 8 | Dashboard admin (totais do mês, ranking por representante, funil agregado, reuniões próximas) + CRUD de metas | ✅ |
 | 9 | Configuração de agentes por categoria (`AdminFinderConfiguracoes.tsx`, 7 categorias) | ✅ |
+| 10 | RAG por categoria (opcional) — `pgvector`, embeddings Gemini, base de conhecimento por categoria | ✅ |
 
-**Core do módulo Finder completo** (Fases 1-9). Revisão end-to-end feita ao fechar a Fase 9 — ver
-seção própria abaixo. Resta só a Fase 10 (RAG), opcional e fora deste plano por padrão.
-
-## Fase restante (opcional)
-
-### Fase 10 — RAG (opcional, fora deste plano)
-Só entra se o time decidir usar base de conhecimento por agente — requer `pgvector`, ainda não
-habilitado no projeto. `usa_rag` já existe no schema de `prospeccao_agent_configs` (Fase 1) e a UI
-da Fase 9 já mostra o toggle (desabilitado, com essa explicação) — nenhum trabalho extra de UI
-necessário quando essa fase for priorizada, só a Edge Function/embedding pipeline em si.
+**Módulo Finder completo** (Fases 1-10, incluindo a opcional). Revisão end-to-end feita ao fechar
+a Fase 9, ainda válida — RAG é aditivo (só ativa quando `usa_rag=true`, sem mudar o comportamento
+padrão do agente).
 
 ## Revisão end-to-end do módulo (ao fechar a Fase 9)
 
@@ -116,3 +110,9 @@ que não há como validar isso sem as credenciais de produção configuradas.
   como proxy de "quando converteu" e `contatados` usa `status <> 'novo'` como proxy de "já
   contatado" — limitações conhecidas, não novas migrations. `responderam` reaproveita o mesmo
   sinal de `role='user'` em `prospeccao_conversas` já usado pelo `ai_score` (Fase 5).
+- RAG (Fase 10, já implementado): `pgvector` habilitado via migration (`CREATE EXTENSION IF NOT
+  EXISTS vector;`), sem precisar de ação manual. Embeddings via Gemini `text-embedding-004` (768
+  dimensões) — RAG só funciona com Gemini ativo, mesma limitação já existente pro function-calling
+  do agente (Fase 4), não uma restrição nova. Busca por similaridade sem índice `ivfflat`/`hnsw` de
+  propósito (volume esperado de chunks é baixo); falha na busca RAG degrada silenciosamente em vez
+  de bloquear a resposta do agente — é um complemento, não uma dependência crítica.

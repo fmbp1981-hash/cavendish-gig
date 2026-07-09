@@ -50,3 +50,6 @@ verify_jwt = true
 
 [functions.prospeccao-converter-lead]
 verify_jwt = true
+
+[functions.prospeccao-embed-knowledge]
+verify_jwt = true

@@ -1,9 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { buildCorsHeaders } from "../_shared/cors.ts";
 import { createUserClient, createServiceClient } from "../_shared/supabase.ts";
-import { getAIConfig } from "../_shared/ai-provider.ts";
+import { getAIConfig, type AIProviderConfig } from "../_shared/ai-provider.ts";
 import { getWhatsAppConfig, sendWhatsAppMessage } from "../_shared/whatsapp-provider.ts";
 import { PROSPECCAO_TOOLS, executarTool } from "../_shared/prospeccao-tools.ts";
+import { gerarEmbedding } from "../_shared/gemini-embeddings.ts";
 import { logEdgeFunctionError } from "../_shared/logger.ts";
 
 // Orquestrador do agente de IA do Finder (blueprint §8, Opção B: dedicado, não o ai-generate
@@ -57,6 +58,35 @@ async function autenticar(req: Request, service: any): Promise<boolean> {
 }
 
 const MAX_ITERACOES_PADRAO = 5;
+
+/** RAG (Fase 10, opcional) — só quando `agentConfig.usa_rag` e o provider ativo é Gemini (mesma
+ * limitação já existente pro function-calling: único provider testável hoje). Falha degradando
+ * (loga e retorna null) em vez de bloquear a resposta do agente — a base de conhecimento é um
+ * complemento, não uma dependência crítica do fluxo de conversa. */
+async function buscarContextoRAG(
+  service: any,
+  aiConfig: AIProviderConfig,
+  agentConfig: Record<string, any>,
+  categoria: string,
+  ultimaMensagemUsuario: string | null,
+): Promise<string | null> {
+  if (!agentConfig.usa_rag || !ultimaMensagemUsuario) return null;
+  try {
+    const embedding = await gerarEmbedding(aiConfig.apiKey, aiConfig.baseUrl, ultimaMensagemUsuario);
+    const { data, error } = await service.rpc("buscar_conhecimento_similar", {
+      p_categoria: categoria,
+      p_embedding: embedding,
+      p_top_k: agentConfig.rag_top_k || 5,
+      p_threshold: Number(agentConfig.rag_similarity_threshold) || 0.75,
+    });
+    if (error || !data || data.length === 0) return null;
+    const trechos = data.map((d: any) => `- ${d.titulo}: ${d.conteudo}`).join("\n");
+    return `Contexto da base de conhecimento (use se relevante para responder):\n${trechos}`;
+  } catch (err) {
+    console.error("[prospeccao-agent] falha ao buscar contexto RAG (não bloqueia a resposta):", err);
+    return null;
+  }
+}
 
 async function chamarGeminiComTools(
   apiKey: string,
@@ -203,11 +233,15 @@ serve(async (req) => {
     let transferido = false;
 
     if (aiConfig.provider === "gemini") {
+      const ultimaMensagemUsuario = [...(historicoDb ?? [])].reverse().find((m: any) => m.role === "user")?.conteudo ?? null;
+      const contextoRAG = await buscarContextoRAG(service, aiConfig, agentConfig, lead.categoria, ultimaMensagemUsuario);
+      const systemPromptFinal = contextoRAG ? `${agentConfig.system_prompt}\n\n${contextoRAG}` : agentConfig.system_prompt;
+
       const resultado = await chamarGeminiComTools(
         aiConfig.apiKey,
         aiConfig.model,
         aiConfig.baseUrl,
-        agentConfig.system_prompt,
+        systemPromptFinal,
         historico,
         Number(agentConfig.temperatura) || 0.7,
         agentConfig.max_iteracoes || MAX_ITERACOES_PADRAO,
