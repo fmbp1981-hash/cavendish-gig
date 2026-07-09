@@ -128,3 +128,20 @@ que não há como validar isso sem as credenciais de produção configuradas.
   real alcançável depende de quantas combinações a busca gerar, limitado a
   `MAX_COMBINACOES = 20` por chamada. `prospeccao_buscas.parametros` (jsonb, nova coluna) guarda o
   corpo original da busca pra "Usar novamente"/"Reprocessar" funcionarem sem perder informação.
+- Etapas do funil (pós-Fase 10, a pedido do usuário, espelhando o Kanban Board do
+  prospect-pulse-54): as 7 etapas antigas (Novo/Contatado/Qualificando/Proposta Enviada/
+  Negociando/Fechado/Perdido) foram substituídas por Novo Lead, Contato Inicial, Qualificação,
+  Transferido para Consultor, Fechado Ganho, Fechado Perdido, Follow-up (ordem literal pedida —
+  "Follow-up" é a última coluna, não a penúltima). Migration faz DELETE+INSERT por funil padrão
+  em vez de remapear 1:1 (a estrutura mudou — "Transferido para Consultor" e "Follow-up" não
+  existiam antes); seguro porque `funil_etapa_id` é `ON DELETE SET NULL` em `prospeccao_leads` e
+  `prospeccao_campanhas`. Fluxo confirmado: toda busca já cria os leads direto na primeira etapa
+  ("Novo Lead") do funil padrão da categoria — isso já era o comportamento desde a Fase 3, só
+  renomeou a etapa.
+- Página "Clientes Convertidos" (pós-Fase 10, a pedido do usuário): nova tela em
+  `/admin/clientes-convertidos`, dentro do grupo "Clientes" do menu (ao lado de Organizações e
+  Usuários) — lista só os leads do Finder que fecharam e viraram organização de verdade
+  (`prospeccao_leads.status='convertido' AND organizacao_id IS NOT NULL`), diferente de
+  `/admin/organizacoes` que lista todas as organizações (inclusive as criadas manualmente, sem
+  origem de prospecção). Reaproveita o mesmo proxy `updated_at` já usado no dashboard (Fase 8)
+  como "quando converteu" — não existe `convertido_em` dedicado no schema.
