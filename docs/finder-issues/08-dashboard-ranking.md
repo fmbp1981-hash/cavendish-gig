@@ -1,5 +1,15 @@
 # Fase 8 — Dashboard e ranking por representante
 
+> ✅ **Concluído.** O mockup referenciado abaixo (`FINDER_MODULE_SPEC.md §4.1`) nunca existiu no
+> repositório — é uma referência morta (confirmado por busca no histórico do git). A especificação
+> usada foi só a lista de bullets desta issue. Duas limitações assumidas conscientemente em vez de
+> criar migration/RPC nova: `convertidos`/`taxa de conversão` usam `updated_at` como proxy de
+> "quando converteu" (não existe `convertido_em`); `contatados` usa `status <> 'novo'` como proxy
+> de "já foi contatado" (não existe timestamp de primeiro contato). `responderam` reaproveita o
+> mesmo sinal já usado pela fórmula de `ai_score` (Fase 5): pelo menos uma mensagem `role='user'`
+> em `prospeccao_conversas` no mês. Todas as agregações rodam no client (sem VIEW/RPC dedicada) —
+> decisão de performance a revisitar se o volume de leads justificar.
+
 ## Functional Specification
 
 ### Behavior: dashboard-finder-admin

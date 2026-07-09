@@ -72,6 +72,7 @@ import AdminLogs from "./spa/pages/admin/AdminLogs";
 import AdminDocumentos from "./spa/pages/admin/AdminDocumentos";
 import AdminConsultores from "./spa/pages/admin/AdminConsultores";
 import AdminBiblioteca from "./spa/pages/admin/AdminBiblioteca";
+import AdminFinderDashboard from "./spa/pages/admin/AdminFinderDashboard";
 import AdminFinderLeads from "./spa/pages/admin/AdminFinderLeads";
 import AdminFinderFunil from "./spa/pages/admin/AdminFinderFunil";
 import AdminFinderBusca from "./spa/pages/admin/AdminFinderBusca";
@@ -405,6 +406,14 @@ const App = () => (
               />
 
               {/* Finder (prospecção) — admin */}
+              <Route
+                path="/admin/finder"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <ErrorBoundary><AdminFinderDashboard /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/admin/finder/leads"
                 element={

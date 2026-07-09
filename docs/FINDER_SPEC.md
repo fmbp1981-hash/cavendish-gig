@@ -38,16 +38,13 @@ Sistema GIG.
 | 5 | Follow-up automático (`pg_cron`), recálculo de `ai_score` (SQL puro), campanhas em massa | ✅ |
 | 6 | Agendamento automático de fechamento (`freebusy` + evento + `reunioes` + notificação lead/admin) | ✅ |
 | 7 | Conversão lead → organização/parceiro (`prospeccao-converter-lead` + pré-registro vinculado a organização) | ✅ |
+| 8 | Dashboard admin (totais do mês, ranking por representante, funil agregado, reuniões próximas) + CRUD de metas | ✅ |
 
 ## Fases restantes — behaviors por fase
 
 Cada fase abaixo tem um arquivo de issue em `docs/finder-issues/NN-nome.md` com a especificação
 completa (Functional Spec, Files to Create/Modify, Notes, Tasks). Ordem de execução é sequencial
 — uma fase só começa depois do `/plan` da fase anterior fechado com checklist verde.
-
-### Fase 8 — Dashboard e ranking
-- **dashboard-finder-admin**: `AdminFinderDashboard.tsx` — funil agregado, ranking por representante, reuniões próximas
-- **crud-metas-representante**: tela simples de definição de metas mensais
 
 ### Fase 9 — Configuração de agentes por categoria
 - **crud-agent-configs**: `AdminFinderConfiguracoes.tsx` — prompt de sistema, provider, temperatura, RAG toggle por categoria
@@ -82,3 +79,9 @@ habilitado no projeto.
   com uma coluna `organizacao_id` nullable em vez de criar um sistema de convite por email novo; a
   pessoa ainda precisa se cadastrar sozinha com o mesmo email (é avisada disso por WhatsApp/email).
   Ver `supabase/migrations/20260708150000_finder_pre_registration_org_link.sql`.
+- Dashboard do Finder (Fase 8, já implementado): `FINDER_MODULE_SPEC.md §4.1` (mockup citado na
+  issue original) nunca existiu no repositório — spec usada foi só a lista de bullets da própria
+  issue. Agregações client-side (sem VIEW/RPC dedicada); `convertidos`/`taxa` usam `updated_at`
+  como proxy de "quando converteu" e `contatados` usa `status <> 'novo'` como proxy de "já
+  contatado" — limitações conhecidas, não novas migrations. `responderam` reaproveita o mesmo
+  sinal de `role='user'` em `prospeccao_conversas` já usado pelo `ai_score` (Fase 5).
