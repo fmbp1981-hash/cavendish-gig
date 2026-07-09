@@ -1,4 +1,4 @@
-# Módulo Finder — SPEC (Fases 4-9)
+# Módulo Finder — SPEC (Fases 4-9, ✅ core completo)
 
 > Adaptado da disciplina Epic-Workflow (`/spec → /break → /plan → /execute`) para a arquitetura
 > real deste repositório. **Nota de adaptação:** o template original da skill assume Next.js App
@@ -39,19 +39,50 @@ Sistema GIG.
 | 6 | Agendamento automático de fechamento (`freebusy` + evento + `reunioes` + notificação lead/admin) | ✅ |
 | 7 | Conversão lead → organização/parceiro (`prospeccao-converter-lead` + pré-registro vinculado a organização) | ✅ |
 | 8 | Dashboard admin (totais do mês, ranking por representante, funil agregado, reuniões próximas) + CRUD de metas | ✅ |
+| 9 | Configuração de agentes por categoria (`AdminFinderConfiguracoes.tsx`, 7 categorias) | ✅ |
 
-## Fases restantes — behaviors por fase
+**Core do módulo Finder completo** (Fases 1-9). Revisão end-to-end feita ao fechar a Fase 9 — ver
+seção própria abaixo. Resta só a Fase 10 (RAG), opcional e fora deste plano por padrão.
 
-Cada fase abaixo tem um arquivo de issue em `docs/finder-issues/NN-nome.md` com a especificação
-completa (Functional Spec, Files to Create/Modify, Notes, Tasks). Ordem de execução é sequencial
-— uma fase só começa depois do `/plan` da fase anterior fechado com checklist verde.
-
-### Fase 9 — Configuração de agentes por categoria
-- **crud-agent-configs**: `AdminFinderConfiguracoes.tsx` — prompt de sistema, provider, temperatura, RAG toggle por categoria
+## Fase restante (opcional)
 
 ### Fase 10 — RAG (opcional, fora deste plano)
 Só entra se o time decidir usar base de conhecimento por agente — requer `pgvector`, ainda não
-habilitado no projeto.
+habilitado no projeto. `usa_rag` já existe no schema de `prospeccao_agent_configs` (Fase 1) e a UI
+da Fase 9 já mostra o toggle (desabilitado, com essa explicação) — nenhum trabalho extra de UI
+necessário quando essa fase for priorizada, só a Edge Function/embedding pipeline em si.
+
+## Revisão end-to-end do módulo (ao fechar a Fase 9)
+
+Conferência de que a cadeia completa está de fato conectada, não só que cada fase compila
+isoladamente:
+
+- **Busca → Leads**: `prospeccao-search` grava em `prospeccao_leads` com `funil_etapa_id` da
+  primeira etapa do funil padrão da categoria (seed da Fase 2) — leads buscados aparecem direto no
+  Kanban, sem etapa manual.
+- **Kanban → Agente**: mover um lead no funil (`useMoverLeadEtapa`) e acionar o agente
+  (`ConversaPanel`) atualizam a mesma linha de `prospeccao_leads` que a busca criou — sem tabela
+  paralela.
+- **Agente → Agendamento**: `transferir_para_humano` (tool do agente) não cria a reunião sozinho —
+  o representante aciona `AgendarFechamentoButton` manualmente no drawer, que já reflete
+  `reuniao_fechamento_id` tanto no card (`CalendarCheck`) quanto no dashboard (reuniões próximas).
+- **Agendamento → Conversão**: o Gate (`reunioes.status = 'realizada'`) só pode ser satisfeito pelo
+  botão adicionado na Fase 7 dentro do próprio `ConverterLeadDialog` — confirmado que não existe
+  nenhum outro caminho no sistema que marque isso, então o fluxo não fica travado sem UI.
+- **Conversão → Dashboard**: `converter_organizacao`/`converter_parceiro` fazem `status =
+  'convertido'`, que é exatamente o filtro usado pelos totais/ranking do dashboard (Fase 8) — os
+  números batem sem transformação adicional.
+- **Config de agentes → Agente**: `prospeccao-agent` lê `prospeccao_agent_configs` por
+  `categoria + ativo=true` a cada chamada (não cacheia) — mudar o prompt/provider na tela da Fase 9
+  tem efeito imediato na próxima mensagem, sem precisar reiniciar nada.
+- **Rotas e menu**: todas as 6 páginas admin do Finder (`/admin/finder`, `/busca`, `/leads`,
+  `/funil`, `/campanhas`, `/configuracoes`) têm rota em `App.tsx` e item correspondente em
+  `AdminLayout.tsx`; representante tem as 4 que fazem sentido pro papel dele (`/busca`, `/leads`,
+  `/funil`, `/campanhas` — sem dashboard/configurações, que são admin-only por design).
+
+Nenhuma lacuna de integração encontrada nessa revisão — os pontos que precisavam de teste manual
+real (credenciais de WhatsApp/Google Places/Calendar) continuam listados no test plan do PR, já
+que não há como validar isso sem as credenciais de produção configuradas.
 
 ## Decisões de produto já fechadas (não reabrir sem motivo novo)
 

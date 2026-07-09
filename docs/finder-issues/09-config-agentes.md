@@ -1,5 +1,12 @@
 # Fase 9 — Configuração de agentes de IA por categoria
 
+> ✅ **Concluído.** `usa_rag` fica sempre desabilitado na UI (switch `disabled`, com texto
+> explicando que requer a Fase 10/`pgvector`, ainda não habilitado no projeto — confirmado por
+> busca em `supabase/migrations`, nenhuma extensão `vector` foi criada). Uma categoria pode ter
+> mais de uma linha em `prospeccao_agent_configs` (só `ativo=true` é único por categoria via
+> índice parcial) — a tela sempre edita a config ativa da categoria, ou a mais recente se nenhuma
+> estiver ativa, ou oferece criar uma nova se a categoria ainda não tem nenhuma.
+
 ## Functional Specification
 
 ### Behavior: crud-agent-configs

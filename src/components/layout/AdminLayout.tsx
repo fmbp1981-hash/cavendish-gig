@@ -24,6 +24,7 @@ import {
   ClipboardList,
   Megaphone,
   Gauge,
+  Bot,
 } from "lucide-react";
 import {
   DropdownMenuItem,
@@ -39,6 +40,7 @@ const navItems: NavItem[] = [
   { icon: ClipboardList,   label: "Finder — Leads",   href: "/admin/finder/leads",          dataTour: "admin-nav-finder-leads" },
   { icon: Kanban,          label: "Finder — Funil",   href: "/admin/finder/funil",          dataTour: "admin-nav-finder-funil" },
   { icon: Megaphone,       label: "Finder — Campanhas", href: "/admin/finder/campanhas",    dataTour: "admin-nav-finder-campanhas" },
+  { icon: Bot,             label: "Finder — Agentes", href: "/admin/finder/configuracoes",  dataTour: "admin-nav-finder-configuracoes" },
   { icon: FileText,        label: "Documentos",       href: "/admin/documentos",            dataTour: "admin-nav-documentos" },
   { icon: Database,        label: "Catálogo",         href: "/admin/catalogo",              dataTour: "admin-nav-catalogo" },
   { icon: FileText,        label: "Templates",        href: "/admin/templates",             dataTour: "admin-nav-templates" },

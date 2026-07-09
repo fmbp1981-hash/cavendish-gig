@@ -77,6 +77,7 @@ import AdminFinderLeads from "./spa/pages/admin/AdminFinderLeads";
 import AdminFinderFunil from "./spa/pages/admin/AdminFinderFunil";
 import AdminFinderBusca from "./spa/pages/admin/AdminFinderBusca";
 import AdminFinderCampanhas from "./spa/pages/admin/AdminFinderCampanhas";
+import AdminFinderConfiguracoes from "./spa/pages/admin/AdminFinderConfiguracoes";
 import ConsultorBiblioteca from "./spa/pages/consultor/ConsultorBiblioteca";
 
 // Representante Pages (módulo Finder)
@@ -443,6 +444,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
                     <ErrorBoundary><AdminFinderCampanhas /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/finder/configuracoes"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <ErrorBoundary><AdminFinderConfiguracoes /></ErrorBoundary>
                   </ProtectedRoute>
                 }
               />
