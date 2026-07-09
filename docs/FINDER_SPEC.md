@@ -37,16 +37,13 @@ Sistema GIG.
 | 4 | WhatsApp dual-provider (Evolution API + Cloud API oficial, sem credenciais ainda) + `prospeccao-agent` (function-calling, só Gemini) + `ConversaPanel` | ✅ |
 | 5 | Follow-up automático (`pg_cron`), recálculo de `ai_score` (SQL puro), campanhas em massa | ✅ |
 | 6 | Agendamento automático de fechamento (`freebusy` + evento + `reunioes` + notificação lead/admin) | ✅ |
+| 7 | Conversão lead → organização/parceiro (`prospeccao-converter-lead` + pré-registro vinculado a organização) | ✅ |
 
 ## Fases restantes — behaviors por fase
 
 Cada fase abaixo tem um arquivo de issue em `docs/finder-issues/NN-nome.md` com a especificação
 completa (Functional Spec, Files to Create/Modify, Notes, Tasks). Ordem de execução é sequencial
 — uma fase só começa depois do `/plan` da fase anterior fechado com checklist verde.
-
-### Fase 7 — Conversão lead → organização/parceiro
-- **converter-lead-organizacao**: cria `organizacoes` + `organization_members` (role `cliente`), só depois da reunião confirmada (modelo Gate — decisão já tomada)
-- **converter-lead-parceiro**: cria usuário `role = 'parceiro'` para a categoria `parceiro_indicador`
 
 ### Fase 8 — Dashboard e ranking
 - **dashboard-finder-admin**: `AdminFinderDashboard.tsx` — funil agregado, ranking por representante, reuniões próximas
@@ -63,7 +60,8 @@ habilitado no projeto.
 
 - Acesso ao Finder: só `admin` + `representante`.
 - Calendário do Alberto: Opção A (compartilhamento direto do Google Calendar pessoal).
-- Reunião de fechamento é **Gate**: só converte em organização depois da reunião confirmada.
+- Reunião de fechamento é **Gate**: só converte em organização depois da reunião confirmada
+  (`reunioes.status = 'realizada'` — Fase 7, já implementado).
 - Parâmetros de agenda: 09h-18h dias úteis, 30 min, antecedência mínima 24h, busca em 5 dias úteis.
 - Sem slot disponível → notifica admin.
 - Firecrawl descartado; enriquecimento via `url_context` do Gemini (Fase 3, já implementado).
@@ -78,3 +76,9 @@ habilitado no projeto.
   fica em `integrations.config.alberto_calendar_id` da própria integração `google-calendar`
   (Admin → Integrações), reaproveitando o vault que já existe em vez de criar uma segunda fonte de
   configuração. Convenção: esse ID é o email do calendário pessoal do Alberto.
+- Convite de contato na conversão (Fase 7, já implementado): não existe (nem existia antes desta
+  fase) nenhum mecanismo de criação/convite de usuário server-side no projeto — só
+  `user_pre_registrations` (email → role, aplicado no signup via `handle_new_user()`). Estendido
+  com uma coluna `organizacao_id` nullable em vez de criar um sistema de convite por email novo; a
+  pessoa ainda precisa se cadastrar sozinha com o mesmo email (é avisada disso por WhatsApp/email).
+  Ver `supabase/migrations/20260708150000_finder_pre_registration_org_link.sql`.

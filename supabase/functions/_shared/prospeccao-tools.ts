@@ -1,7 +1,9 @@
 // Ferramentas (function-calling) do agente de IA do Finder — ver
 // CAVENDISH_PROSPECCAO_BLUEPRINT.md §8.1. `converter_lead_organizacao`/`converter_lead_parceiro`
-// ficam para a Fase 7 (não implementadas ainda) — de propósito não declaradas aqui ainda, pra não
-// oferecer ao modelo uma tool que não faz nada de verdade.
+// (Fase 7) reaproveitam a mesma lógica de negócio usada pela conversão disparada por humano no
+// drawer do lead — ver `_shared/prospeccao-conversao.ts`.
+
+import { converterLeadOrganizacao, converterLeadParceiro } from "./prospeccao-conversao.ts";
 
 export interface ToolDef {
   name: string;
@@ -67,6 +69,34 @@ export const PROSPECCAO_TOOLS: ToolDef[] = [
         mensagem: { type: "string", description: "Mensagem a enviar no follow-up." },
       },
       required: ["horas"],
+    },
+  },
+  {
+    name: "converter_lead_organizacao",
+    description:
+      "Converte o lead em uma organização cliente real do sistema, criando o acesso do contato. Só funciona se a reunião de fechamento já tiver sido marcada como realizada — se não tiver, a ferramenta retorna erro explicando isso, não falha silenciosamente.",
+    parameters: {
+      type: "object",
+      properties: {
+        nome_organizacao: { type: "string", description: "Nome da organização (padrão: nome do lead, se omitido)." },
+        cnpj: { type: "string", description: "CNPJ da organização, se souber." },
+        contato_nome: { type: "string", description: "Nome da pessoa de contato." },
+        contato_email: { type: "string", description: "Email da pessoa de contato, usado para criar o acesso (padrão: email do lead, se omitido)." },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "converter_lead_parceiro",
+    description:
+      "Converte o lead (categoria parceiro_indicador) em um usuário com acesso de parceiro. Não se aplica a outras categorias.",
+    parameters: {
+      type: "object",
+      properties: {
+        contato_nome: { type: "string", description: "Nome da pessoa de contato." },
+        contato_email: { type: "string", description: "Email da pessoa de contato, usado para criar o acesso (padrão: email do lead, se omitido)." },
+      },
+      required: [],
     },
   },
 ];
@@ -145,6 +175,26 @@ export async function executarTool(
       if (error) return { success: false, error: error.message };
       await service.from("prospeccao_leads").update({ proximo_followup_em: enviarEm }).eq("id", lead.id);
       return { success: true };
+    }
+
+    case "converter_lead_organizacao": {
+      const resultado = await converterLeadOrganizacao(service, lead, {
+        nomeOrganizacao: typeof args.nome_organizacao === "string" ? args.nome_organizacao : undefined,
+        cnpj: typeof args.cnpj === "string" ? args.cnpj : undefined,
+        contatoNome: typeof args.contato_nome === "string" ? args.contato_nome : undefined,
+        contatoEmail: typeof args.contato_email === "string" ? args.contato_email : undefined,
+      }, null);
+      if (resultado.success) lead.status = "convertido";
+      return resultado;
+    }
+
+    case "converter_lead_parceiro": {
+      const resultado = await converterLeadParceiro(service, lead, {
+        contatoNome: typeof args.contato_nome === "string" ? args.contato_nome : undefined,
+        contatoEmail: typeof args.contato_email === "string" ? args.contato_email : undefined,
+      }, null);
+      if (resultado.success) lead.status = "convertido";
+      return resultado;
     }
 
     default:

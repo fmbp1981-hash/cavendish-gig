@@ -1,5 +1,26 @@
 # Fase 7 — Conversão lead → organização/parceiro
 
+> ✅ **Concluído**, com um achado importante da investigação prévia (pedida explicitamente nesta
+> issue): **não existe no projeto nenhum mecanismo de convite/criação de usuário server-side**
+> (sem `auth.admin.createUser`, sem email de convite). O único mecanismo é `user_pre_registrations`
+> (email → role, aplicado no signup via `handle_new_user()`) — nunca vinculava a uma organização.
+> Preenchida essa lacuna mínima com uma coluna `organizacao_id` nullable + trigger atualizado
+> (migration `20260708150000_finder_pre_registration_org_link.sql`), em vez de inventar um sistema
+> de convite por email novo. A pessoa ainda precisa se cadastrar sozinha (fluxo público de signup
+> já existente) usando o mesmo email — é notificada disso por WhatsApp/email.
+>
+> Outro desvio: `organizacoes` só aceita `INSERT` de admin via RLS ("Admins can manage
+> organizations"), então um representante convertendo o próprio lead não conseguiria criar a
+> organização direto do client. A lógica de conversão (criação de organização + pré-registro) roda
+> numa Edge Function nova (`prospeccao-converter-lead`, service role) em vez de hooks com
+> `supabase.from()` direto como a issue original previa — com checagem de admin/representante+
+> ownership feita na própria function antes de qualquer escrita. A lógica de negócio em si vive em
+> `_shared/prospeccao-conversao.ts`, compartilhada entre essa function e as tools do agente.
+>
+> A confirmação de "reunião realizada" (precondition do Gate) também não tinha nenhuma UI em lugar
+> nenhum do sistema (nem para reuniões fora do Finder) — adicionado um botão simples
+> "Confirmar que a reunião foi realizada" dentro do próprio diálogo de conversão.
+
 A ponte real entre o funil de vendas e o produto. Depende da Fase 6 (reunião confirmada, modelo
 Gate) para o caminho `cliente`; a categoria `parceiro_indicador` não depende de reunião.
 

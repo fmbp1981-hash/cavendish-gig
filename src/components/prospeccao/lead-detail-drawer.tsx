@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, ArrowRightCircle } from "lucide-react";
 import { useUpdateProspeccaoLead, useDeleteProspeccaoLead } from "@/hooks/useProspeccaoLeads";
 import { CategoryBadge } from "./category-badge";
 import { ConversaPanel } from "./conversa-panel";
 import { AgendarFechamentoButton } from "./agendar-fechamento-button";
+import { ConverterLeadDialog } from "./converter-lead-dialog";
 import type { ProspeccaoLead, ProspeccaoStatus } from "@/types/prospeccao";
 
 const STATUS_OPTIONS: { value: ProspeccaoStatus; label: string }[] = [
@@ -34,6 +35,7 @@ export function LeadDetailDrawer({ lead, onClose, podeExcluir }: LeadDetailDrawe
   const atualizarLead = useUpdateProspeccaoLead();
   const excluirLead = useDeleteProspeccaoLead();
   const [form, setForm] = useState({ telefone: "", email: "", cidade: "", estado: "", observacoes: "", status: "novo" as ProspeccaoStatus });
+  const [converterAberto, setConverterAberto] = useState(false);
 
   useEffect(() => {
     if (lead) {
@@ -146,6 +148,15 @@ export function LeadDetailDrawer({ lead, onClose, podeExcluir }: LeadDetailDrawe
           <ConversaPanel lead={lead} />
 
           <AgendarFechamentoButton lead={lead} />
+
+          {lead.status !== "convertido" && lead.status !== "perdido" && (
+            <Button variant="outline" size="sm" onClick={() => setConverterAberto(true)}>
+              <ArrowRightCircle className="h-4 w-4 mr-2" />
+              Converter
+            </Button>
+          )}
+
+          <ConverterLeadDialog lead={lead} open={converterAberto} onOpenChange={setConverterAberto} />
 
           <div className="flex items-center justify-between pt-2">
             {podeExcluir ? (

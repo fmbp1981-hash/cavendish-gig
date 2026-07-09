@@ -47,3 +47,6 @@ verify_jwt = true
 
 [functions.prospeccao-agendar-fechamento]
 verify_jwt = true
+
+[functions.prospeccao-converter-lead]
+verify_jwt = true
