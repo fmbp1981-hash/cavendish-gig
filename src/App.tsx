@@ -61,7 +61,7 @@ import ParceiroConfiguracoes from "./spa/pages/parceiro/ParceiroConfiguracoes";
 import AdminDashboard from "./spa/pages/admin/AdminDashboard";
 import AdminUsuarios from "./spa/pages/admin/AdminUsuarios";
 import AdminOrganizacoes from "./spa/pages/admin/AdminOrganizacoes";
-import AdminClientesConvertidos from "./spa/pages/admin/AdminClientesConvertidos";
+import AdminClientes from "./spa/pages/admin/AdminClientes";
 import AdminCatalogo from "./spa/pages/admin/AdminCatalogo";
 import AdminConfiguracoes from "./spa/pages/admin/AdminConfiguracoes";
 import AdminIntegracoes from "./spa/pages/admin/AdminIntegracoes";
@@ -319,10 +319,10 @@ const App = () => (
                 }
               />
               <Route
-                path="/admin/clientes-convertidos"
+                path="/admin/clientes"
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
-                    <AdminClientesConvertidos />
+                    <AdminClientes />
                   </ProtectedRoute>
                 }
               />

@@ -45,7 +45,7 @@ const navItems: NavEntry[] = [
     items: [
       { icon: Building2, label: "Organizações", href: "/admin/organizacoes", dataTour: "admin-nav-organizacoes" },
       { icon: Users,     label: "Usuários",     href: "/admin/usuarios",     dataTour: "admin-nav-usuarios" },
-      { icon: UserCheck, label: "Clientes Convertidos", href: "/admin/clientes-convertidos", dataTour: "admin-nav-clientes-convertidos" },
+      { icon: UserCheck, label: "Todos os Clientes", href: "/admin/clientes", dataTour: "admin-nav-clientes" },
     ],
   },
   {

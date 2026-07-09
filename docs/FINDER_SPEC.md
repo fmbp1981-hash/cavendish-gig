@@ -138,10 +138,13 @@ que não há como validar isso sem as credenciais de produção configuradas.
   `prospeccao_campanhas`. Fluxo confirmado: toda busca já cria os leads direto na primeira etapa
   ("Novo Lead") do funil padrão da categoria — isso já era o comportamento desde a Fase 3, só
   renomeou a etapa.
-- Página "Clientes Convertidos" (pós-Fase 10, a pedido do usuário): nova tela em
-  `/admin/clientes-convertidos`, dentro do grupo "Clientes" do menu (ao lado de Organizações e
-  Usuários) — lista só os leads do Finder que fecharam e viraram organização de verdade
-  (`prospeccao_leads.status='convertido' AND organizacao_id IS NOT NULL`), diferente de
-  `/admin/organizacoes` que lista todas as organizações (inclusive as criadas manualmente, sem
-  origem de prospecção). Reaproveita o mesmo proxy `updated_at` já usado no dashboard (Fase 8)
-  como "quando converteu" — não existe `convertido_em` dedicado no schema.
+- Página "Todos os Clientes" (pós-Fase 10, a pedido do usuário — corrigida depois de uma primeira
+  versão que só listava conversões do Finder): `/admin/clientes`, dentro do grupo "Clientes" do
+  menu, lista **todas** as organizações do sistema com uma coluna "Origem". "Finder (Prospecção)"
+  é determinável com segurança (existe um `prospeccao_leads.organizacao_id` real apontando pra
+  essa organização, só criado por `converter_lead_organizacao`); qualquer organização sem esse
+  vínculo cai em "Cadastro Direto" — cobre tanto criação manual pelo admin
+  (`AdminOrganizacoes.tsx`) quanto onboarding self-service do cliente (`create_client_onboarding`),
+  que **não são distinguíveis entre si** no schema atual (nenhuma delas grava uma marca de origem
+  em `organizacoes`) — inventar uma heurística pra separar essas duas seria mais enganoso do que
+  agrupar como uma origem só. `useClientesGeral.ts` (renomeado de `useProspeccaoClientes.ts`).
