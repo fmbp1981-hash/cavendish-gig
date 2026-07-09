@@ -8,7 +8,7 @@ export default function AdminFinderBusca() {
 
   return (
     <AdminLayout>
-      <BuscaView isAdmin currentUserId={user.id} />
+      <BuscaView isAdmin currentUserId={user.id} leadsHref="/admin/finder/leads" />
     </AdminLayout>
   );
 }

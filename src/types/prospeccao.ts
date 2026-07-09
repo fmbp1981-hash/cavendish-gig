@@ -97,6 +97,19 @@ export interface ProspeccaoFunilEtapa {
   created_at: string;
 }
 
+/** Parâmetros originais de uma busca — guardados pra "Usar novamente" (prefill do formulário) e
+ * "Reprocessar" (rodar de novo exatamente igual) funcionarem sem perder nenhuma informação que
+ * as colunas `termo`/`localizacao` (só pra exibição) não conseguem reconstruir sozinhas. */
+export interface ProspeccaoBuscaParametros {
+  termos?: string[];
+  nomeEstabelecimento?: string;
+  cidade?: string;
+  estado?: string;
+  bairros?: string[];
+  categoria: ProspeccaoCategoria;
+  quantidade?: number;
+}
+
 export interface ProspeccaoBusca {
   id: string;
   responsavel_id: string;
@@ -105,6 +118,7 @@ export interface ProspeccaoBusca {
   categoria: ProspeccaoCategoria;
   total_resultados: number;
   total_importados: number;
+  parametros: ProspeccaoBuscaParametros;
   created_at: string;
 }
 

@@ -116,3 +116,15 @@ que não há como validar isso sem as credenciais de produção configuradas.
   do agente (Fase 4), não uma restrição nova. Busca por similaridade sem índice `ivfflat`/`hnsw` de
   propósito (volume esperado de chunks é baixo); falha na busca RAG degrada silenciosamente em vez
   de bloquear a resposta do agente — é um complemento, não uma dependência crítica.
+- Redesign da tela de Busca (pós-Fase 10, a pedido do usuário, espelhando o layout/UX do
+  "LeadFinder Pro" de referência): nicho de negócio (Google Places) e categoria de prospecção da
+  Cavendish (gatilho de compliance) continuam campos **independentes** — o primeiro é atalho de
+  UI (`lib/prospeccao/nichos.ts`), o segundo é regra de negócio que já existia (funil/agente).
+  Cidade vem de uma cascata Estado→Cidade usando a API pública do IBGE (dado grande demais pra
+  embutir; estados/cidades populares continuam estáticos, são pequenos e estáveis). Multi-nicho e
+  multi-bairro rodam uma combinação de busca por termo×bairro no `prospeccao-search`, deduplicada
+  por `place_id` — "quantidade de leads" aceita até 500 na UI, mas o Google só retorna 20
+  resultados por combinação (sem paginação por `pagetoken`, latência alta demais nesta fase); o
+  real alcançável depende de quantas combinações a busca gerar, limitado a
+  `MAX_COMBINACOES = 20` por chamada. `prospeccao_buscas.parametros` (jsonb, nova coluna) guarda o
+  corpo original da busca pra "Usar novamente"/"Reprocessar" funcionarem sem perder informação.

@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Plus, Search } from "lucide-react";
+import { Loader2, Plus, Search, X } from "lucide-react";
 import { useProspeccaoLeads } from "@/hooks/useProspeccaoLeads";
 import { useRepresentantes } from "@/hooks/useRepresentantes";
 import { PROSPECCAO_CATEGORIAS } from "@/types/prospeccao";
@@ -37,11 +38,14 @@ export function LeadsView({ isAdmin, currentUserId }: LeadsViewProps) {
   const [busca, setBusca] = useState("");
   const [criarAberto, setCriarAberto] = useState(false);
   const [leadSelecionado, setLeadSelecionado] = useState<ProspeccaoLead | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const buscaIdFiltro = searchParams.get("busca_id") ?? undefined;
 
   const { data: leads, isLoading } = useProspeccaoLeads({
     categoria: categoria === "todas" ? undefined : categoria,
     status: status === "todos" ? undefined : status,
     responsavelId: isAdmin ? undefined : currentUserId,
+    buscaId: buscaIdFiltro,
   });
   const { data: representantes } = useRepresentantes();
 
@@ -69,6 +73,19 @@ export function LeadsView({ isAdmin, currentUserId }: LeadsViewProps) {
           Novo Lead
         </Button>
       </div>
+
+      {buscaIdFiltro && (
+        <Badge variant="secondary" className="gap-1 pr-1 w-fit">
+          Filtrado pela busca
+          <button
+            type="button"
+            onClick={() => setSearchParams((prev) => { prev.delete("busca_id"); return prev; })}
+            className="rounded-full hover:bg-muted-foreground/20 p-0.5"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </Badge>
+      )}
 
       <div className="flex flex-wrap gap-3">
         <div className="relative w-64">

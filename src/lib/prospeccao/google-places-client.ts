@@ -5,10 +5,15 @@ import type { ProspeccaoCategoria } from "@/types/prospeccao";
 // `prospeccao-search`, que resolve a key a partir do vault de integrações.
 
 export interface BuscarGooglePlacesInput {
-  termo: string;
-  cidade: string;
+  /** Um ou mais nichos/termos de busca (Seleção Rápida permite multi-select). Ignorado se
+   * `nomeEstabelecimento` for informado. */
+  termos?: string[];
+  /** Busca direta por nome do estabelecimento — dispensa cidade/nicho detalhado. */
+  nomeEstabelecimento?: string;
+  cidade?: string;
   estado?: string;
-  bairro?: string;
+  /** Um ou mais bairros/regiões — roda uma combinação de busca por termo×bairro. */
+  bairros?: string[];
   categoria: ProspeccaoCategoria;
   quantidade?: number;
   responsavelId?: string;

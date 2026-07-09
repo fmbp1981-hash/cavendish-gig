@@ -12,6 +12,9 @@ export interface ProspeccaoLeadFiltros {
   status?: ProspeccaoStatus;
   /** Escopo do representante — quando omitido, RLS já restringe para o próprio usuário; admin vê todos. */
   responsavelId?: string;
+  /** Filtra pelos leads importados por uma busca específica — usado pelo "Ver Leads" no
+   * histórico da tela de Busca. */
+  buscaId?: string;
 }
 
 export function useProspeccaoLeads(filtros?: ProspeccaoLeadFiltros) {
@@ -26,6 +29,7 @@ export function useProspeccaoLeads(filtros?: ProspeccaoLeadFiltros) {
       if (filtros?.categoria) query = query.eq("categoria", filtros.categoria);
       if (filtros?.status) query = query.eq("status", filtros.status);
       if (filtros?.responsavelId) query = query.eq("responsavel_id", filtros.responsavelId);
+      if (filtros?.buscaId) query = query.eq("busca_id", filtros.buscaId);
 
       const { data, error } = await query;
       if (error) throw error;

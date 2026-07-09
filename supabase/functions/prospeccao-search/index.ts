@@ -19,10 +19,16 @@ import { normalizePhone } from "../_shared/phone.ts";
 // do módulo Finder original, yolo_sdr). Ver CAVENDISH_PROSPECCAO_BLUEPRINT.md §6.
 
 interface SearchRequest {
-  termo: string;
-  cidade: string;
+  /** Um ou mais nichos/termos de busca (Seleção Rápida permite multi-select). Ignorado se
+   * `nomeEstabelecimento` for informado. */
+  termos?: string[];
+  /** Busca direta por nome do estabelecimento — quando presente, tem prioridade sobre `termos`
+   * e dispensa cidade/categoria detalhada (o Google resolve a partir do nome). */
+  nomeEstabelecimento?: string;
+  cidade?: string;
   estado?: string;
-  bairro?: string;
+  /** Um ou mais bairros/regiões — roda uma combinação de busca por termo×bairro. */
+  bairros?: string[];
   categoria: string;
   quantidade?: number;
   responsavelId?: string; // admin pode atribuir a busca a outro representante
@@ -51,7 +57,15 @@ interface EnriquecimentoIA {
 }
 
 const PLACES_BASE = "https://maps.googleapis.com/maps/api/place";
-const MAX_QUANTIDADE = 20; // Text Search retorna no máx. 20 por página; paginação fica para uma v2
+// A Text Search do Google retorna no máx. 20 resultados por página (paginação com pagetoken
+// fica pra uma v2 — exige esperar ~2s pelo token ficar válido, custo de latência alto demais
+// pra essa fase). "Quantidade de leads" no formulário permite pedir até 500, mas o real
+// alcançável depende de quantas combinações de termo×bairro rodam (cada uma contribui até 20) —
+// por isso MAX_COMBINACOES limita o número de sub-buscas (custo/latência previsíveis) em vez de
+// prometer 500 resultados reais de uma housing só.
+const MAX_QUANTIDADE = 500;
+const RESULTADOS_POR_COMBINACAO = 20;
+const MAX_COMBINACOES = 20;
 
 const TYPE_LABELS: Record<string, string> = {
   lawyer: "Advogado", accounting: "Contabilidade", real_estate_agency: "Imobiliária",
@@ -225,15 +239,23 @@ serve(async (req) => {
     }
 
     const body = await req.json() as SearchRequest;
-    const { termo, cidade, estado, bairro, categoria, gerarResumoIA: querResumo } = body;
+    const { nomeEstabelecimento, cidade, estado, bairros, categoria, gerarResumoIA: querResumo } = body;
+    const termos = (body.termos ?? []).map((t) => t.trim()).filter(Boolean);
     const responsavelId = isAdmin && body.responsavelId ? body.responsavelId : user.id;
     const quantidade = Math.min(body.quantidade || 20, MAX_QUANTIDADE);
+    const buscaDireta = !!nomeEstabelecimento?.trim();
 
-    if (!termo?.trim() || !cidade?.trim() || !categoria?.trim()) {
-      return new Response(JSON.stringify({ error: "Informe termo, cidade e categoria" }), {
+    if (!categoria?.trim()) {
+      return new Response(JSON.stringify({ error: "Informe a categoria" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+    if (!buscaDireta && (termos.length === 0 || !cidade?.trim())) {
+      return new Response(
+        JSON.stringify({ error: "Informe ao menos um nicho e a cidade, ou use a busca direta por nome do estabelecimento" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const integration = await loadIntegration(service, "google-places", "system");
@@ -251,25 +273,58 @@ serve(async (req) => {
       });
     }
 
-    const localizacao = [bairro, cidade, estado].filter(Boolean).join(", ");
+    const localizacaoBase = [cidade, estado].filter(Boolean).join(", ");
+    const localizacao = bairros?.length
+      ? `${bairros.join("/")}${localizacaoBase ? `, ${localizacaoBase}` : ""}`
+      : localizacaoBase;
 
-    // 1. Text Search
-    const searchUrl = new URL(`${PLACES_BASE}/textsearch/json`);
-    searchUrl.searchParams.set("query", `${termo} em ${localizacao}`);
-    searchUrl.searchParams.set("key", apiKey);
-    searchUrl.searchParams.set("language", "pt-BR");
-    searchUrl.searchParams.set("region", "br");
+    // Monta as combinações de query a rodar: busca direta é uma combinação só; senão, um termo
+    // × cada bairro informado (ou o termo sozinho com a cidade, se não houver bairro).
+    const localizacoes = bairros?.length ? bairros.map((b) => [b, cidade, estado].filter(Boolean).join(", ")) : [localizacaoBase];
+    const queries: string[] = buscaDireta
+      ? [[nomeEstabelecimento, localizacaoBase].filter(Boolean).join(" ")]
+      : termos.flatMap((termo) => localizacoes.map((loc) => `${termo} em ${loc}`));
 
-    const searchRes = await fetch(searchUrl.toString());
-    const searchData = await searchRes.json();
-    if (searchData.status !== "OK" && searchData.status !== "ZERO_RESULTS") {
+    if (queries.length > MAX_COMBINACOES) {
+      console.warn(`[prospeccao-search] ${queries.length} combinações pedidas, truncando para ${MAX_COMBINACOES} (limite de custo/latência)`);
+      queries.length = MAX_COMBINACOES;
+    }
+
+    // 1. Text Search — uma chamada por combinação, resultados deduplicados por place_id
+    const vistosNaBusca = new Set<string>();
+    const places: Array<{ place_id: string }> = [];
+    let combinacoesComErro = 0;
+    for (const query of queries) {
+      if (places.length >= quantidade) break;
+      const searchUrl = new URL(`${PLACES_BASE}/textsearch/json`);
+      searchUrl.searchParams.set("query", query);
+      searchUrl.searchParams.set("key", apiKey);
+      searchUrl.searchParams.set("language", "pt-BR");
+      searchUrl.searchParams.set("region", "br");
+
+      const searchRes = await fetch(searchUrl.toString());
+      const searchData = await searchRes.json();
+      if (searchData.status !== "OK" && searchData.status !== "ZERO_RESULTS") {
+        console.warn(`[prospeccao-search] query "${query}" respondeu ${searchData.status} — pulando`);
+        combinacoesComErro++;
+        continue;
+      }
+      let encontradosNestaCombinacao = 0;
+      for (const p of (searchData.results || []) as Array<{ place_id: string }>) {
+        if (encontradosNestaCombinacao >= RESULTADOS_POR_COMBINACAO) break;
+        if (vistosNaBusca.has(p.place_id)) continue;
+        vistosNaBusca.add(p.place_id);
+        places.push(p);
+        encontradosNestaCombinacao++;
+        if (places.length >= quantidade) break;
+      }
+    }
+    if (combinacoesComErro === queries.length) {
       return new Response(
-        JSON.stringify({ error: `Erro na API do Google Places: ${searchData.status}`, details: searchData.error_message }),
+        JSON.stringify({ error: "Erro na API do Google Places em todas as combinações de busca" }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-
-    const places: Array<{ place_id: string }> = (searchData.results || []).slice(0, quantidade);
 
     // 2. Details em lotes de 5 (equilíbrio entre velocidade e rate limit — mesmo valor do
     // módulo Finder de referência)
@@ -281,10 +336,20 @@ serve(async (req) => {
       for (const r of results) if (r) detailed.push(r);
     }
 
-    // 3. Registro do histórico de busca
+    // 3. Registro do histórico de busca — `parametros` guarda o corpo original completo pra
+    // "Usar novamente"/"Reprocessar" no client reconstruírem o formulário sem perder nada.
+    const termoExibicao = buscaDireta ? nomeEstabelecimento!.trim() : termos.join(", ");
+    const parametros = { termos, nomeEstabelecimento, cidade, estado, bairros, categoria, quantidade };
     const { data: busca, error: erroBusca } = await service
       .from("prospeccao_buscas")
-      .insert({ responsavel_id: responsavelId, termo, localizacao, categoria, total_resultados: detailed.length })
+      .insert({
+        responsavel_id: responsavelId,
+        termo: termoExibicao,
+        localizacao,
+        categoria,
+        total_resultados: detailed.length,
+        parametros,
+      })
       .select()
       .single();
     if (erroBusca) throw erroBusca;

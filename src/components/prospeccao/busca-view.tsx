@@ -5,48 +5,56 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Search } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Search, History, RotateCcw } from "lucide-react";
 import { useBuscarGooglePlaces, useHistoricoBusca } from "@/hooks/useProspeccaoBusca";
 import { useRepresentantes } from "@/hooks/useRepresentantes";
+import { NichoPicker } from "./nicho-picker";
+import { LocalizacaoPicker } from "./localizacao-picker";
+import { BuscaHistorico } from "./busca-historico";
 import { PROSPECCAO_CATEGORIAS } from "@/types/prospeccao";
 import { getCategoriaLabel } from "@/lib/prospeccao/categorias";
-import type { ProspeccaoCategoria } from "@/types/prospeccao";
+import type { ProspeccaoBusca, ProspeccaoCategoria } from "@/types/prospeccao";
 
 interface BuscaViewProps {
   isAdmin: boolean;
   currentUserId: string;
+  leadsHref: string;
 }
 
 const CAMPOS_INICIAIS = {
-  termo: "",
+  termos: [] as string[],
+  nomeEstabelecimento: "",
   cidade: "",
   estado: "",
-  bairro: "",
+  bairros: [] as string[],
   categoria: "" as ProspeccaoCategoria | "",
-  quantidade: 20,
+  quantidade: 50,
   responsavelId: "",
 };
 
-export function BuscaView({ isAdmin, currentUserId }: BuscaViewProps) {
+export function BuscaView({ isAdmin, currentUserId, leadsHref }: BuscaViewProps) {
   const [form, setForm] = useState(CAMPOS_INICIAIS);
   const [gerarResumoIA, setGerarResumoIA] = useState(true);
+  const [reprocessandoId, setReprocessandoId] = useState<string | null>(null);
 
   const buscar = useBuscarGooglePlaces();
   const { data: representantes } = useRepresentantes();
   const responsavelHistorico = isAdmin ? undefined : currentUserId;
   const { data: historico, isLoading: carregandoHistorico } = useHistoricoBusca(responsavelHistorico);
+  const ultimaPesquisa = historico?.[0];
+
+  const buscaDireta = !!form.nomeEstabelecimento.trim();
+  const podeSubmeter = !!form.categoria && (buscaDireta || (form.termos.length > 0 && !!form.cidade.trim()));
 
   const handleSubmit = async () => {
-    if (!form.termo.trim() || !form.cidade.trim() || !form.categoria) return;
-
+    if (!podeSubmeter || !form.categoria) return;
     await buscar.mutateAsync({
-      termo: form.termo.trim(),
-      cidade: form.cidade.trim(),
+      termos: form.termos,
+      nomeEstabelecimento: form.nomeEstabelecimento.trim() || undefined,
+      cidade: form.cidade.trim() || undefined,
       estado: form.estado.trim() || undefined,
-      bairro: form.bairro.trim() || undefined,
+      bairros: form.bairros,
       categoria: form.categoria,
       quantidade: form.quantidade,
       responsavelId: isAdmin && form.responsavelId ? form.responsavelId : undefined,
@@ -54,29 +62,96 @@ export function BuscaView({ isAdmin, currentUserId }: BuscaViewProps) {
     });
   };
 
+  const preencherDaBusca = (busca: ProspeccaoBusca) => {
+    const p = busca.parametros;
+    setForm({
+      termos: p.termos ?? [],
+      nomeEstabelecimento: p.nomeEstabelecimento ?? "",
+      cidade: p.cidade ?? "",
+      estado: p.estado ?? "",
+      bairros: p.bairros ?? [],
+      categoria: p.categoria,
+      quantidade: p.quantidade ?? 50,
+      responsavelId: isAdmin ? busca.responsavel_id : "",
+    });
+  };
+
+  const handleReprocessar = async (busca: ProspeccaoBusca) => {
+    const p = busca.parametros;
+    setReprocessandoId(busca.id);
+    try {
+      await buscar.mutateAsync({
+        termos: p.termos ?? [],
+        nomeEstabelecimento: p.nomeEstabelecimento,
+        cidade: p.cidade,
+        estado: p.estado,
+        bairros: p.bairros,
+        categoria: p.categoria,
+        quantidade: p.quantidade ?? 50,
+        responsavelId: isAdmin ? busca.responsavel_id : undefined,
+        gerarResumoIA,
+      });
+    } finally {
+      setReprocessandoId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Busca — Finder</h1>
-        <p className="text-muted-foreground">Encontre leads B2B via Google Places por termo e localização</p>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Search className="h-6 w-6 text-primary" />
+          Nova Prospecção
+        </h1>
+        <p className="text-muted-foreground">Configure sua busca de leads no Google Places</p>
       </div>
 
+      {ultimaPesquisa && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-3">
+              <Badge variant="outline">Última pesquisa {new Date(ultimaPesquisa.created_at).toLocaleDateString("pt-BR")}</Badge>
+              <Button variant="ghost" size="sm" onClick={() => preencherDaBusca(ultimaPesquisa)}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Usar novamente
+              </Button>
+            </div>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">Nicho:</p>
+                <p className="font-medium">{ultimaPesquisa.termo || "—"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Local:</p>
+                <p className="font-medium">{ultimaPesquisa.localizacao || "—"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Quantidade:</p>
+                <p className="font-medium">{ultimaPesquisa.parametros.quantidade ?? "—"} leads</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Nova busca</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="pt-6 space-y-6">
+          <NichoPicker termos={form.termos} onChangeTermos={(termos) => setForm({ ...form, termos })} />
+
+          <LocalizacaoPicker
+            estado={form.estado}
+            cidade={form.cidade}
+            bairros={form.bairros}
+            nomeEstabelecimento={form.nomeEstabelecimento}
+            onChangeEstado={(estado) => setForm({ ...form, estado })}
+            onChangeCidade={(cidade) => setForm({ ...form, cidade })}
+            onChangeBairros={(bairros) => setForm({ ...form, bairros })}
+            onChangeNomeEstabelecimento={(nomeEstabelecimento) => setForm({ ...form, nomeEstabelecimento })}
+          />
+
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Termo de busca *</Label>
-              <Input
-                value={form.termo}
-                onChange={(e) => setForm({ ...form, termo: e.target.value })}
-                placeholder="Ex.: escritório de advocacia"
-              />
-            </div>
-            <div>
-              <Label>Categoria (gatilho de compliance) *</Label>
+              <Label>Categoria de Prospecção (Cavendish) *</Label>
               <Select value={form.categoria} onValueChange={(v) => setForm({ ...form, categoria: v as ProspeccaoCategoria })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
@@ -89,34 +164,7 @@ export function BuscaView({ isAdmin, currentUserId }: BuscaViewProps) {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label>Cidade *</Label>
-              <Input value={form.cidade} onChange={(e) => setForm({ ...form, cidade: e.target.value })} />
-            </div>
-            <div>
-              <Label>Estado (UF)</Label>
-              <Input value={form.estado} onChange={(e) => setForm({ ...form, estado: e.target.value })} maxLength={2} />
-            </div>
-            <div>
-              <Label>Bairro</Label>
-              <Input value={form.bairro} onChange={(e) => setForm({ ...form, bairro: e.target.value })} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 items-end">
-            <div>
-              <Label>Quantidade de resultados</Label>
-              <Input
-                type="number"
-                min={1}
-                max={20}
-                value={form.quantidade}
-                onChange={(e) => setForm({ ...form, quantidade: Number(e.target.value) || 20 })}
-              />
+              <p className="text-xs text-muted-foreground mt-1">Gatilho de compliance/governança — define o funil e o agente de IA do lead.</p>
             </div>
             {isAdmin && (
               <div>
@@ -137,6 +185,19 @@ export function BuscaView({ isAdmin, currentUserId }: BuscaViewProps) {
             )}
           </div>
 
+          <div>
+            <Label>Quantidade de Leads</Label>
+            <Input
+              type="number"
+              min={1}
+              max={500}
+              value={form.quantidade}
+              onChange={(e) => setForm({ ...form, quantidade: Number(e.target.value) || 50 })}
+              className="max-w-40"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Máximo: 500 leads por busca.</p>
+          </div>
+
           <div className="flex items-center gap-2">
             <Checkbox id="gerar-resumo-ia" checked={gerarResumoIA} onCheckedChange={(v) => setGerarResumoIA(v === true)} />
             <Label htmlFor="gerar-resumo-ia" className="font-normal cursor-pointer">
@@ -144,57 +205,28 @@ export function BuscaView({ isAdmin, currentUserId }: BuscaViewProps) {
             </Label>
           </div>
 
-          <Button onClick={handleSubmit} disabled={buscar.isPending || !form.termo.trim() || !form.cidade.trim() || !form.categoria}>
+          <Button size="lg" className="w-full" onClick={handleSubmit} disabled={buscar.isPending || !podeSubmeter}>
             {buscar.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
-            Buscar
+            Iniciar Prospecção
           </Button>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Histórico de buscas</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <History className="h-4 w-4" />
+            Histórico de Buscas
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {carregandoHistorico ? (
-            <div className="flex justify-center py-6">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Termo</TableHead>
-                  <TableHead>Localização</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Resultados</TableHead>
-                  <TableHead>Importados</TableHead>
-                  <TableHead>Data</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {historico?.map((busca) => (
-                  <TableRow key={busca.id}>
-                    <TableCell className="font-medium">{busca.termo}</TableCell>
-                    <TableCell className="text-muted-foreground">{busca.localizacao}</TableCell>
-                    <TableCell className="text-muted-foreground">{getCategoriaLabel(busca.categoria)}</TableCell>
-                    <TableCell>{busca.total_resultados}</TableCell>
-                    <TableCell>{busca.total_importados}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(busca.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(!historico || historico.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                      Nenhuma busca realizada ainda.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
+          <BuscaHistorico
+            historico={historico}
+            isLoading={carregandoHistorico}
+            leadsHref={leadsHref}
+            onReprocessar={handleReprocessar}
+            reprocessandoId={reprocessandoId}
+          />
         </CardContent>
       </Card>
     </div>

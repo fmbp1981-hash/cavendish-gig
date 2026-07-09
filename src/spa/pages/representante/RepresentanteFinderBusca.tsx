@@ -8,7 +8,7 @@ export default function RepresentanteFinderBusca() {
 
   return (
     <RepresentanteLayout>
-      <BuscaView isAdmin={false} currentUserId={user.id} />
+      <BuscaView isAdmin={false} currentUserId={user.id} leadsHref="/representante/finder/leads" />
     </RepresentanteLayout>
   );
 }
