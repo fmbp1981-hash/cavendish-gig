@@ -6,10 +6,11 @@ import { useProspeccaoFunilPadrao, useProspeccaoFunilEtapas, useMoverLeadEtapa }
 import { useRepresentantes } from "@/hooks/useRepresentantes";
 import { PROSPECCAO_CATEGORIAS } from "@/types/prospeccao";
 import { getCategoriaLabel } from "@/lib/prospeccao/categorias";
+import { getEtapaCores } from "@/lib/prospeccao/funil-etapa-cores";
 import { KanbanBoard } from "./kanban-board";
 import { LeadCard } from "./lead-card";
 import { LeadDetailDrawer } from "./lead-detail-drawer";
-import type { ProspeccaoCategoria, ProspeccaoLead } from "@/types/prospeccao";
+import type { ProspeccaoCategoria, ProspeccaoLead, ProspeccaoFunilEtapa } from "@/types/prospeccao";
 
 interface FunilViewProps {
   isAdmin: boolean;
@@ -35,8 +36,16 @@ export function FunilView({ isAdmin, currentUserId }: FunilViewProps) {
     return map;
   }, [representantes]);
 
-  const columns = useMemo(() => (etapas ?? []).map((e) => ({ id: e.id, title: e.nome })), [etapas]);
+  const columns = useMemo(
+    () => (etapas ?? []).map((e) => ({ id: e.id, title: e.nome, posicao: e.posicao, isTerminal: e.is_terminal })),
+    [etapas]
+  );
   const leadsComEtapa = useMemo(() => (leads ?? []).filter((l) => !!l.funil_etapa_id), [leads]);
+  const etapaPorId = useMemo(() => {
+    const map = new Map<string, ProspeccaoFunilEtapa>();
+    for (const e of etapas ?? []) map.set(e.id, e);
+    return map;
+  }, [etapas]);
 
   const isLoading = carregandoFunil || carregandoEtapas || carregandoLeads;
 
@@ -80,13 +89,18 @@ export function FunilView({ isAdmin, currentUserId }: FunilViewProps) {
             if (!etapa || !lead) return;
             moverLeadEtapa.mutate({ leadId, etapa, statusAtual: lead.status });
           }}
-          renderCard={(lead) => (
-            <LeadCard
-              lead={lead}
-              responsavelNome={isAdmin ? representanteNomeMap.get(lead.responsavel_id) : undefined}
-              onClick={() => setLeadSelecionado(lead)}
-            />
-          )}
+          renderCard={(lead) => {
+            const etapa = etapaPorId.get(lead.funil_etapa_id as string);
+            const cores = etapa ? getEtapaCores(etapa.nome, etapa.posicao, etapa.is_terminal) : undefined;
+            return (
+              <LeadCard
+                lead={lead}
+                responsavelNome={isAdmin ? representanteNomeMap.get(lead.responsavel_id) : undefined}
+                onClick={() => setLeadSelecionado(lead)}
+                accentClassName={cores?.bar}
+              />
+            );
+          }}
         />
       )}
 

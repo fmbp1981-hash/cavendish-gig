@@ -32,7 +32,7 @@ function DraggableCard({ id, children }: DraggableCardProps) {
   } as React.CSSProperties;
 
   return (
-    <div ref={setNodeRef} style={style} className={isDragging ? "opacity-50" : ""} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} className={isDragging ? "opacity-40" : ""} {...attributes} {...listeners}>
       {children}
     </div>
   );
@@ -67,6 +67,8 @@ export function KanbanBoard<T extends { id: string }>({
 
   const activeItem = activeId ? items.find((i) => i.id === activeId) : undefined;
 
+  // Só as colunas são registradas como droppable (useDroppable em KanbanColumn) — os cards em si
+  // não são alvo de drop, então `event.over.id` é sempre "column:<id>", nunca o id de outro card.
   const parseColumnId = (id: string) => (id.startsWith("column:") ? id.replace("column:", "") : null);
 
   const handleDragStart = (event: DragStartEvent) => setActiveId(String(event.active.id));
@@ -80,8 +82,7 @@ export function KanbanBoard<T extends { id: string }>({
     const draggedItem = items.find((i) => i.id === draggedId);
     if (!draggedItem) return;
 
-    const overItem = items.find((i) => i.id === overId);
-    const toColumnId = overItem ? getColumnId(overItem) : parseColumnId(overId);
+    const toColumnId = parseColumnId(overId);
     if (!toColumnId || toColumnId === getColumnId(draggedItem)) return;
 
     onMoveItem(draggedId, toColumnId);
@@ -94,7 +95,7 @@ export function KanbanBoard<T extends { id: string }>({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-4 overflow-x-auto pb-2">
+      <div className="flex gap-3 overflow-x-auto pb-4">
         {columns.map((column) => (
           <KanbanColumn key={column.id} column={column} count={itemsByColumn[column.id]?.length ?? 0}>
             {(itemsByColumn[column.id] ?? []).map((item) => (
@@ -106,7 +107,11 @@ export function KanbanBoard<T extends { id: string }>({
         ))}
       </div>
 
-      <DragOverlay>{activeItem ? <div className="w-80">{renderCard(activeItem)}</div> : null}</DragOverlay>
+      <DragOverlay>
+        {activeItem ? (
+          <div className="w-[300px] rotate-2 scale-[1.03] drop-shadow-xl">{renderCard(activeItem)}</div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 }
