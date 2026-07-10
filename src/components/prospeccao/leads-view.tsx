@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Plus, Search, X } from "lucide-react";
+import { Loader2, Plus, Search, Upload, X } from "lucide-react";
 import { useProspeccaoLeads } from "@/hooks/useProspeccaoLeads";
 import { useRepresentantes } from "@/hooks/useRepresentantes";
 import { PROSPECCAO_CATEGORIAS } from "@/types/prospeccao";
@@ -13,6 +13,9 @@ import { getCategoriaLabel } from "@/lib/prospeccao/categorias";
 import { CategoryBadge } from "./category-badge";
 import { LeadFormDialog } from "./lead-form-dialog";
 import { LeadDetailDrawer } from "./lead-detail-drawer";
+import { ImportLeadsDialog } from "./import-leads-dialog";
+import { ExportMenuButton } from "./export-menu-button";
+import type { ExportColumn } from "@/lib/export/table-export";
 import type { ProspeccaoCategoria, ProspeccaoLead, ProspeccaoStatus } from "@/types/prospeccao";
 
 const STATUS_LABEL: Record<ProspeccaoStatus, string> = {
@@ -37,6 +40,7 @@ export function LeadsView({ isAdmin, currentUserId }: LeadsViewProps) {
   const [status, setStatus] = useState<ProspeccaoStatus | "todos">("todos");
   const [busca, setBusca] = useState("");
   const [criarAberto, setCriarAberto] = useState(false);
+  const [importarAberto, setImportarAberto] = useState(false);
   const [leadSelecionado, setLeadSelecionado] = useState<ProspeccaoLead | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const buscaIdFiltro = searchParams.get("busca_id") ?? undefined;
@@ -61,6 +65,24 @@ export function LeadsView({ isAdmin, currentUserId }: LeadsViewProps) {
     return (leads ?? []).filter((l) => l.nome.toLowerCase().includes(termo) || l.cidade?.toLowerCase().includes(termo));
   }, [leads, busca]);
 
+  const colunasExport = useMemo<ExportColumn<ProspeccaoLead>[]>(() => {
+    const colunas: ExportColumn<ProspeccaoLead>[] = [
+      { label: "Empresa", getValue: (l) => l.nome },
+      { label: "CNPJ", getValue: (l) => l.cnpj ?? "" },
+      { label: "Categoria", getValue: (l) => getCategoriaLabel(l.categoria) },
+      { label: "Status", getValue: (l) => STATUS_LABEL[l.status] },
+      { label: "Telefone", getValue: (l) => l.telefone ?? "" },
+      { label: "Email", getValue: (l) => l.email ?? "" },
+      { label: "Cidade", getValue: (l) => l.cidade ?? "" },
+      { label: "Estado", getValue: (l) => l.estado ?? "" },
+    ];
+    if (isAdmin) {
+      colunas.push({ label: "Responsável", getValue: (l) => representanteNomeMap.get(l.responsavel_id) ?? "" });
+    }
+    colunas.push({ label: "Score", getValue: (l) => (typeof l.ai_score === "number" ? String(l.ai_score) : "") });
+    return colunas;
+  }, [isAdmin, representanteNomeMap]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -68,10 +90,17 @@ export function LeadsView({ isAdmin, currentUserId }: LeadsViewProps) {
           <h1 className="text-2xl font-bold">{isAdmin ? "Leads — Finder" : "Meus Leads"}</h1>
           <p className="text-muted-foreground">Prospecção de leads B2B para o Sistema GIG</p>
         </div>
-        <Button onClick={() => setCriarAberto(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Lead
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportMenuButton rows={leadsFiltrados} columns={colunasExport} titulo="Leads" />
+          <Button variant="outline" onClick={() => setImportarAberto(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importar
+          </Button>
+          <Button onClick={() => setCriarAberto(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Lead
+          </Button>
+        </div>
       </div>
 
       {buscaIdFiltro && (
@@ -169,6 +198,7 @@ export function LeadsView({ isAdmin, currentUserId }: LeadsViewProps) {
       )}
 
       <LeadFormDialog open={criarAberto} onOpenChange={setCriarAberto} currentUserId={currentUserId} allowAssignResponsavel={isAdmin} />
+      <ImportLeadsDialog open={importarAberto} onOpenChange={setImportarAberto} currentUserId={currentUserId} />
       <LeadDetailDrawer lead={leadSelecionado} onClose={() => setLeadSelecionado(null)} podeExcluir={isAdmin} />
     </div>
   );

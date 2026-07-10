@@ -148,3 +148,28 @@ que não há como validar isso sem as credenciais de produção configuradas.
   que **não são distinguíveis entre si** no schema atual (nenhuma delas grava uma marca de origem
   em `organizacoes`) — inventar uma heurística pra separar essas duas seria mais enganoso do que
   agrupar como uma origem só. `useClientesGeral.ts` (renomeado de `useProspeccaoClientes.ts`).
+- Redesign do Kanban do Funil (pós-Fase 10, a pedido do usuário — layout "simplório demais"):
+  paleta de cores por etapa (`lib/prospeccao/funil-etapa-cores.ts`), mapeada pelo nome das 7
+  etapas padrão com fallback por posição/`is_terminal` pra funis customizados futuros. Cards
+  ganharam barra de destaque colorida (cor da etapa atual), score de IA como pílula colorida, ícone
+  de "grip" indicando arrastável, overlay de drag com leve rotação/elevação. Aproveitado pra
+  limpar um trecho morto em `kanban-board.tsx` (`handleDragEnd` tentava resolver a coluna via
+  "item sobre o qual soltou", mas só colunas são `droppable` — cards nunca são alvo de drop entre
+  si, então esse branch nunca era exercitado). Escopo: `KanbanBoard`/`KanbanColumn` só são usados
+  pela tela de Funil — `ConsultorTarefas.tsx` tem sua própria implementação inline de @dnd-kit, não
+  foi tocado.
+- Importação/Exportação de leads e clientes (pós-Fase 10, a pedido do usuário): importação de CSV/
+  XLSX (já existiam desde a Fase 2, mas nunca tinham UI — só hook/parser) ganhou PDF/DOCX/TXT.
+  PDF (`pdfjs-dist`, mesmo padrão de worker do `PDFViewer.tsx`) e DOCX (`mammoth`) não têm
+  colunas — extração é heurística por linha/parágrafo via regex (email, telefone, CNPJ; o resto
+  do texto vira o nome), com a categoria escolhida no dialog aplicada a todas as linhas (sem coluna
+  de categoria pra mapear). TXT é ambíguo (pode ser delimitado, exportado de uma planilha, ou texto
+  livre) — resolvido com uma heurística determinística (`pareceDelimitado`, mesma função usada na
+  decisão de UI e na decisão de parsing, então nunca divergem): se as primeiras linhas têm o mesmo
+  delimitador repetido, trata como CSV (mostra mapeamento de colunas); senão, freeform como PDF/
+  DOCX. `prospeccao_importacoes.formato` teve seu CHECK ampliado de `csv/xlsx` pra incluir
+  `pdf/txt/docx` (`20260710000000_finder_importacao_formatos.sql`). Exportação (CSV/XLSX/PDF) é
+  100% client-side via `lib/export/table-export.ts` (`ExportMenuButton` reutilizável), sem endpoint
+  novo — os dados já estão carregados na tela via react-query. PDF usa `jspdf` + `jspdf-autotable`
+  (instalados nesta fase); XLSX reaproveita `exceljs` (mesma lib do import, evita o `xlsx`/SheetJS
+  descartado por CVE). CSV exportado com BOM UTF-8 pra abrir acentuação correta no Excel.

@@ -5,8 +5,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Loader2, Search, Building2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useClientesGeral } from "@/hooks/useClientesGeral";
+import { useClientesGeral, type ClienteGeral } from "@/hooks/useClientesGeral";
 import { CategoryBadge } from "./category-badge";
+import { ExportMenuButton } from "./export-menu-button";
+import type { ExportColumn } from "@/lib/export/table-export";
+import { getCategoriaLabel } from "@/lib/prospeccao/categorias";
 
 export function ClientesView() {
   const { data: clientes, isLoading } = useClientesGeral();
@@ -18,14 +21,29 @@ export function ClientesView() {
     return (clientes ?? []).filter((c) => c.nome.toLowerCase().includes(termo) || c.cnpj?.toLowerCase().includes(termo));
   }, [clientes, busca]);
 
+  const colunasExport = useMemo<ExportColumn<ClienteGeral>[]>(
+    () => [
+      { label: "Empresa", getValue: (c) => c.nome },
+      { label: "CNPJ", getValue: (c) => c.cnpj ?? "" },
+      { label: "Origem", getValue: (c) => (c.origem === "finder" ? "Finder (Prospecção)" : "Cadastro Direto") },
+      { label: "Categoria de prospecção", getValue: (c) => (c.categoriaProspeccao ? getCategoriaLabel(c.categoriaProspeccao) : "") },
+      { label: "Representante", getValue: (c) => c.representanteNome ?? "" },
+      { label: "Cliente desde", getValue: (c) => format(new Date(c.createdAt), "dd/MM/yyyy", { locale: ptBR }) },
+    ],
+    []
+  );
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Building2 className="h-6 w-6 text-primary" />
-          Todos os Clientes
-        </h1>
-        <p className="text-muted-foreground">Todas as organizações clientes do sistema, com a origem de cada uma</p>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Building2 className="h-6 w-6 text-primary" />
+            Todos os Clientes
+          </h1>
+          <p className="text-muted-foreground">Todas as organizações clientes do sistema, com a origem de cada uma</p>
+        </div>
+        <ExportMenuButton rows={filtrados} columns={colunasExport} titulo="Clientes" />
       </div>
 
       <div className="relative w-64">

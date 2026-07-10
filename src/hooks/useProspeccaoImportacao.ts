@@ -4,11 +4,14 @@ import { toast } from "sonner";
 import {
   parseCSVText,
   parseXLSXBuffer,
+  parseTXTText,
+  parsePDFBuffer,
+  parseDOCXBuffer,
   validateParsedRow,
   type ColumnMapping,
   type ParsedImportRow,
 } from "@/lib/prospeccao/import-parser";
-import type { ProspeccaoImportacao, ProspeccaoImportacaoErro } from "@/types/prospeccao";
+import type { ProspeccaoCategoria, ProspeccaoImportacao, ProspeccaoImportacaoErro } from "@/types/prospeccao";
 
 const db = supabase as any;
 
@@ -30,6 +33,21 @@ interface ImportarArquivoInput {
   arquivo: File;
   mapping: ColumnMapping;
   responsavelId: string;
+  /** Categoria usada quando a linha não tem uma coluna de categoria mapeada (planilhas sem essa
+   * coluna) e sempre para os formatos "freeform" (PDF/DOCX/TXT sem delimitador), que não têm
+   * colunas pra mapear — ver import-parser.ts. */
+  categoriaPadrao: ProspeccaoCategoria;
+}
+
+type FormatoImportacao = "csv" | "xlsx" | "pdf" | "txt" | "docx";
+
+function detectarFormato(nomeArquivo: string): FormatoImportacao {
+  const nome = nomeArquivo.toLowerCase();
+  if (nome.endsWith(".xlsx")) return "xlsx";
+  if (nome.endsWith(".pdf")) return "pdf";
+  if (nome.endsWith(".docx")) return "docx";
+  if (nome.endsWith(".txt")) return "txt";
+  return "csv";
 }
 
 const LOTE = 200;
@@ -38,13 +56,24 @@ export function useImportarArquivo() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ arquivo, mapping, responsavelId }: ImportarArquivoInput) => {
-      const formato = arquivo.name.toLowerCase().endsWith(".xlsx") ? "xlsx" : "csv";
+    mutationFn: async ({ arquivo, mapping, responsavelId, categoriaPadrao }: ImportarArquivoInput) => {
+      const formato = detectarFormato(arquivo.name);
 
-      const { linhas, totalLinhas } =
-        formato === "csv"
-          ? await parseCSVText(await arquivo.text(), mapping)
-          : await parseXLSXBuffer(await arquivo.arrayBuffer(), mapping);
+      const { linhas, totalLinhas } = await (async () => {
+        switch (formato) {
+          case "xlsx":
+            return parseXLSXBuffer(await arquivo.arrayBuffer(), mapping, categoriaPadrao);
+          case "pdf":
+            return parsePDFBuffer(await arquivo.arrayBuffer(), categoriaPadrao);
+          case "docx":
+            return parseDOCXBuffer(await arquivo.arrayBuffer(), categoriaPadrao);
+          case "txt":
+            return parseTXTText(await arquivo.text(), mapping, categoriaPadrao);
+          case "csv":
+          default:
+            return parseCSVText(await arquivo.text(), mapping, categoriaPadrao);
+        }
+      })();
 
       const { data: importacao, error: erroImportacao } = await db
         .from("prospeccao_importacoes")
@@ -68,7 +97,7 @@ export function useImportarArquivo() {
             ...linha,
             responsavel_id: responsavelId,
             importacao_id: importacao.id,
-            origem: formato === "csv" ? "import_csv" : "import_xlsx",
+            origem: `import_${formato}`,
           });
         } else {
           erros.push({ linha: index + 2, motivo: "Nome, categoria e telefone/email são obrigatórios" });
