@@ -24,8 +24,8 @@ export function KanbanColumn({ column, count, children }: KanbanColumnProps) {
 
   return (
     <div className="w-[300px] shrink-0 flex flex-col">
-      <div className={cn("h-1.5 rounded-t-lg", cores.bar)} />
-      <div className="flex flex-col flex-1 rounded-b-lg border border-t-0 bg-card shadow-sm">
+      <div className={cn("h-2 rounded-t-lg", cores.bar)} />
+      <div className="flex flex-col flex-1 rounded-b-lg border border-t-0 bg-card shadow-md">
         <div className="flex items-center justify-between gap-2 px-3 py-3 border-b bg-muted/30 rounded-t-none">
           <div className="flex items-center gap-2 min-w-0">
             <span className={cn("h-2 w-2 rounded-full shrink-0", cores.dot)} />

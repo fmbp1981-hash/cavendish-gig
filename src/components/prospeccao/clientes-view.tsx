@@ -9,6 +9,7 @@ import { useClientesGeral, type ClienteGeral } from "@/hooks/useClientesGeral";
 import { CategoryBadge } from "./category-badge";
 import { ExportMenuButton } from "./export-menu-button";
 import { EmptyState } from "./empty-state";
+import { FinderPageHeader } from "./finder-page-header";
 import { SortableTableHead, type SortDirection } from "./sortable-table-head";
 import { TableSkeletonRows } from "./table-skeleton-rows";
 import type { ExportColumn } from "@/lib/export/table-export";
@@ -69,22 +70,19 @@ export function ClientesView() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-primary" />
-            Todos os Clientes
-          </h1>
-          <p className="text-muted-foreground">Todas as organizações clientes do sistema, com a origem de cada uma</p>
-        </div>
-        <ExportMenuButton rows={ordenados} columns={colunasExport} titulo="Clientes" />
-      </div>
+      <FinderPageHeader
+        icon={Building2}
+        title="Todos os Clientes"
+        subtitle="Todas as organizações clientes do sistema, com a origem de cada uma"
+        actions={<ExportMenuButton rows={ordenados} columns={colunasExport} titulo="Clientes" />}
+      />
 
       <div className="relative w-64">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input className="pl-8" placeholder="Buscar por nome ou CNPJ..." value={busca} onChange={(e) => setBusca(e.target.value)} />
       </div>
 
+      <div className="rounded-xl border bg-card shadow-sm overflow-hidden animate-fade-in">
       <Table>
         <TableHeader>
           <TableRow>
@@ -147,6 +145,7 @@ export function ClientesView() {
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

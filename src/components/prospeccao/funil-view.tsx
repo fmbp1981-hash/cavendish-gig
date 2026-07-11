@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Kanban } from "lucide-react";
 import { useProspeccaoLeads } from "@/hooks/useProspeccaoLeads";
 import { useProspeccaoFunilPadrao, useProspeccaoFunilEtapas, useMoverLeadEtapa } from "@/hooks/useProspeccaoFunis";
 import { useRepresentantes } from "@/hooks/useRepresentantes";
@@ -10,6 +10,8 @@ import { getEtapaCores } from "@/lib/prospeccao/funil-etapa-cores";
 import { KanbanBoard } from "./kanban-board";
 import { LeadCard } from "./lead-card";
 import { LeadDetailDrawer } from "./lead-detail-drawer";
+import { FinderPageHeader } from "./finder-page-header";
+import { EmptyState } from "./empty-state";
 import type { ProspeccaoCategoria, ProspeccaoLead, ProspeccaoFunilEtapa } from "@/types/prospeccao";
 
 interface FunilViewProps {
@@ -51,33 +53,32 @@ export function FunilView({ isAdmin, currentUserId }: FunilViewProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-bold">Funil — Finder</h1>
-          <p className="text-muted-foreground">Acompanhe os leads por etapa do funil comercial</p>
-        </div>
-        <Select value={categoria} onValueChange={(v) => setCategoria(v as ProspeccaoCategoria)}>
-          <SelectTrigger className="w-64">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PROSPECCAO_CATEGORIAS.map((c) => (
-              <SelectItem key={c} value={c}>
-                {getCategoriaLabel(c)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <FinderPageHeader
+        icon={Kanban}
+        title="Funil — Finder"
+        subtitle="Acompanhe os leads por etapa do funil comercial"
+        actions={
+          <Select value={categoria} onValueChange={(v) => setCategoria(v as ProspeccaoCategoria)}>
+            <SelectTrigger className="w-64">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PROSPECCAO_CATEGORIAS.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {getCategoriaLabel(c)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : !funil ? (
-        <p className="text-muted-foreground text-center py-8">
-          Nenhum funil configurado para esta categoria ainda.
-        </p>
+        <EmptyState icon={Kanban} title="Nenhum funil configurado para esta categoria ainda" />
       ) : (
         <KanbanBoard
           columns={columns}
