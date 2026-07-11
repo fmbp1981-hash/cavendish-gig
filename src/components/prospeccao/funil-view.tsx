@@ -89,7 +89,7 @@ export function FunilView({ isAdmin, currentUserId }: FunilViewProps) {
             if (!etapa || !lead) return;
             moverLeadEtapa.mutate({ leadId, etapa, statusAtual: lead.status });
           }}
-          renderCard={(lead) => {
+          renderCard={(lead, ctx) => {
             const etapa = etapaPorId.get(lead.funil_etapa_id as string);
             const cores = etapa ? getEtapaCores(etapa.nome, etapa.posicao, etapa.is_terminal) : undefined;
             return (
@@ -98,6 +98,9 @@ export function FunilView({ isAdmin, currentUserId }: FunilViewProps) {
                 responsavelNome={isAdmin ? representanteNomeMap.get(lead.responsavel_id) : undefined}
                 onClick={() => setLeadSelecionado(lead)}
                 accentClassName={cores?.bar}
+                columns={ctx.columns}
+                currentColumnId={ctx.currentColumnId}
+                onMoveToColumn={ctx.moveTo}
               />
             );
           }}

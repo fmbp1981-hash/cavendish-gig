@@ -8,8 +8,11 @@ import { ptBR } from "date-fns/locale";
 import { useClientesGeral, type ClienteGeral } from "@/hooks/useClientesGeral";
 import { CategoryBadge } from "./category-badge";
 import { ExportMenuButton } from "./export-menu-button";
+import { EmptyState } from "./empty-state";
 import type { ExportColumn } from "@/lib/export/table-export";
 import { getCategoriaLabel } from "@/lib/prospeccao/categorias";
+import { STATUS_TOKENS } from "@/lib/prospeccao/status-tokens";
+import { cn } from "@/lib/utils";
 
 export function ClientesView() {
   const { data: clientes, isLoading } = useClientesGeral();
@@ -74,7 +77,7 @@ export function ClientesView() {
                 <TableCell className="text-muted-foreground">{c.cnpj || "—"}</TableCell>
                 <TableCell>
                   {c.origem === "finder" ? (
-                    <Badge className="bg-sky-100 text-sky-800 border-sky-300 hover:bg-sky-100">Finder (Prospecção)</Badge>
+                    <Badge className={cn(STATUS_TOKENS.info.badge, "hover:bg-sky-100")}>Finder (Prospecção)</Badge>
                   ) : (
                     <Badge variant="outline">Cadastro Direto</Badge>
                   )}
@@ -86,8 +89,12 @@ export function ClientesView() {
             ))}
             {filtrados.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                  Nenhum cliente cadastrado ainda.
+                <TableCell colSpan={6}>
+                  <EmptyState
+                    icon={Building2}
+                    title={busca.trim() ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado ainda"}
+                    description={busca.trim() ? "Ajuste a busca por nome ou CNPJ." : "Clientes aparecem aqui assim que uma organização é criada ou convertida a partir do Finder."}
+                  />
                 </TableCell>
               </TableRow>
             )}

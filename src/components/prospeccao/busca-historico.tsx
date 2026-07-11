@@ -2,10 +2,13 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ExternalLink, RefreshCw, Target, MapPin, Hash, Database, Clock } from "lucide-react";
+import { Loader2, ExternalLink, RefreshCw, Target, MapPin, Hash, Database, Clock, History } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getCategoriaLabel } from "@/lib/prospeccao/categorias";
+import { STATUS_TOKENS } from "@/lib/prospeccao/status-tokens";
+import { EmptyState } from "./empty-state";
+import { cn } from "@/lib/utils";
 import type { ProspeccaoBusca } from "@/types/prospeccao";
 
 interface BuscaHistoricoProps {
@@ -28,7 +31,13 @@ export function BuscaHistorico({ historico, isLoading, leadsHref, onReprocessar,
   }
 
   if (!historico || historico.length === 0) {
-    return <p className="text-center text-muted-foreground py-8">Nenhuma busca realizada ainda.</p>;
+    return (
+      <EmptyState
+        icon={History}
+        title="Nenhuma busca realizada ainda"
+        description="Configure o nicho e a localização acima e clique em Iniciar Prospecção."
+      />
+    );
   }
 
   return (
@@ -37,7 +46,7 @@ export function BuscaHistorico({ historico, isLoading, leadsHref, onReprocessar,
         <Card key={busca.id}>
           <CardContent className="pt-6 space-y-2">
             <div className="flex items-center justify-between">
-              <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-100">
+              <Badge className={cn(busca.total_resultados > 0 ? STATUS_TOKENS.success.badge : STATUS_TOKENS.neutral.badge)}>
                 {busca.total_resultados > 0 ? "Concluída" : "Sem resultados"}
               </Badge>
               <span className="flex items-center gap-1 text-sm text-muted-foreground">

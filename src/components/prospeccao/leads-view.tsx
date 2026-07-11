@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Plus, Search, Upload, X } from "lucide-react";
+import { Loader2, Plus, Search, Upload, Users, X } from "lucide-react";
 import { useProspeccaoLeads } from "@/hooks/useProspeccaoLeads";
 import { useRepresentantes } from "@/hooks/useRepresentantes";
 import { PROSPECCAO_CATEGORIAS } from "@/types/prospeccao";
@@ -15,6 +15,7 @@ import { LeadFormDialog } from "./lead-form-dialog";
 import { LeadDetailDrawer } from "./lead-detail-drawer";
 import { ImportLeadsDialog } from "./import-leads-dialog";
 import { ExportMenuButton } from "./export-menu-button";
+import { EmptyState } from "./empty-state";
 import type { ExportColumn } from "@/lib/export/table-export";
 import type { ProspeccaoCategoria, ProspeccaoLead, ProspeccaoStatus } from "@/types/prospeccao";
 
@@ -188,8 +189,16 @@ export function LeadsView({ isAdmin, currentUserId }: LeadsViewProps) {
             ))}
             {leadsFiltrados.length === 0 && (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 6 : 5} className="text-center text-muted-foreground py-8">
-                  Nenhum lead encontrado.
+                <TableCell colSpan={isAdmin ? 6 : 5}>
+                  <EmptyState
+                    icon={Users}
+                    title="Nenhum lead encontrado"
+                    description={
+                      busca.trim() || categoria !== "todas" || status !== "todos" || buscaIdFiltro
+                        ? "Ajuste os filtros ou a busca para ver mais resultados."
+                        : "Use \"Novo Lead\" ou \"Importar\" para começar a preencher esta lista."
+                    }
+                  />
                 </TableCell>
               </TableRow>
             )}

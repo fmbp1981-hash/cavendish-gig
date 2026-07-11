@@ -38,12 +38,20 @@ function DraggableCard({ id, children }: DraggableCardProps) {
   );
 }
 
+export interface KanbanRenderContext {
+  columns: KanbanColumnDef[];
+  currentColumnId: string;
+  /** Alternativa por teclado/sem ponteiro ao drag-and-drop (WCAG 2.5.7) — a página que renderiza
+   * o card deve expor isso como uma ação clicável (ex: menu "Mover para"). */
+  moveTo: (toColumnId: string) => void;
+}
+
 export interface KanbanBoardProps<T extends { id: string }> {
   columns: KanbanColumnDef[];
   items: T[];
   getColumnId: (item: T) => string;
   onMoveItem: (itemId: string, toColumnId: string) => void;
-  renderCard: (item: T) => ReactNode;
+  renderCard: (item: T, ctx: KanbanRenderContext) => ReactNode;
 }
 
 export function KanbanBoard<T extends { id: string }>({
@@ -100,7 +108,7 @@ export function KanbanBoard<T extends { id: string }>({
           <KanbanColumn key={column.id} column={column} count={itemsByColumn[column.id]?.length ?? 0}>
             {(itemsByColumn[column.id] ?? []).map((item) => (
               <DraggableCard key={item.id} id={item.id}>
-                {renderCard(item)}
+                {renderCard(item, { columns, currentColumnId: getColumnId(item), moveTo: (toColumnId) => onMoveItem(item.id, toColumnId) })}
               </DraggableCard>
             ))}
           </KanbanColumn>
@@ -109,7 +117,9 @@ export function KanbanBoard<T extends { id: string }>({
 
       <DragOverlay>
         {activeItem ? (
-          <div className="w-[300px] rotate-2 scale-[1.03] drop-shadow-xl">{renderCard(activeItem)}</div>
+          <div className="w-[300px] rotate-2 scale-[1.03] drop-shadow-xl">
+            {renderCard(activeItem, { columns, currentColumnId: getColumnId(activeItem), moveTo: () => {} })}
+          </div>
         ) : null}
       </DragOverlay>
     </DndContext>
