@@ -17,6 +17,15 @@ const CHIP_CLASSES: Record<KpiTom, string> = {
   accent: "bg-accent/15 text-accent-foreground",
 };
 
+/** Mesma barra colorida usada no topo das colunas do kanban (kanban-column.tsx) — reaproveita a
+ * linguagem visual entre as duas telas mais usadas do Finder. */
+const BAR_CLASSES: Record<KpiTom, string> = {
+  primary: "bg-primary",
+  info: "bg-sky-500",
+  success: "bg-emerald-500",
+  accent: "bg-accent",
+};
+
 interface KpiCardProps {
   icon: LucideIcon;
   tom: KpiTom;
@@ -28,7 +37,8 @@ interface KpiCardProps {
 
 export function KpiCard({ icon: Icon, tom, label, value, description, loading }: KpiCardProps) {
   return (
-    <Card>
+    <Card className="overflow-hidden hover:shadow-md transition-shadow duration-200">
+      <div className={cn("h-1", BAR_CLASSES[tom])} />
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium">{label}</CardTitle>
         <div className={cn("rounded-lg p-2", CHIP_CLASSES[tom])}>

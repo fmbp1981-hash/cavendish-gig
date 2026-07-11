@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Target, Users, MessageCircle, CheckCircle2, TrendingUp, CalendarClock, Kanban } from "lucide-react";
+import { Target, Users, MessageCircle, CheckCircle2, TrendingUp, CalendarClock, Kanban, Gauge } from "lucide-react";
 import {
   useProspeccaoDashboardMes,
   useFunilAgregado,
@@ -16,6 +16,7 @@ import { RankingRepresentantes } from "@/components/prospeccao/ranking-represent
 import { MetasFormDialog } from "@/components/prospeccao/metas-form-dialog";
 import { KpiCard } from "@/components/prospeccao/kpi-card";
 import { EmptyState } from "@/components/prospeccao/empty-state";
+import { FinderPageHeader } from "@/components/prospeccao/finder-page-header";
 import type { ProspeccaoStatus } from "@/types/prospeccao";
 
 const STATUS_LABELS: Record<ProspeccaoStatus, string> = {
@@ -51,32 +52,33 @@ export default function AdminFinderDashboard() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Finder — Dashboard</h1>
-            <p className="text-muted-foreground">Prospecção comercial e conversão de leads</p>
-          </div>
-          <div className="flex items-end gap-2">
-            <div>
-              <Label htmlFor="periodo-mes" className="text-xs text-muted-foreground">
-                Mês de referência
-              </Label>
-              <Input
-                id="periodo-mes"
-                type="month"
-                value={periodoMes}
-                onChange={(e) => setPeriodoMes(e.target.value)}
-                className="w-40"
-              />
-            </div>
-            <Button variant="outline" onClick={() => setMetasAberto(true)}>
-              <Target className="h-4 w-4 mr-2" />
-              Definir metas
-            </Button>
-          </div>
-        </div>
+        <FinderPageHeader
+          icon={Gauge}
+          title="Finder — Dashboard"
+          subtitle="Prospecção comercial e conversão de leads"
+          actions={
+            <>
+              <div>
+                <Label htmlFor="periodo-mes" className="text-xs text-muted-foreground">
+                  Mês de referência
+                </Label>
+                <Input
+                  id="periodo-mes"
+                  type="month"
+                  value={periodoMes}
+                  onChange={(e) => setPeriodoMes(e.target.value)}
+                  className="w-40"
+                />
+              </div>
+              <Button variant="outline" onClick={() => setMetasAberto(true)}>
+                <Target className="h-4 w-4 mr-2" />
+                Definir metas
+              </Button>
+            </>
+          }
+        />
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in">
           <KpiCard
             icon={Users}
             tom="primary"
