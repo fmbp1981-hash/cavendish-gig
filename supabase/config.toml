@@ -29,3 +29,27 @@ verify_jwt = false
 
 [functions.generate-monthly-report]
 verify_jwt = true
+
+[functions.prospeccao-search]
+verify_jwt = true
+
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.prospeccao-agent]
+verify_jwt = false
+
+[functions.prospeccao-followup-cron]
+verify_jwt = false
+
+[functions.prospeccao-campaign-dispatch]
+verify_jwt = true
+
+[functions.prospeccao-agendar-fechamento]
+verify_jwt = true
+
+[functions.prospeccao-converter-lead]
+verify_jwt = true
+
+[functions.prospeccao-embed-knowledge]
+verify_jwt = true

@@ -1,0 +1,11 @@
+{
+  "plugins": [
+    {
+      "type": "local",
+      "path": "./.claude/plugins/intellix-plugin"
+    }
+  ],
+  "enabledPlugins": {
+    "superpowers@superpowers-marketplace": true
+  }
+}

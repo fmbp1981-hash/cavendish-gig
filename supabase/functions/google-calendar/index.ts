@@ -19,10 +19,12 @@ interface CalendarEvent {
 }
 
 interface CalendarRequest {
-  action: "create" | "list" | "update" | "delete";
+  action: "create" | "list" | "update" | "delete" | "freebusy";
   event?: CalendarEvent;
   eventId?: string;
   calendarId?: string;
+  timeMin?: string;
+  timeMax?: string;
 }
 
 async function getAccessToken(serviceAccountJson: string): Promise<string> {
@@ -211,6 +213,31 @@ async function deleteCalendarEvent(
   }
 }
 
+async function queryFreeBusy(
+  accessToken: string,
+  calendarId: string,
+  timeMin: string,
+  timeMax: string
+): Promise<{ busy: { start: string; end: string }[] }> {
+  const response = await fetch("https://www.googleapis.com/calendar/v3/freeBusy", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ timeMin, timeMax, items: [{ id: calendarId }] }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to query freeBusy: ${error}`);
+  }
+
+  const data = await response.json();
+  const busy = data.calendars?.[calendarId]?.busy ?? [];
+  return { busy };
+}
+
 async function scheduleFirefliesBot(
   apiKey: string,
   meetingUrl: string,
@@ -286,7 +313,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { action, event, eventId, calendarId }: CalendarRequest = await req.json();
+    const { action, event, eventId, calendarId, timeMin, timeMax }: CalendarRequest = await req.json();
     console.log(`[google-calendar][${reqId}] action=${action} calendarId=${calendarId ?? "primary"}`);
 
     let accessToken: string;
@@ -346,6 +373,15 @@ const handler = async (req: Request): Promise<Response> => {
         result = { success: true, message: "Event deleted" };
         console.log(`[google-calendar][${reqId}] event deleted id=${eventId}`);
         break;
+
+      case "freebusy": {
+        if (!calendarId || !timeMin || !timeMax) {
+          throw new Error("calendarId, timeMin e timeMax são obrigatórios para a ação freebusy");
+        }
+        result = await queryFreeBusy(accessToken, calendarId, timeMin, timeMax);
+        console.log(`[google-calendar][${reqId}] freebusy calendarId=${calendarId} busy=${result.busy.length}`);
+        break;
+      }
 
       default:
         throw new Error(`Unknown action: ${action}`);

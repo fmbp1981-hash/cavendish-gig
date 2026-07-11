@@ -1,4 +1,4 @@
-import { useState, ReactNode } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrandingContext } from "@/components/branding/TenantBrandingProvider";
@@ -33,12 +33,28 @@ export interface NavItem {
   dataTour?: string;
 }
 
+/** Um módulo colapsável do menu (ex: "Finder" agrupando Busca/Leads/Funil/Campanhas) — só um
+ * grupo fica aberto por vez (acordeão), e o grupo que contém a rota ativa abre automaticamente. */
+export interface NavGroup {
+  id: string;
+  icon: LucideIcon;
+  label: string;
+  items: NavItem[];
+}
+
+export type NavEntry = NavItem | NavGroup;
+
+function isNavGroup(entry: NavEntry): entry is NavGroup {
+  return "items" in entry;
+}
+
 interface BaseLayoutProps {
   children: ReactNode;
-  navItems: NavItem[];
+  /** Itens de topo — um NavItem vira um link direto, um NavGroup vira um módulo colapsável. */
+  navItems: NavEntry[];
   homeHref: string;
   headerTitle: ReactNode;
-  userRole: "admin" | "consultor" | "cliente" | "parceiro";
+  userRole: "admin" | "consultor" | "cliente" | "parceiro" | "representante";
   settingsHref: string;
   /** Extra DropdownMenuItems rendered before Settings */
   extraMenuItems?: ReactNode;
@@ -62,6 +78,23 @@ export function BaseLayout({
   const { companyName, logoUrl } = useBrandingContext();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const isHrefActive = (href: string) =>
+    location.pathname === href || (href !== homeHref && location.pathname.startsWith(href + "/"));
+
+  const [openGroupId, setOpenGroupId] = useState<string | null>(() => {
+    const grupoAtivo = navItems.find((entry) => isNavGroup(entry) && entry.items.some((item) => isHrefActive(item.href)));
+    return grupoAtivo ? (grupoAtivo as NavGroup).id : null;
+  });
+
+  // Segue a rota ativa: abrir o módulo correspondente e fechar os demais (acordeão) sempre que
+  // a navegação mudar — é assim que o menu "colapsa à medida que é aberto ou fechado" (pedido do
+  // usuário), sem depender só do clique manual no cabeçalho do módulo.
+  useEffect(() => {
+    const grupoAtivo = navItems.find((entry) => isNavGroup(entry) && entry.items.some((item) => isHrefActive(item.href)));
+    if (grupoAtivo) setOpenGroupId((grupoAtivo as NavGroup).id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     await signOut();
@@ -132,26 +165,80 @@ export function BaseLayout({
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive =
-              location.pathname === item.href ||
-              (item.href !== homeHref && location.pathname.startsWith(item.href + "/"));
+          {navItems.map((entry) => {
+            if (!isNavGroup(entry)) {
+              const isActive = isHrefActive(entry.href);
+              return (
+                <Link
+                  key={entry.href}
+                  to={entry.href}
+                  data-tour={entry.dataTour}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                    isActive
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                      : "text-sidebar-foreground opacity-80 hover:opacity-100 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    !sidebarOpen && "justify-center px-2"
+                  )}
+                >
+                  <entry.icon className="h-5 w-5 shrink-0" />
+                  {sidebarOpen && <span className="text-sm font-medium">{entry.label}</span>}
+                </Link>
+              );
+            }
+
+            const isOpen = openGroupId === entry.id;
+            const hasActiveChild = entry.items.some((item) => isHrefActive(item.href));
+
             return (
-              <Link
-                key={item.href}
-                to={item.href}
-                data-tour={item.dataTour}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
-                  isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
-                    : "text-sidebar-foreground opacity-80 hover:opacity-100 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  !sidebarOpen && "justify-center px-2"
+              <div key={entry.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!sidebarOpen) setSidebarOpen(true);
+                    setOpenGroupId(isOpen ? null : entry.id);
+                  }}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                    hasActiveChild
+                      ? "text-sidebar-foreground font-medium"
+                      : "text-sidebar-foreground opacity-80 hover:opacity-100 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    !sidebarOpen && "justify-center px-2"
+                  )}
+                >
+                  <entry.icon className="h-5 w-5 shrink-0" />
+                  {sidebarOpen && (
+                    <>
+                      <span className="text-sm font-medium flex-1 text-left">{entry.label}</span>
+                      <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", !isOpen && "-rotate-90")} />
+                    </>
+                  )}
+                </button>
+
+                {sidebarOpen && isOpen && (
+                  <div className="mt-1 ml-4 space-y-1 border-l border-sidebar-border pl-3">
+                    {entry.items.map((item) => {
+                      const isActive = isHrefActive(item.href);
+                      return (
+                        <Link
+                          key={item.href}
+                          to={item.href}
+                          data-tour={item.dataTour}
+                          className={cn(
+                            "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors",
+                            isActive
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                              : "text-sidebar-foreground opacity-80 hover:opacity-100 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          )}
+                        >
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          <span>{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
                 )}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
-              </Link>
+              </div>
             );
           })}
         </nav>

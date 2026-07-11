@@ -61,6 +61,7 @@ import ParceiroConfiguracoes from "./spa/pages/parceiro/ParceiroConfiguracoes";
 import AdminDashboard from "./spa/pages/admin/AdminDashboard";
 import AdminUsuarios from "./spa/pages/admin/AdminUsuarios";
 import AdminOrganizacoes from "./spa/pages/admin/AdminOrganizacoes";
+import AdminClientes from "./spa/pages/admin/AdminClientes";
 import AdminCatalogo from "./spa/pages/admin/AdminCatalogo";
 import AdminConfiguracoes from "./spa/pages/admin/AdminConfiguracoes";
 import AdminIntegracoes from "./spa/pages/admin/AdminIntegracoes";
@@ -72,7 +73,19 @@ import AdminLogs from "./spa/pages/admin/AdminLogs";
 import AdminDocumentos from "./spa/pages/admin/AdminDocumentos";
 import AdminConsultores from "./spa/pages/admin/AdminConsultores";
 import AdminBiblioteca from "./spa/pages/admin/AdminBiblioteca";
+import AdminFinderDashboard from "./spa/pages/admin/AdminFinderDashboard";
+import AdminFinderLeads from "./spa/pages/admin/AdminFinderLeads";
+import AdminFinderFunil from "./spa/pages/admin/AdminFinderFunil";
+import AdminFinderBusca from "./spa/pages/admin/AdminFinderBusca";
+import AdminFinderCampanhas from "./spa/pages/admin/AdminFinderCampanhas";
+import AdminFinderConfiguracoes from "./spa/pages/admin/AdminFinderConfiguracoes";
 import ConsultorBiblioteca from "./spa/pages/consultor/ConsultorBiblioteca";
+
+// Representante Pages (módulo Finder)
+import RepresentanteFinderLeads from "./spa/pages/representante/RepresentanteFinderLeads";
+import RepresentanteFinderFunil from "./spa/pages/representante/RepresentanteFinderFunil";
+import RepresentanteFinderBusca from "./spa/pages/representante/RepresentanteFinderBusca";
+import RepresentanteFinderCampanhas from "./spa/pages/representante/RepresentanteFinderCampanhas";
 import Help from "./spa/pages/Help";
 import { installGlobalErrorHandlers } from "./utils/errorLogger";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -306,6 +319,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/admin/clientes"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <AdminClientes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/admin/catalogo"
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
@@ -390,6 +411,90 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRoles={["admin"]}>
                     <AdminBiblioteca />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Finder (prospecção) — admin */}
+              <Route
+                path="/admin/finder"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <ErrorBoundary><AdminFinderDashboard /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/finder/leads"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <ErrorBoundary><AdminFinderLeads /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/finder/funil"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <ErrorBoundary><AdminFinderFunil /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/finder/busca"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <ErrorBoundary><AdminFinderBusca /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/finder/campanhas"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <ErrorBoundary><AdminFinderCampanhas /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/finder/configuracoes"
+                element={
+                  <ProtectedRoute requiredRoles={["admin"]}>
+                    <ErrorBoundary><AdminFinderConfiguracoes /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Finder (prospecção) — representante */}
+              <Route
+                path="/representante/finder/leads"
+                element={
+                  <ProtectedRoute requiredRoles={["representante", "admin"]}>
+                    <ErrorBoundary><RepresentanteFinderLeads /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/representante/finder/funil"
+                element={
+                  <ProtectedRoute requiredRoles={["representante", "admin"]}>
+                    <ErrorBoundary><RepresentanteFinderFunil /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/representante/finder/busca"
+                element={
+                  <ProtectedRoute requiredRoles={["representante", "admin"]}>
+                    <ErrorBoundary><RepresentanteFinderBusca /></ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/representante/finder/campanhas"
+                element={
+                  <ProtectedRoute requiredRoles={["representante", "admin"]}>
+                    <ErrorBoundary><RepresentanteFinderCampanhas /></ErrorBoundary>
                   </ProtectedRoute>
                 }
               />

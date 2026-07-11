@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { BaseLayout, NavItem } from "./BaseLayout";
+import { BaseLayout, NavEntry } from "./BaseLayout";
 import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard,
@@ -19,26 +19,72 @@ import {
   User,
   Handshake,
   Library,
+  Search,
+  Kanban,
+  ClipboardList,
+  Megaphone,
+  Gauge,
+  Bot,
+  UserCheck,
 } from "lucide-react";
 import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-const navItems: NavItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard",       href: "/admin",                       dataTour: "admin-nav-dashboard" },
-  { icon: Building2,       label: "Organizações",    href: "/admin/organizacoes",          dataTour: "admin-nav-organizacoes" },
-  { icon: Users,           label: "Usuários",         href: "/admin/usuarios",              dataTour: "admin-nav-usuarios" },
-  { icon: FileText,        label: "Documentos",       href: "/admin/documentos",            dataTour: "admin-nav-documentos" },
-  { icon: Database,        label: "Catálogo",         href: "/admin/catalogo",              dataTour: "admin-nav-catalogo" },
-  { icon: FileText,        label: "Templates",        href: "/admin/templates",             dataTour: "admin-nav-templates" },
-  { icon: Library,         label: "Biblioteca",       href: "/admin/biblioteca",            dataTour: "admin-nav-biblioteca" },
-  { icon: TrendingUp,      label: "Relatórios",       href: "/admin/relatorios/historico",  dataTour: "admin-nav-relatorios" },
-  { icon: Plug,            label: "Integrações",      href: "/admin/integracoes",           dataTour: "admin-nav-integracoes" },
-  { icon: Sparkles,        label: "Branding",         href: "/admin/branding",              dataTour: "admin-nav-branding" },
-  { icon: Bug,             label: "Logs do Sistema",  href: "/admin/logs",                  dataTour: "admin-nav-logs" },
-  { icon: ShieldCheck,     label: "Audit Trail",      href: "/admin/audit-trail",           dataTour: "admin-nav-audit" },
-  { icon: Settings,        label: "Configurações",    href: "/admin/configuracoes",         dataTour: "admin-nav-configuracoes" },
+// Menu organizado por módulos colapsáveis (acordeão — só um módulo aberto por vez, ver
+// BaseLayout.tsx). Cada módulo de negócio vira um NavGroup; "Agentes de IA" do Finder mora no
+// grupo Sistema junto de Configurações (é uma configuração do sistema, não uma etapa do fluxo de
+// prospecção como Busca/Leads/Funil/Campanhas — pedido explícito do usuário).
+const navItems: NavEntry[] = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "/admin", dataTour: "admin-nav-dashboard" },
+  {
+    id: "clientes",
+    icon: Building2,
+    label: "Clientes",
+    items: [
+      { icon: Building2, label: "Organizações", href: "/admin/organizacoes", dataTour: "admin-nav-organizacoes" },
+      { icon: Users,     label: "Usuários",     href: "/admin/usuarios",     dataTour: "admin-nav-usuarios" },
+      { icon: UserCheck, label: "Todos os Clientes", href: "/admin/clientes", dataTour: "admin-nav-clientes" },
+    ],
+  },
+  {
+    id: "finder",
+    icon: Search,
+    label: "Finder",
+    items: [
+      { icon: Gauge,         label: "Dashboard",  href: "/admin/finder",           dataTour: "admin-nav-finder-dashboard" },
+      { icon: Search,        label: "Busca",      href: "/admin/finder/busca",     dataTour: "admin-nav-finder-busca" },
+      { icon: ClipboardList, label: "Leads",      href: "/admin/finder/leads",     dataTour: "admin-nav-finder-leads" },
+      { icon: Kanban,        label: "Funil",      href: "/admin/finder/funil",     dataTour: "admin-nav-finder-funil" },
+      { icon: Megaphone,     label: "Campanhas",  href: "/admin/finder/campanhas", dataTour: "admin-nav-finder-campanhas" },
+    ],
+  },
+  {
+    id: "conteudo",
+    icon: Library,
+    label: "Conteúdo",
+    items: [
+      { icon: FileText, label: "Documentos", href: "/admin/documentos", dataTour: "admin-nav-documentos" },
+      { icon: Database, label: "Catálogo",   href: "/admin/catalogo",   dataTour: "admin-nav-catalogo" },
+      { icon: FileText, label: "Templates",  href: "/admin/templates",  dataTour: "admin-nav-templates" },
+      { icon: Library,  label: "Biblioteca", href: "/admin/biblioteca", dataTour: "admin-nav-biblioteca" },
+    ],
+  },
+  { icon: TrendingUp, label: "Relatórios", href: "/admin/relatorios/historico", dataTour: "admin-nav-relatorios" },
+  {
+    id: "sistema",
+    icon: Settings,
+    label: "Sistema",
+    items: [
+      { icon: Plug,        label: "Integrações",         href: "/admin/integracoes",          dataTour: "admin-nav-integracoes" },
+      { icon: Bot,         label: "Agentes de IA (Finder)", href: "/admin/finder/configuracoes", dataTour: "admin-nav-finder-configuracoes" },
+      { icon: Sparkles,    label: "Branding",            href: "/admin/branding",             dataTour: "admin-nav-branding" },
+      { icon: Bug,         label: "Logs do Sistema",     href: "/admin/logs",                 dataTour: "admin-nav-logs" },
+      { icon: ShieldCheck, label: "Audit Trail",         href: "/admin/audit-trail",          dataTour: "admin-nav-audit" },
+      { icon: Settings,    label: "Configurações",       href: "/admin/configuracoes",        dataTour: "admin-nav-configuracoes" },
+    ],
+  },
 ];
 
 const headerTitle = (

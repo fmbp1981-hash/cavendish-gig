@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type AppRole = 'admin' | 'consultor' | 'parceiro' | 'cliente';
+export type AppRole = 'admin' | 'consultor' | 'parceiro' | 'cliente' | 'representante';
 export type FaseProjeto = 'diagnostico' | 'implementacao' | 'recorrencia';
 export type TipoProjeto = 'gig_completo' | 'gig_modular' | 'consultoria_pontual';
 export type StatusDocumento = 'pendente' | 'enviado' | 'em_analise' | 'aprovado' | 'rejeitado';
