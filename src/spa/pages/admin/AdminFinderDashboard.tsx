@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Target, Users, MessageCircle, CheckCircle2, TrendingUp, CalendarClock } from "lucide-react";
+import { Target, Users, MessageCircle, CheckCircle2, TrendingUp, CalendarClock, Kanban } from "lucide-react";
 import {
   useProspeccaoDashboardMes,
   useFunilAgregado,
@@ -14,6 +14,8 @@ import {
 import { useRepresentantes } from "@/hooks/useRepresentantes";
 import { RankingRepresentantes } from "@/components/prospeccao/ranking-representantes";
 import { MetasFormDialog } from "@/components/prospeccao/metas-form-dialog";
+import { KpiCard } from "@/components/prospeccao/kpi-card";
+import { EmptyState } from "@/components/prospeccao/empty-state";
 import type { ProspeccaoStatus } from "@/types/prospeccao";
 
 const STATUS_LABELS: Record<ProspeccaoStatus, string> = {
@@ -75,46 +77,38 @@ export default function AdminFinderDashboard() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Leads prospectados</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {carregandoDashboard ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">{totais?.leadsProspectados ?? 0}</div>}
-              <p className="text-xs text-muted-foreground">No mês selecionado</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Responderam</CardTitle>
-              <MessageCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {carregandoDashboard ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">{totais?.responderam ?? 0}</div>}
-              <p className="text-xs text-muted-foreground">Leads com resposta no mês</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Convertidos</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {carregandoDashboard ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">{totais?.convertidos ?? 0}</div>}
-              <p className="text-xs text-muted-foreground">Organizações/parceiros criados</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Taxa de conversão</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {carregandoDashboard ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">{totais?.taxaConversao ?? 0}%</div>}
-              <p className="text-xs text-muted-foreground">Convertidos / prospectados</p>
-            </CardContent>
-          </Card>
+          <KpiCard
+            icon={Users}
+            tom="primary"
+            label="Leads prospectados"
+            value={totais?.leadsProspectados ?? 0}
+            description="No mês selecionado"
+            loading={carregandoDashboard}
+          />
+          <KpiCard
+            icon={MessageCircle}
+            tom="info"
+            label="Responderam"
+            value={totais?.responderam ?? 0}
+            description="Leads com resposta no mês"
+            loading={carregandoDashboard}
+          />
+          <KpiCard
+            icon={CheckCircle2}
+            tom="success"
+            label="Convertidos"
+            value={totais?.convertidos ?? 0}
+            description="Organizações/parceiros criados"
+            loading={carregandoDashboard}
+          />
+          <KpiCard
+            icon={TrendingUp}
+            tom="accent"
+            label="Taxa de conversão"
+            value={`${totais?.taxaConversao ?? 0}%`}
+            description="Convertidos / prospectados"
+            loading={carregandoDashboard}
+          />
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
@@ -137,7 +131,7 @@ export default function AdminFinderDashboard() {
               {carregandoFunil ? (
                 <Skeleton className="h-40 w-full" />
               ) : (funil ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum lead cadastrado ainda.</p>
+                <EmptyState icon={Kanban} title="Nenhum lead cadastrado ainda" />
               ) : (
                 (funil ?? []).map((item) => (
                   <div key={item.status} className="space-y-1">
@@ -169,7 +163,7 @@ export default function AdminFinderDashboard() {
             {carregandoReunioes ? (
               <Skeleton className="h-24 w-full" />
             ) : (reunioes ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma reunião de fechamento agendada para os próximos 7 dias.</p>
+              <EmptyState icon={CalendarClock} title="Nenhuma reunião de fechamento agendada" description="Próximos 7 dias." />
             ) : (
               <div className="space-y-3">
                 {(reunioes ?? []).map((r) => (

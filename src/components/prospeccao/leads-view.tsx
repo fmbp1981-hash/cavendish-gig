@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Plus, Search, Upload, Users, X } from "lucide-react";
+import { Plus, Search, Upload, Users, X } from "lucide-react";
 import { useProspeccaoLeads } from "@/hooks/useProspeccaoLeads";
 import { useRepresentantes } from "@/hooks/useRepresentantes";
 import { PROSPECCAO_CATEGORIAS } from "@/types/prospeccao";
@@ -16,8 +16,12 @@ import { LeadDetailDrawer } from "./lead-detail-drawer";
 import { ImportLeadsDialog } from "./import-leads-dialog";
 import { ExportMenuButton } from "./export-menu-button";
 import { EmptyState } from "./empty-state";
+import { SortableTableHead, type SortDirection } from "./sortable-table-head";
+import { TableSkeletonRows } from "./table-skeleton-rows";
 import type { ExportColumn } from "@/lib/export/table-export";
 import type { ProspeccaoCategoria, ProspeccaoLead, ProspeccaoStatus } from "@/types/prospeccao";
+
+type SortField = "nome" | "categoria" | "status" | "cidade" | "responsavel" | "score";
 
 const STATUS_LABEL: Record<ProspeccaoStatus, string> = {
   novo: "Novo",
@@ -66,6 +70,33 @@ export function LeadsView({ isAdmin, currentUserId }: LeadsViewProps) {
     return (leads ?? []).filter((l) => l.nome.toLowerCase().includes(termo) || l.cidade?.toLowerCase().includes(termo));
   }, [leads, busca]);
 
+  const [sort, setSort] = useState<{ campo: SortField; direcao: SortDirection } | null>(null);
+  const toggleSort = (campo: SortField) =>
+    setSort((prev) => (prev?.campo === campo ? { campo, direcao: prev.direcao === "asc" ? "desc" : "asc" } : { campo, direcao: "asc" }));
+
+  const sortGetters = useMemo<Record<SortField, (l: ProspeccaoLead) => string | number>>(
+    () => ({
+      nome: (l) => l.nome.toLowerCase(),
+      categoria: (l) => getCategoriaLabel(l.categoria).toLowerCase(),
+      status: (l) => STATUS_LABEL[l.status].toLowerCase(),
+      cidade: (l) => (l.cidade ?? "").toLowerCase(),
+      responsavel: (l) => (representanteNomeMap.get(l.responsavel_id) ?? "").toLowerCase(),
+      score: (l) => (typeof l.ai_score === "number" ? l.ai_score : -1),
+    }),
+    [representanteNomeMap]
+  );
+
+  const leadsOrdenados = useMemo(() => {
+    if (!sort) return leadsFiltrados;
+    const getter = sortGetters[sort.campo];
+    const ordenados = [...leadsFiltrados].sort((a, b) => {
+      const va = getter(a);
+      const vb = getter(b);
+      return typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb), "pt-BR");
+    });
+    return sort.direcao === "asc" ? ordenados : ordenados.reverse();
+  }, [leadsFiltrados, sort, sortGetters]);
+
   const colunasExport = useMemo<ExportColumn<ProspeccaoLead>[]>(() => {
     const colunas: ExportColumn<ProspeccaoLead>[] = [
       { label: "Empresa", getValue: (l) => l.nome },
@@ -92,7 +123,7 @@ export function LeadsView({ isAdmin, currentUserId }: LeadsViewProps) {
           <p className="text-muted-foreground">Prospecção de leads B2B para o Sistema GIG</p>
         </div>
         <div className="flex items-center gap-2">
-          <ExportMenuButton rows={leadsFiltrados} columns={colunasExport} titulo="Leads" />
+          <ExportMenuButton rows={leadsOrdenados} columns={colunasExport} titulo="Leads" />
           <Button variant="outline" onClick={() => setImportarAberto(true)}>
             <Upload className="h-4 w-4 mr-2" />
             Importar
@@ -150,61 +181,78 @@ export function LeadsView({ isAdmin, currentUserId }: LeadsViewProps) {
         </Select>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Empresa</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Cidade/UF</TableHead>
-              {isAdmin && <TableHead>Responsável</TableHead>}
-              <TableHead>Score</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {leadsFiltrados.map((lead) => (
-              <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/40" onClick={() => setLeadSelecionado(lead)}>
-                <TableCell className="font-medium">{lead.nome}</TableCell>
-                <TableCell>
-                  <CategoryBadge categoria={lead.categoria} />
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{STATUS_LABEL[lead.status]}</Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {lead.cidade ? `${lead.cidade}${lead.estado ? " - " + lead.estado : ""}` : "—"}
-                </TableCell>
-                {isAdmin && (
-                  <TableCell className="text-muted-foreground">
-                    {representanteNomeMap.get(lead.responsavel_id) ?? "—"}
-                  </TableCell>
-                )}
-                <TableCell>{typeof lead.ai_score === "number" ? lead.ai_score : "—"}</TableCell>
-              </TableRow>
-            ))}
-            {leadsFiltrados.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={isAdmin ? 6 : 5}>
-                  <EmptyState
-                    icon={Users}
-                    title="Nenhum lead encontrado"
-                    description={
-                      busca.trim() || categoria !== "todas" || status !== "todos" || buscaIdFiltro
-                        ? "Ajuste os filtros ou a busca para ver mais resultados."
-                        : "Use \"Novo Lead\" ou \"Importar\" para começar a preencher esta lista."
-                    }
-                  />
-                </TableCell>
-              </TableRow>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <SortableTableHead label="Empresa" active={sort?.campo === "nome"} direction={sort?.direcao} onClick={() => toggleSort("nome")} />
+            <SortableTableHead
+              label="Categoria"
+              active={sort?.campo === "categoria"}
+              direction={sort?.direcao}
+              onClick={() => toggleSort("categoria")}
+            />
+            <SortableTableHead label="Status" active={sort?.campo === "status"} direction={sort?.direcao} onClick={() => toggleSort("status")} />
+            <SortableTableHead
+              label="Cidade/UF"
+              active={sort?.campo === "cidade"}
+              direction={sort?.direcao}
+              onClick={() => toggleSort("cidade")}
+            />
+            {isAdmin && (
+              <SortableTableHead
+                label="Responsável"
+                active={sort?.campo === "responsavel"}
+                direction={sort?.direcao}
+                onClick={() => toggleSort("responsavel")}
+              />
             )}
-          </TableBody>
-        </Table>
-      )}
+            <SortableTableHead label="Score" active={sort?.campo === "score"} direction={sort?.direcao} onClick={() => toggleSort("score")} />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            <TableSkeletonRows columns={isAdmin ? 6 : 5} />
+          ) : (
+            <>
+              {leadsOrdenados.map((lead) => (
+                <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/40" onClick={() => setLeadSelecionado(lead)}>
+                  <TableCell className="font-medium">{lead.nome}</TableCell>
+                  <TableCell>
+                    <CategoryBadge categoria={lead.categoria} />
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{STATUS_LABEL[lead.status]}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {lead.cidade ? `${lead.cidade}${lead.estado ? " - " + lead.estado : ""}` : "—"}
+                  </TableCell>
+                  {isAdmin && (
+                    <TableCell className="text-muted-foreground">
+                      {representanteNomeMap.get(lead.responsavel_id) ?? "—"}
+                    </TableCell>
+                  )}
+                  <TableCell>{typeof lead.ai_score === "number" ? lead.ai_score : "—"}</TableCell>
+                </TableRow>
+              ))}
+              {leadsOrdenados.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={isAdmin ? 6 : 5}>
+                    <EmptyState
+                      icon={Users}
+                      title="Nenhum lead encontrado"
+                      description={
+                        busca.trim() || categoria !== "todas" || status !== "todos" || buscaIdFiltro
+                          ? "Ajuste os filtros ou a busca para ver mais resultados."
+                          : "Use \"Novo Lead\" ou \"Importar\" para começar a preencher esta lista."
+                      }
+                    />
+                  </TableCell>
+                </TableRow>
+              )}
+            </>
+          )}
+        </TableBody>
+      </Table>
 
       <LeadFormDialog open={criarAberto} onOpenChange={setCriarAberto} currentUserId={currentUserId} allowAssignResponsavel={isAdmin} />
       <ImportLeadsDialog open={importarAberto} onOpenChange={setImportarAberto} currentUserId={currentUserId} />
