@@ -16,6 +16,7 @@ import { LeadDetailDrawer } from "./lead-detail-drawer";
 import { ImportLeadsDialog } from "./import-leads-dialog";
 import { ExportMenuButton } from "./export-menu-button";
 import { EmptyState } from "./empty-state";
+import { FinderPageHeader } from "./finder-page-header";
 import { SortableTableHead, type SortDirection } from "./sortable-table-head";
 import { TableSkeletonRows } from "./table-skeleton-rows";
 import type { ExportColumn } from "@/lib/export/table-export";
@@ -117,23 +118,24 @@ export function LeadsView({ isAdmin, currentUserId }: LeadsViewProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-bold">{isAdmin ? "Leads — Finder" : "Meus Leads"}</h1>
-          <p className="text-muted-foreground">Prospecção de leads B2B para o Sistema GIG</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <ExportMenuButton rows={leadsOrdenados} columns={colunasExport} titulo="Leads" />
-          <Button variant="outline" onClick={() => setImportarAberto(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Importar
-          </Button>
-          <Button onClick={() => setCriarAberto(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Lead
-          </Button>
-        </div>
-      </div>
+      <FinderPageHeader
+        icon={Users}
+        title={isAdmin ? "Leads — Finder" : "Meus Leads"}
+        subtitle="Prospecção de leads B2B para o Sistema GIG"
+        actions={
+          <>
+            <ExportMenuButton rows={leadsOrdenados} columns={colunasExport} titulo="Leads" />
+            <Button variant="outline" onClick={() => setImportarAberto(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Importar
+            </Button>
+            <Button onClick={() => setCriarAberto(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Lead
+            </Button>
+          </>
+        }
+      />
 
       {buscaIdFiltro && (
         <Badge variant="secondary" className="gap-1 pr-1 w-fit">
@@ -181,6 +183,7 @@ export function LeadsView({ isAdmin, currentUserId }: LeadsViewProps) {
         </Select>
       </div>
 
+      <div className="rounded-xl border bg-card shadow-sm overflow-hidden animate-fade-in">
       <Table>
         <TableHeader>
           <TableRow>
@@ -253,6 +256,7 @@ export function LeadsView({ isAdmin, currentUserId }: LeadsViewProps) {
           )}
         </TableBody>
       </Table>
+      </div>
 
       <LeadFormDialog open={criarAberto} onOpenChange={setCriarAberto} currentUserId={currentUserId} allowAssignResponsavel={isAdmin} />
       <ImportLeadsDialog open={importarAberto} onOpenChange={setImportarAberto} currentUserId={currentUserId} />

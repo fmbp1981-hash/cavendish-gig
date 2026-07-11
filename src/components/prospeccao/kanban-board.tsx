@@ -103,7 +103,7 @@ export function KanbanBoard<T extends { id: string }>({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-3 overflow-x-auto pb-4">
+      <div className="flex gap-3 overflow-x-auto pb-4 animate-fade-in">
         {columns.map((column) => (
           <KanbanColumn key={column.id} column={column} count={itemsByColumn[column.id]?.length ?? 0}>
             {(itemsByColumn[column.id] ?? []).map((item) => (

@@ -45,7 +45,7 @@ export function LeadCard({
   return (
     <div
       onClick={onClick}
-      className="group relative overflow-hidden rounded-lg border bg-background shadow-sm hover:shadow-md hover:border-foreground/20 transition-all cursor-grab active:cursor-grabbing"
+      className="group relative overflow-hidden rounded-lg border bg-background shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-foreground/20 transition-all duration-200 cursor-grab active:cursor-grabbing"
     >
       <div className={cn("absolute inset-y-0 left-0 w-1", accentClassName ?? "bg-border")} />
 

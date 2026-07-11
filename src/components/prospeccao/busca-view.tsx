@@ -12,6 +12,7 @@ import { useRepresentantes } from "@/hooks/useRepresentantes";
 import { NichoPicker } from "./nicho-picker";
 import { LocalizacaoPicker } from "./localizacao-picker";
 import { BuscaHistorico } from "./busca-historico";
+import { FinderPageHeader } from "./finder-page-header";
 import { PROSPECCAO_CATEGORIAS } from "@/types/prospeccao";
 import { getCategoriaLabel } from "@/lib/prospeccao/categorias";
 import type { ProspeccaoBusca, ProspeccaoCategoria } from "@/types/prospeccao";
@@ -98,13 +99,7 @@ export function BuscaView({ isAdmin, currentUserId, leadsHref }: BuscaViewProps)
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Search className="h-6 w-6 text-primary" />
-          Nova Prospecção
-        </h1>
-        <p className="text-muted-foreground">Configure sua busca de leads no Google Places</p>
-      </div>
+      <FinderPageHeader icon={Search} title="Nova Prospecção" subtitle="Configure sua busca de leads no Google Places" />
 
       {ultimaPesquisa && (
         <Card>
